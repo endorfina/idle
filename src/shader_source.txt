@@ -1,0 +1,161 @@
+@@ renderv
+
+attribute vec2 vPos;
+attribute vec2 aUV;
+varying vec2 vUV;
+
+void main() {
+    vUV = aUV;
+    gl_Position = vec4(vPos, 0.0, 1.0);
+}
+
+@@ renderf
+
+#ifdef GL_ES
+precision mediump float;
+#endif
+uniform sampler2D uT;
+varying vec2 vUV;
+
+void main() {
+  gl_FragColor = texture2D(uT, vUV);// * vec4(1.0, 1.0, 1.0, 1.0);
+}
+
+@@ normv
+
+attribute vec2 vPos;
+uniform mat4 uPM, uVM, uMM; // projection, view, model
+attribute vec2 aUV;
+varying vec2 vUV;
+
+void main() {
+    vUV = aUV;
+    gl_Position = uPM * uVM * uMM * vec4(vPos, 0.0, 1.0);
+}
+
+@@ normf
+
+#ifdef GL_ES
+precision mediump float;
+#endif
+uniform sampler2D uT;
+// uniform bool drawT;
+uniform vec4 uCol;
+varying vec2 vUV;
+
+void main() {
+  // if (drawHl) {
+  //     vec4 color = vec4(1, 1, 1, 0);
+  //     if (texture2D(uT, vUV).w < 0.95) {
+  // 		// ivec2 textureSize2d = textureSize(uT,0);
+  // 		// float ts = float((textureSize2d.x + textureSize2d.y) / 2);
+  // 		int sum = 0;
+  // 		for(int j=-1; j<=1; ++j)
+  // 		for(int i=-1; i<=1; ++i)
+  // 		if (i != j) {
+  // 			vec2 shift = vec2(float(i) * uTSx.x * 4.0, float(j) * uTSx.y
+  // * 4.0); 			float value = texture2D(uT, vUV + shift).w; 			color.w += value;
+  // 			++sum;
+  // 		}
+  // 		color.w /= float(sum);
+  // 	}
+  // 	gl_FragColor = color * vCol;
+  // }
+  // else
+  gl_FragColor = texture2D(uT, vUV) * uCol;
+}
+
+@@ doublev
+
+attribute vec2 vPos, vDest, aUV;
+uniform mat4 uPM, uVM, uMM; // projection, view, model
+uniform float uIv;  // interpolate value (between 0 and 1)
+varying vec2 vUV;
+
+void main() {
+    vUV = aUV;
+    vec2 pos = vPos + (vDest - vPos) * uIv;
+    gl_Position = uPM * uVM * uMM * vec4(pos, 0.0, 1.0);
+}
+
+@@ doublef
+
+#ifdef GL_ES
+precision mediump float;
+#endif
+//uniform sampler2D uT;
+uniform vec4 uCol;
+//varying vec2 vUV;
+
+void main() {
+  gl_FragColor = uCol;//texture2D(uT, vUV) * uCol;
+}
+
+
+@@ solidv
+
+attribute vec2 vPos;
+uniform mat4 uPM, uVM, uMM;
+
+void main() {
+    gl_Position = uPM * uVM * uMM * vec4(vPos, 0.0, 1.0);
+}
+
+@@ solidf
+
+#ifdef GL_ES
+precision mediump float;
+#endif
+uniform vec4 uCol;
+
+void main() {
+    gl_FragColor = uCol;
+}
+
+@@ textv
+
+attribute vec2 vPos;
+uniform mat4 uPM, uVM, uMM; // projection, scale (font-size), model
+uniform vec2 uOf;
+attribute vec2 aUV;
+varying vec2 vUV;
+
+void main() {
+    vUV = aUV;
+    gl_Position = uPM * uVM * uMM * vec4(vPos + uOf, 0.0, 1.0);
+}
+
+@@ textf
+
+#ifdef GL_ES
+precision mediump float;
+#endif
+uniform sampler2D uT;
+uniform vec4 uCol;
+varying vec2 vUV;
+
+void main() {
+  float t = texture2D(uT, vUV).x;
+  float a = 0.3 + (t * 0.7);
+  gl_FragColor = vec4(a, a, a, t) * uCol; // swizzling won't work on earlier OpenGL
+}
+
+@@ fullbgf
+
+#ifdef GL_ES
+precision mediump float;
+#endif
+uniform sampler2D uT;
+uniform float uCol;
+uniform vec2 uR; // resolution
+// varying vec2 vUV;
+uniform float uI; // iterate
+
+void main() {
+    // between -1 & 1
+    vec2 uv = gl_FragCoord.xy / uR;
+    uv.x *= uR.x / uR.y;
+    uv.x -= uI;
+    uv.y += uI;
+    gl_FragColor = texture2D(uT, uv) * vec4(1, 1, 1, uCol);
+}

@@ -1,0 +1,7 @@
+.vscode/
+compile_commands.json
+cmake-build/
+out/
+trash/
+src/embedded_shaders.hpp
+Makefile
