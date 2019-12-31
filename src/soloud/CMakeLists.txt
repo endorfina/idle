@@ -1,7 +1,7 @@
 set(SOLOUD_COMPILE_FLAGS "-O3")
 
 if("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
-    set(SOLOUD_COMPILE_FLAGS "${SOLOUD_COMPILE_FLAGS} -Wno-misleading-indentation -Wno-unused-but-set-variable -Wno-sign-compare")
+    set(SOLOUD_COMPILE_FLAGS "${SOLOUD_COMPILE_FLAGS} -Wno-misleading-indentation -Wno-unused-but-set-variable -Wno-sign-compare -Wno-unused-result")
 elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
     set(SOLOUD_COMPILE_FLAGS "${SOLOUD_COMPILE_FLAGS} -Wno-deprecated-register")
 endif()

@@ -13,7 +13,7 @@ then
     exit 1
 fi
 
-while getopts 'dlnyuj' OPT
+while getopts 'dlncujv' OPT
 do
     case $OPT in
         d)
@@ -26,7 +26,7 @@ do
             ;;
 
         n)
-            CM_OPTS_CXX="${CM_OPTS_CXX} -march=native"
+            CM_OPTS_CXX="${CM_OPTS_CXX} -march=native -mtune=native"
             ;;
 
         u)
@@ -37,12 +37,16 @@ do
             CM_OPTS="${CM_OPTS} -DMAKESHIFT_UNITY=ON"
             ;;
 
-        y)
+        c)
             CM_OPTS="${CM_OPTS} -DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
             ;;
 
+        v)
+            CM_OPTS="${CM_OPTS} -DCMAKE_VERBOSE_MAKEFILE=ON"
+            ;;
+
         *)
-            echo "Unknown option \"${OPT}\"."
+            echo "${0##*/}: Unknown option \"${OPT}\"."
             ;;
     esac
 done
@@ -79,8 +83,13 @@ then
     done
 fi
 
-echo ">> cmake ${ARGS[*]}"
+if [[ -d "$BUILD_DIR" ]]
+then
+    echo 'Clearing existing cmake configuration'
+    rm -r "${BUILD_DIR}/"
+fi
 
+echo ">> cmake ${ARGS[*]}"
 
 if cmake "${ARGS[@]}"
 then
@@ -106,9 +115,4 @@ EOF
 
     sed 's~\.\./~~' "${SOURCE_DIR}/Makefile" > 'Makefile'
 
-else
-    test -d "$BUILD_DIR" \
-        && rm -r "${BUILD_DIR}/CMakeFiles/" "${BUILD_DIR}/CMakeCache.txt" &>/dev/null
-
-    exit 1
 fi

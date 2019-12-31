@@ -23,7 +23,7 @@
 #include "top.hpp"
 #include "database.hpp"
 #include "blue/script.hpp"
-#include "platform/FreeType.hpp"
+#include "FreeType.hpp"
 
 // #include <soloud.h>
 // #include <soloud_modplug.h>

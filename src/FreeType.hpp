@@ -20,17 +20,21 @@
 
 #include <string_view>
 #include <memory>
-#include "../fonts.hpp"
+#include "fonts.hpp"
 
-namespace fonts {
-    struct FreeType {
-        std::unique_ptr<font_t> load(const std::string_view &memory, int resolution) const;
-        std::unique_ptr<font_t> load(const std::string_view &memory, int resolution, int glyphMargin) const;
+namespace fonts
+{
 
-        FreeType();
-        ~FreeType();
+struct FreeType
+{
+    std::unique_ptr<font_t> load(const std::string_view &memory, int resolution) const;
+    std::unique_ptr<font_t> load(const std::string_view &memory, int resolution, int glyphMargin) const;
 
-        FreeType(const FreeType &) = delete;
-        FreeType(FreeType &&) = delete;
-    };
+    FreeType();
+    ~FreeType();
+
+    FreeType(const FreeType &) = delete;
+    FreeType(FreeType &&) = delete;
+};
+
 }

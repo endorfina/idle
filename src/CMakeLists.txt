@@ -90,6 +90,9 @@ if(DEFINED CMAKE_BUILD_TYPE AND CMAKE_BUILD_TYPE STREQUAL "Debug")
     target_compile_definitions(${PROJECT_NAME}-obj PUBLIC DEBUG)
 endif()
 
+find_package(ZLIB REQUIRED)
+add_library(${PROJECT_NAME}-ft OBJECT "FreeType.cpp")
+
 add_subdirectory(platform)
 add_subdirectory(soloud)
 add_subdirectory(test)

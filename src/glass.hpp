@@ -28,20 +28,6 @@
 namespace idle::glass
 {
 
-template <typename Head, typename... Tail>
-constexpr inline unsigned elem_size()
-{
-    if constexpr (!!sizeof...(Tail))
-    {
-        return Head::size +
-            elem_size<Tail...>();
-    }
-    else
-    {
-        return Head::size;
-    }
-}
-
 template <typename... Appendages>
 struct bone
 {
@@ -50,7 +36,7 @@ struct bone
     float stiffness;
     std::tuple<Appendages...> appendages;
 
-    static constexpr unsigned size = elem_size<Appendages...>() + 1;
+    static constexpr unsigned size = (1 + ... + Appendages::size);
 };
 
 template<>
@@ -70,6 +56,8 @@ template<typename Value>
 struct symmetry
 {
     Value left, right;
+
+    static constexpr unsigned size = Value::size * 2;
 };
 
 namespace spine
@@ -81,6 +69,12 @@ struct humanoid
     symmetry<limb_bone> arms, legs;
     bone<> head;
     point_3d_t center, rotation;
+
+    static constexpr humanoid get_default()
+    {
+        humanoid hu{};
+        return hu;
+    }
 };
 
 }  // namespace spine

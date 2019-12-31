@@ -310,6 +310,12 @@ asset::asset(AAsset* f, std::string_view d)
     : file(f), data(d)
 {}
 
+asset::asset(asset&& other)
+    : file(other.file), data(other.data)
+{
+    other.file = nullptr;
+}
+
 asset::~asset()
 {
     if (file)

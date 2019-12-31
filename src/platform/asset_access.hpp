@@ -36,15 +36,30 @@ protected:
 
     asset() = default;
     asset(AAsset*, std::string_view);
+
+public:
+    asset(asset&&);
+
 #else
     std::unique_ptr<char[]> ptr;
     size_t size = 0;
-#endif
+
+    asset() = default;
+
+    template<typename Ptr>
+    asset(size_t s, Ptr&& p)
+        : ptr(std::forward<Ptr>(ptr)), size(s) {}
 
 public:
+    asset(asset&&) = default;
+
+#endif
+
     operator bool() const;
 
     std::string_view view() const;
+
+    asset(const asset&) = delete;
 
     ~asset();
 

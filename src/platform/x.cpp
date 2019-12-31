@@ -46,12 +46,12 @@ struct x11_display
 
     static const x11_display& cast(const window::data_t& data)
     {
-        return *reinterpret_cast<const x11_display*>(data.data());
+        return *reinterpret_cast<const x11_display*>(data);
     }
 
     static x11_display& cast(window::data_t& data)
     {
-        return *reinterpret_cast<x11_display*>(data.data());
+        return *reinterpret_cast<x11_display*>(data);
     }
 };
 
@@ -289,7 +289,6 @@ void window::terminate_display()
     }
 }
 
-
 asset::~asset() {}
 
 asset::operator bool() const
@@ -302,35 +301,27 @@ std::string_view asset::view() const
     return { ptr.get(), size };
 }
 
-asset asset::hold(const window& sys, std::string path)
+asset asset::hold(std::string path)
 {
     path.insert(0, "assets/");
 
-    if(FILE *f = fopen(path.c_str(), "rb"))
+    if(const std::unique_ptr<FILE, decltype(&fclose)> f{ fopen(path.c_str(), "rb"), fclose })
     {
-        platform::asset a;
-        const auto size = ftell(f);
-        if(size <= 0 || fseek(f, 0, SEEK_SET) != 0) {
-            fclose(f);
+        const auto size = ftell(f.get());
+        if(size <= 0 || fseek(f.get(), 0, SEEK_SET) != 0)
             return {};
-        }
 
-        a.size = static_cast<size_t>(size);
-        a.ptr = std::make_unique<char[]>(a.size);
+        auto ptr = std::make_unique<char[]>(size);
 
-        if(fread(a.ptr.get(), 1, a.size, f) != static_cast<size_t>(size)) {
-            fclose(f);
-            return {};
-        }
-        fclose(f);
-        return a;
+        if(fread(ptr.get(), 1, size, f.get()) == static_cast<size_t>(size))
+            return { static_cast<size_t>(size), std::move(ptr) };
     }
     return {};
 }
 
-asset asset::hold(const window& sys, const char * path)
+asset asset::hold(const char * path)
 {
-    return hold(sys, path);
+    return hold(path);
 }
 
 }  // namespace platform

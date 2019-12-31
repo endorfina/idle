@@ -19,7 +19,7 @@ Just run the associated bash script:
 
 Configure script accepts some flags, however by default it will prepare a proper `cmake` release build.
 `-l` flag forces the build system to use both clang and libc++ for compilation.
-`-n` translates to `-march=native`.
+`-n` translates to `-march=native -mtune=native`.
 `-j` will try to merge the core library files into a jumbo build.
 Personally I'd recommend running `./configure.sh -nj` for an optimal solution.
 There are others but they're mostly for development (and quite straightforward).

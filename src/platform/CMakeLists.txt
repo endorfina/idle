@@ -1,6 +1,3 @@
-find_package(ZLIB REQUIRED)
-add_library(${PROJECT_NAME}-ft OBJECT "FreeType.cpp")
-
 if(ANDROID)
     set(PLATFORM_LIBRARIES "android" "native_app_glue" "log" "EGL" "GLESv2" "freetype")
 
@@ -82,7 +79,7 @@ else()
 
     set(OUTPUT_PATH "${PROJECT_SOURCE_DIR}/../out" CACHE PATH "Path to the executable output directory")
 
-    # mostly so I can run the generator in isolation at work
+    # mostly so I can run tests in isolation at work
     if(NOT MACOSX)
         find_package(X11 REQUIRED)
         cmake_policy(SET CMP0072 NEW)
@@ -110,4 +107,12 @@ if(NOT MACOSX)
                   soloud
                   lodepng
                   modplug)
+
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+            COMMAND ${CMAKE_OBJCOPY} --only-keep-debug "$<TARGET_FILE:${PROJECT_NAME}>" "${PROJECT_NAME}.debug"
+            COMMAND ${CMAKE_STRIP} --strip-debug --strip-unneeded "$<TARGET_FILE:${PROJECT_NAME}>"
+            COMMAND ${CMAKE_OBJCOPY} "--add-gnu-debuglink=${PROJECT_NAME}.debug" "$<TARGET_FILE:${PROJECT_NAME}>"
+            COMMAND chmod -x "${PROJECT_NAME}.debug"
+            WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
+
 endif()
