@@ -23,7 +23,7 @@ namespace platform
 {
 
 struct pointer {
-    violet::point2<float> pos;
+    math::point2<float> pos;
     bool pressed = false, single_press = false, double_tap = false;
     float touch = 0.f;
 };

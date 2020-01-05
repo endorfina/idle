@@ -25,12 +25,12 @@
 
 namespace idle
 {
-using color_t = violet::color<GLfloat>;
-using point_t = violet::point2<GLfloat>;
-using point_3d_t = violet::point3<GLfloat>;
-using mat4x4_t = violet::matrix4x4<GLfloat, false>;
-using mat4x4_noopt_t = violet::matrix4x4<GLfloat, true>;
-using rect_t = violet::rect<GLfloat>;
+using color_t = math::color<GLfloat>;
+using point_t = math::point2<GLfloat>;
+using point_3d_t = math::point3<GLfloat>;
+using mat4x4_t = math::matrix4x4<GLfloat, false>;
+using mat4x4_noopt_t = math::matrix4x4<GLfloat, true>;
+using rect_t = math::rect<GLfloat>;
 
 enum class TextAlign { Near, Center, Far };
 

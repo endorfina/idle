@@ -92,7 +92,7 @@ class collection
 {
 public:
     object * first_node = nullptr;
-    // violet::colony<object, 80, uint_fast8_t> data;
+    // math::colony<object, 80, uint_fast8_t> data;
     std::unordered_map<object*, object*> replacements;
     std::mutex gen_access, node_access;
 

@@ -36,17 +36,23 @@ struct bone
     float stiffness;
     std::tuple<Appendages...> appendages;
 
+    constexpr bone() :
+        length(10),
+        angle{0, 0, 0},
+        lower_bound{0, 0, 0},
+        upper_bound{0, 0, 0},
+        stiffness{0},
+        appendages{}
+    {}
+
+    template<unsigned Index>
+    constexpr auto& get()
+    {
+        static_assert(Index < sizeof...(Appendages));
+        return std::get<Index>(appendages);
+    }
+
     static constexpr unsigned size = (1 + ... + Appendages::size);
-};
-
-template<>
-struct bone<>
-{
-    float length;
-    point_3d_t angle, lower_bound, upper_bound;
-    float stiffness;
-
-    static constexpr unsigned size = 1;
 };
 
 template <unsigned FrameSize, unsigned AnimLength>
@@ -59,6 +65,60 @@ struct symmetry
 
     static constexpr unsigned size = Value::size * 2;
 };
+
+template<typename... Links>
+struct muscle
+{
+    std::tuple<Links...> chain;
+
+    template<typename... Li>
+    constexpr muscle(Li&&... var)
+        : chain{std::forward<Li>(var)...}
+    {}
+
+protected:
+    template<unsigned Index = 0, typename Load>
+    constexpr void expand(Load& load) const
+    {
+        constexpr auto source_index = Index > 0 ? Index - 1 : 0;
+        load[Index] = std::get<Index>(chain)(load[source_index]);
+
+        if constexpr (Index + 1 < sizeof...(Links))
+        {
+            expand<Index + 1, Load>(load);
+        }
+    }
+
+public:
+    template<typename Val>
+    using array_t = std::array<Val, sizeof...(Links)>;
+
+    template<typename Cargo>
+    constexpr array_t<Cargo> link(const Cargo& cargo) const
+    {
+        array_t<Cargo> out{};
+        out[0] = cargo;
+        expand<0>(out);
+        return out;
+    }
+};
+
+template<unsigned Index = 0, typename Callable, typename...Nodes>
+constexpr void apply_for_all(const Callable& func, bone<Nodes...>& node)
+{
+    if constexpr (Index == 0)
+    {
+        func(node);
+    }
+
+    if constexpr (sizeof...(Nodes) > 0)
+    {
+        apply_for_all<0>(func, node.template get<Index>());
+
+        if constexpr (Index + 1 < sizeof...(Nodes))
+            apply_for_all<Index + 1>(func, node);
+    }
+}
 
 namespace spine
 {
@@ -73,6 +133,13 @@ struct humanoid
     static constexpr humanoid get_default()
     {
         humanoid hu{};
+        constexpr auto mat = mat4x4_t::rotate(0);
+
+        apply_for_all([](auto& b){ b.length = 15; }, hu.arms.left);
+        apply_for_all([](auto& b){ b.length = 15; }, hu.arms.right);
+
+        apply_for_all([](auto& b){ b.length = 20; }, hu.legs.left);
+        apply_for_all([](auto& b){ b.length = 20; }, hu.legs.right);
         return hu;
     }
 };

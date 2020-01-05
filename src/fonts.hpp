@@ -40,7 +40,7 @@ struct font_t
 
     void draw(const graphics::text_program_t& rcp, const std::string_view &str, unsigned int limit = (-1)) const;
 
-    void draw_custom_animation(const graphics::text_program_t& rcp, const std::string_view &str, const violet::color<float> &col, const idle::text_animation_data* anim, const unsigned start, const unsigned end) const;
+    void draw_custom_animation(const graphics::text_program_t& rcp, const std::string_view &str, const math::color<float> &col, const idle::text_animation_data* anim, const unsigned start, const unsigned end) const;
 
 
     //Return the width/height of the rendered text at given size

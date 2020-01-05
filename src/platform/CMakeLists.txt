@@ -108,11 +108,11 @@ if(NOT MACOSX)
                   lodepng
                   modplug)
 
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-            COMMAND ${CMAKE_OBJCOPY} --only-keep-debug "$<TARGET_FILE:${PROJECT_NAME}>" "${PROJECT_NAME}.debug"
-            COMMAND ${CMAKE_STRIP} --strip-debug --strip-unneeded "$<TARGET_FILE:${PROJECT_NAME}>"
-            COMMAND ${CMAKE_OBJCOPY} "--add-gnu-debuglink=${PROJECT_NAME}.debug" "$<TARGET_FILE:${PROJECT_NAME}>"
-            COMMAND chmod -x "${PROJECT_NAME}.debug"
-            WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
+  # add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+  #         COMMAND ${CMAKE_OBJCOPY} --only-keep-debug "$<TARGET_FILE:${PROJECT_NAME}>" "${PROJECT_NAME}.debug"
+  #         COMMAND ${CMAKE_STRIP} --strip-debug --strip-unneeded "$<TARGET_FILE:${PROJECT_NAME}>"
+  #         COMMAND ${CMAKE_OBJCOPY} "--add-gnu-debuglink=${CMAKE_BINARY_DIR}/${PROJECT_NAME}.debug" "$<TARGET_FILE:${PROJECT_NAME}>"
+  #         COMMAND chmod -x "${PROJECT_NAME}.debug"
+  #         WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
 
 endif()

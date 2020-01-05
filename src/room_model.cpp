@@ -168,7 +168,7 @@ void option_save(model_room& r)
 //     }
 // }
 
-// void model_room::menu(collection& coll, violet::point2<int> size)
+// void model_room::menu(collection& coll, math::point2<int> size)
 // {
 //     constexpr point_t standard_button {16, 16};
 //     constexpr auto rainbow = rainbow_from_saturation(.5f);
@@ -440,7 +440,7 @@ bool model_room::step(::overlay& parent)
     //             {
     //                 std::string str("new");
     //                 str.resize(16);
-    //                 violet::generate_random_string(str.data() + 3, str.size() - 3);
+    //                 math::generate_random_string(str.data() + 3, str.size() - 3);
     //                 edited_skele = &skeleton_map.try_emplace(std::move(str)).first->second;
     //             }
     //             skele = *edited_skele;

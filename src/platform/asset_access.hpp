@@ -26,8 +26,8 @@ namespace platform
 
 class asset
 {
-#ifdef __ANDROID__
 protected:
+#ifdef __ANDROID__
     static const struct android_app * android_activity;
     friend struct window;
 
@@ -39,6 +39,8 @@ protected:
 
 public:
     asset(asset&&);
+
+    ~asset();
 
 #else
     std::unique_ptr<char[]> ptr;
@@ -60,8 +62,6 @@ public:
     std::string_view view() const;
 
     asset(const asset&) = delete;
-
-    ~asset();
 
     static asset hold(const char * path);
 

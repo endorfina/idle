@@ -24,13 +24,12 @@
 #include "objects.hpp"
 
 #ifndef NDEBUG
-#define COMPILE_M_ROOM
+// #define COMPILE_M_ROOM
 #endif
 
 #ifdef COMPILE_M_ROOM
 #include "gui.hpp"
 #include "draw_text.hpp"
-#include "these_bones.hpp"
 
 namespace idle
 {
@@ -178,25 +177,25 @@ using model_interface_t = std::variant<
 >;
 
 
-struct working_model
-{
-    std::unordered_map<std::string, models::skeleton> skeleton_map;
-    models::skeleton* edited_skele = nullptr;
-    models::skeleton skele;
-    unsigned bid = 0;
-    float center_rotation = 0, z_rotation = 0.f, model_scale = 1.f;
-    std::unordered_map<unsigned, mat4x4_noopt_t> matrix_cache;
-    point_t center_translation;
-
-    models::bone* get_current_bone();
-    void refresh_matrix_cache();
-    void clear_from_matrix_cache(unsigned);
-    void recalibrate_center();
-    bool has_model() const;
-    void draw(const graphics::core& gl) const;
-    void add_bone();
-    void remove_bone();
-};
+// struct working_model
+// {
+//     std::unordered_map<std::string, models::skeleton> skeleton_map;
+//     models::skeleton* edited_skele = nullptr;
+//     models::skeleton skele;
+//     unsigned bid = 0;
+//     float center_rotation = 0, z_rotation = 0.f, model_scale = 1.f;
+//     std::unordered_map<unsigned, mat4x4_noopt_t> matrix_cache;
+//     point_t center_translation;
+//
+//     models::bone* get_current_bone();
+//     void refresh_matrix_cache();
+//     void clear_from_matrix_cache(unsigned);
+//     void recalibrate_center();
+//     bool has_model() const;
+//     void draw(const graphics::core& gl) const;
+//     void add_bone();
+//     void remove_bone();
+// };
 
 struct model_room
 {
@@ -211,7 +210,7 @@ struct model_room
     std::shared_mutex mutex;
     model_interface_t face;
     Targeted targeted;
-    working_model model_;
+    // working_model model_;
 
     struct _drag_struct_ {
         point_t* ptr = nullptr;
@@ -239,26 +238,26 @@ constexpr float point_3d_t::* __choose_3d_point_value__()
 template<int P, int X, int Y>
 void target_dragable_position<P, X, Y>::trigger(model_room& r)
 {
-    if (!r.model_.has_model()) return;
+    // if (!r.model_.has_model()) return;
     r.start_drag(this->pos, __choose_3d_point_value__<P>());
 }
 
 template<Targeted T, int X, int Y>
 void target_dragable_target<T, X, Y>::trigger(model_room& r)
 {
-    if (!r.model_.has_model()) return;
+    // if (!r.model_.has_model()) return;
     // start_drag
     r.drag.ptr = &this->pos;
     r.drag.start = this->pos;
     r.drag.ptr_val = nullptr;
     r.drag.animation = 0.f;
 
-    if constexpr (T == Targeted::GlobalRotation)
-        r.drag.ptr_val = &r.model_.z_rotation;
-    else {
-        static_assert(T == Targeted::GlobalScale);
-        r.drag.ptr_val = &r.model_.model_scale;
-    }
+    // if constexpr (T == Targeted::GlobalRotation)
+    //     r.drag.ptr_val = &r.model_.z_rotation;
+    // else {
+    //     static_assert(T == Targeted::GlobalScale);
+    //     r.drag.ptr_val = &r.model_.model_scale;
+    // }
 
     r.drag.initial_value = *r.drag.ptr_val;
 }
@@ -266,19 +265,19 @@ void target_dragable_target<T, X, Y>::trigger(model_room& r)
 template<Targeted T, int X, int Y>
 void target_change<T, X, Y>::trigger(model_room& r) const
 {
-    r.targeted = T;
+    // r.targeted = T;
 }
 
 template<int X, int Y>
 void button_add<X, Y>::trigger(model_room& r) const
 {
-    r.model_.add_bone();
+    // r.model_.add_bone();
 }
 
 template<int X, int Y>
 void button_remove<X, Y>::trigger(model_room& r) const
 {
-    r.model_.remove_bone();
+    // r.model_.remove_bone();
 }
 
 }

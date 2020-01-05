@@ -102,7 +102,6 @@ bool application::execute_commands()
     window.commands.clear();
 
     if (perform_load && !top.gl.setup_graphics()) {
-        // throw idle::haiku("idle meant to load assets.", "But it crashed instead.");
         return false;
     }
 
@@ -112,7 +111,6 @@ bool application::execute_commands()
     }
 
     if (perform_load && !load()) {
-        // throw idle::haiku("idle meant to load assets.", "But it crashed instead.");
         return false;
     }
 
@@ -135,7 +133,7 @@ void application::resize_internal()
 
 namespace
 {
-GLint setup_buffer_frame(const graphics::render_buffer_t& rb, const violet::point2<int> internal_size, const idle::color_t& bg)
+GLint setup_buffer_frame(const graphics::render_buffer_t& rb, const math::point2<int> internal_size, const idle::color_t& bg)
 {
     GLint default_frame_buffer = 0;
     gl::GetIntegerv(gl::FRAMEBUFFER_BINDING, &default_frame_buffer);
@@ -242,41 +240,7 @@ void draw_exit_splash(const graphics::core& gl, const float exit_splash_animatio
     gl.pnormal.texture_vertex(tb);
     gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
 
-    // gl.pfill.use();
-    // gl.pfill.set_identity();
-    // gl.pfill.set_view_identity();
-
     const float yshift = (1 - exit_splash_animation) * 20;
-    const float topy = gl.draw_size.y / 2 - 60.f;
-    const float v2[] {
-        gl.draw_size.x * .01f, topy,
-        gl.draw_size.x * .01f, topy + 120,
-        gl.draw_size.x * .4f, topy,
-        gl.draw_size.x * .4f, topy + 120,
-        gl.draw_size.x * .6f, topy,
-        gl.draw_size.x * .6f, topy + 120,
-        gl.draw_size.x * .99f, topy,
-        gl.draw_size.x * .99f, topy + 120
-    };
-
-    constexpr float t2[] {
-        0, 0,
-        0, 0,
-        0, 1,
-        0, 1,
-        0, 1,
-        0, 1,
-        0, 0,
-        0, 0
-    };
-
-    // gl.pnormal.set_color(0, 0, 0, .81f * powf(exit_splash_animation, 3)); // .2f
-    // gl::ActiveTexture(gl::TEXTURE0);
-    // gl::BindTexture(gl::TEXTURE_2D, gl.image_id_fade);
-    // gl.pnormal.position_vertex(v2);
-    // gl.pnormal.texture_vertex(t2);
-    // gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 8);
-
     const auto rect = idle::rect_t(gl.draw_size.x / 2 - 220.f, gl.draw_size.y / 2 - 60.f, gl.draw_size.x / 2 + 220.f, gl.draw_size.y / 2 + 60.f);
     gl.ptext.use();
     gl.ptext.set_color(1, .133f, .196f, exit_splash_animation);
@@ -363,7 +327,7 @@ struct loading_animation
 
         top.gl.pnormal.use();
         top.gl.pnormal.set_color(1, 1, 1, 1);
-        top.gl.pnormal.set_transform(idle::mat4x4_t::rotate(violet::degtorad<float>(90)) * idle::mat4x4_t::scale(.4f) * idle::mat4x4_t::translate(top.gl.draw_size.x - 1, 1));
+        top.gl.pnormal.set_transform(idle::mat4x4_t::rotate(math::degtorad<float>(90)) * idle::mat4x4_t::scale(.4f) * idle::mat4x4_t::translate(top.gl.draw_size.x - 1, 1));
         picture.draw(top.gl.pnormal, text_cp);
     }
 };

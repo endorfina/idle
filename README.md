@@ -47,3 +47,33 @@ sudo dnf install libX11-devel alsa-lib-devel mesa-libGL-devel freetype-devel zli
 
 The code is licensed under **GPL version 3**.
 Every asset distributed alongside the software (*id est* images, music, etc.) is licensed under [Creative Commons Attribution-ShareAlike 4.0 International License](http://creativecommons.org/licenses/by-sa/4.0/).
+
+
+### Android
+
+In order to build for android, add these options to your gradle configuration:
+
+```groovy
+android {
+    ...
+
+    defaultConfig {
+        minSdkVersion 14
+        ...
+        externalNativeBuild {
+            cmake {
+                arguments '-DANDROID_STL=c++_static',
+                        '-DMAKESHIFT_UNITY=ON',
+                        '-DFREETYPE_SOURCE_LOCATION=<Path to freetype2 source>'
+            }
+        }
+    }
+    ...
+    externalNativeBuild {
+        cmake {
+            version '3.10.2'
+            path '<Path to idle/src/CMakeLists.txt>'
+        }
+    }
+}
+```

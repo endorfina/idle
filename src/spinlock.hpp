@@ -16,29 +16,22 @@
     You should have received a copy of the GNU General Public License
     along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
-#include "interface.hpp"
-#include <cmath>
-#include <math.hpp>
 
-// TEST(GlassCompile) {
-    // constexpr auto sp = idle::glass::spine::humanoid::get_default();
-    // EXPECT_TRUE(true);
-// }
+#pragma once
 
-TEST(math_absolute_value)
+#include <atomic>
+
+namespace idle
 {
-    const float bob = -F_TAU;
-    const auto wow = math::ce::abs(bob);
-    EXPECT_TRUE(wow == -bob);
-    EXPECT_FALSE(bob == wow);
-}
 
-TEST(math_trig)
+class spin_lock
 {
-    const float bob = sin(F_TAU_4);
-    const float wow = cos(F_TAU_4);
-    EXPECT_TRUE(math::ce::detail::epsilon_equal(bob, 1.0f));
-    EXPECT_TRUE(math::ce::detail::epsilon_equal(wow, 0.f));
-}
+    std::atomic_flag flag = ATOMIC_FLAG_INIT;
 
+public:
+    void lock();
 
+    void unlock();
+};
+
+}  // namespace idle

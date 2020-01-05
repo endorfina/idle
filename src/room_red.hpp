@@ -84,7 +84,7 @@ public:
     std::unique_ptr<idle::scoped_thread> worker_thread;
     float darkness = .9f;
     int darkness_update_timer = 0;
-    violet::grid<uint8_t> darkness_data = violet::grid<uint8_t>(DARKNESS_TEXTURE_SIZE, DARKNESS_TEXTURE_SIZE);
+    math::grid<uint8_t> darkness_data = violet::grid<uint8_t>(DARKNESS_TEXTURE_SIZE, DARKNESS_TEXTURE_SIZE);
     std::map<const idle::object *, idle::light_source> lights;
 
     float top_speed = 0.f;

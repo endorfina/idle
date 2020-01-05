@@ -26,7 +26,9 @@
 #include "opengl_core_adaptive.hpp"
 #include <GL/glx.h>
 #include <cstdlib>
+#include <atomic>
 
+#include <log.hpp>
 #include "display.hpp"
 #include "asset_access.hpp"
 
@@ -34,6 +36,8 @@ namespace platform
 {
 namespace
 {
+
+std::atomic_bool xshutdown_requested = false;
 
 struct x11_display
 {
@@ -46,28 +50,28 @@ struct x11_display
 
     static const x11_display& cast(const window::data_t& data)
     {
-        return *reinterpret_cast<const x11_display*>(data);
+        return *std::launder(reinterpret_cast<const x11_display*>(data));
     }
 
     static x11_display& cast(window::data_t& data)
     {
-        return *reinterpret_cast<x11_display*>(data);
+        return *std::launder(reinterpret_cast<x11_display*>(data));
     }
 };
 
 //Atom                    wmDeleteMessage;
 
 int x_fatal_error_handler(Display *) {
-    std::fputs(u8"\U0001F480 (Display destroyed)\n", stderr);
-    std::exit(0x0);
+    LOGE(u8"\U0001F480 (Display destroyed)");
+    xshutdown_requested.store(true, std::memory_order_release);
     return 0;
 }
 
 int x_error_handler(Display *dpy, XErrorEvent *ev) {
     char str[250];
     XGetErrorText(dpy, ev->error_code, str, 250);
-    std::fprintf(stderr, "%s\n", str);
-    std::terminate();
+    LOGE("%s", str);
+    xshutdown_requested.store(true, std::memory_order_release);
     return 0;
 }
 
@@ -101,24 +105,27 @@ window::window()
     std::unique_ptr<Display, decltype(&XCloseDisplay)> display(XOpenDisplay(nullptr), XCloseDisplay);
 
     if(!display) {
-        fputs("Cannot connect to X server\n", stderr);
-        std::abort();
+        LOGE("Cannot connect to X server");
+        commands.push_back(command::CloseWindow);
+        return;
     }
 
     if (int glx_major, glx_minor;
         !glXQueryVersion(display.get(), &glx_major, &glx_minor)
         || ((glx_major == 1) && (glx_minor < 3)) || (glx_major < 1))
     {
-        fputs("Invalid GLX version\n", stderr);
-        std::abort();
+        LOGE("Invalid GLX version");
+        commands.push_back(command::CloseWindow);
+        return;
     }
 
     GLXFBConfig bestFbc; // Get framebuffers
     int fbcount;
-    if (GLXFBConfig* fbc = glXChooseFBConfig(display.get(), DefaultScreen(display.get()), attributes, &fbcount)) {
+    if (const std::unique_ptr<GLXFBConfig[], decltype(&XFree)> fbc{ glXChooseFBConfig(display.get(), DefaultScreen(display.get()), attributes, &fbcount), XFree })
+    {
         int best_fbc = -1, worst_fbc = -1, best_num_samp = -1, worst_num_samp = 999;
         for (int i = 0; i < fbcount; ++i)
-            if (std::unique_ptr<XVisualInfo, decltype(&XFree)> vi(glXGetVisualFromFBConfig(display.get(), fbc[i]), XFree); bool(vi))
+            if (const std::unique_ptr<XVisualInfo, decltype(&XFree)> vi{ glXGetVisualFromFBConfig(display.get(), fbc[i]), XFree }; bool(vi))
             {
                 int samp_buf, samples;
                 glXGetFBConfigAttrib(display.get(), fbc[i], GLX_SAMPLE_BUFFERS, &samp_buf );
@@ -130,18 +137,19 @@ window::window()
                     worst_fbc = i, worst_num_samp = samples;
             }
         bestFbc = fbc[best_fbc];
-        XFree(fbc);
     }
     else {
-        fputs("Failed to retrieve a framebuffer config\n", stderr);
-        std::abort();
+        LOGE("Failed to retrieve a framebuffer config");
+        commands.push_back(command::CloseWindow);
+        return;
     }
 
-    std::unique_ptr<XVisualInfo, decltype(&XFree)> visualinfo(glXGetVisualFromFBConfig(display.get(), bestFbc), XFree);
+    const std::unique_ptr<XVisualInfo, decltype(&XFree)> visualinfo(glXGetVisualFromFBConfig(display.get(), bestFbc), XFree);
 
     if(!visualinfo) {
-        fputs("No appropriate visual found\n", stderr);
-        std::abort();
+        LOGE("No appropriate visual found");
+        commands.push_back(command::CloseWindow);
+        return;
     }
 
     x.colormap = XCreateColormap(display.get(), RootWindow(display.get(), visualinfo->screen), visualinfo->visual, AllocNone);
@@ -152,12 +160,15 @@ window::window()
                           KeyPressMask | // KeyReleaseMask |
                           PointerMotionMask | Button1MotionMask; // | VisibilityChangeMask | ExposureMask;
 
-    x.window = XCreateWindow(display.get(), RootWindow(display.get(), visualinfo->screen), 0, 0, 960, 720, 0, visualinfo->depth, InputOutput, visualinfo->visual, CWColormap | CWEventMask, &setwindowattributes);
+    constexpr unsigned initial_width = 960, initial_height = 720;
+
+    x.window = XCreateWindow(display.get(), RootWindow(display.get(), visualinfo->screen), 0, 0, initial_width, initial_height, 0, visualinfo->depth, InputOutput, visualinfo->visual, CWColormap | CWEventMask, &setwindowattributes);
 
     if(!x.window) {
-        fputs("Failed to create a window\n", stderr);
+        LOGE("Failed to create a window");
         XFreeColormap(display.get(), x.colormap);
-        std::abort();
+        commands.push_back(command::CloseWindow);
+        return;
     }
     XStoreName(display.get(), x.window, "idle/crimson");
     XMapWindow(display.get(), x.window);
@@ -171,8 +182,9 @@ window::window()
     if (!x.context) {
         XDestroyWindow(display.get(), x.window);
         XFreeColormap(display.get(), x.colormap);
-        fputs("Failed to create a proper gl context\n", stderr);
-        std::abort();
+        LOGE("Failed to create a proper gl context");
+        commands.push_back(command::CloseWindow);
+        return;
     }
 
     // wmDeleteMessage = XInternAtom(display.get(), "WM_DELETE_WINDOW", False);
@@ -180,27 +192,29 @@ window::window()
 
     // Sync to ensure any errors generated are processed.
     XSync(display.get(), False);
-    //XSetIOErrorHandler(old_fatal_handler);
     XSetErrorHandler(old_handler);
 
     if (!glXIsDirect(display.get(), x.context)) {
-        fputs(u8"Indirect GLX rendering context obtained (\U0001f937 why\?\?)\n", stderr);
+        LOGE(u8"Indirect GLX rendering context obtained (\U0001f937 why\?\?)");
     }
 
     glXMakeCurrent(display.get(), x.window, x.context);
 
 
-    if(const static gl::exts::LoadTest glTest = gl::sys::LoadFunctions(); !glTest)
+    if (const static gl::exts::LoadTest glTest = gl::sys::LoadFunctions(); !glTest)
     {
-        fputs("Failed to load crucial OpenGL functions\n", stderr);
+        LOGE("Failed to load crucial OpenGL functions");
         glXMakeCurrent(display.get(), None, NULL);
         glXDestroyContext(display.get(), x.context);
         XDestroyWindow(display.get(), x.window);
         XFreeColormap(display.get(), x.colormap);
-        std::abort();
+        commands.push_back(command::CloseWindow);
+        return;
     }
     else if (const auto amt = glTest.GetNumMissing(); amt > 0)
-        fprintf(stderr, "Number of functions that failed to load: %i.\n", amt);
+    {
+        LOGE("Number of functions that failed to load: %i.", amt);
+    }
 
     gl::ClearColor(background.r, background.g, background.b, 1);
     gl::Clear(gl::COLOR_BUFFER_BIT);
@@ -208,7 +222,7 @@ window::window()
 
     x.display = display.release();
 
-    resize_request.emplace(resize_request_t{960, 720, -1, -1, std::chrono::system_clock::now()});
+    resize_request.emplace(resize_request_t{ initial_width, initial_height, -1, -1, std::chrono::system_clock::now() });
     commands.push_back(command::InitWindow);
 }
 
@@ -220,6 +234,12 @@ void window::buffer_swap()
 
 void window::event_loop_back(bool block_if_possible)
 {
+    if (xshutdown_requested.load(std::memory_order_acquire))
+    {
+        commands.push_back(command::CloseWindow);
+        return;
+    }
+
     auto& x = x11_display::cast(data);
     XEvent xev;
     {
@@ -229,6 +249,7 @@ void window::event_loop_back(bool block_if_possible)
         unsigned int mask; //<--three
         XQueryPointer(x.display, x.window, &root_window, &root_window, &root_x, &root_y, &root_x, &root_y, &mask);
     }
+
     while(!!XQLength(x.display))
     {
         XNextEvent(x.display, &xev);
@@ -239,22 +260,26 @@ void window::event_loop_back(bool block_if_possible)
                 cursor.pos.y = static_cast<float>(xev.xbutton.y);
                 cursor.pressed = xev.xbutton.type == ButtonPress;
                 break;
+
             case EnterNotify:
             case MotionNotify:
             case LeaveNotify:
                 cursor.pos.x = static_cast<float>(xev.xmotion.x);
                 cursor.pos.y = static_cast<float>(xev.xmotion.y);
                 break;
+
             case ConfigureNotify:
                 glXMakeCurrent(x.display, x.window, x.context);
                 resize_request.emplace(resize_request_t{xev.xconfigure.width, xev.xconfigure.height, -1, -1, std::chrono::system_clock::now() + std::chrono::seconds(1)});
                 break;
+
             case KeyPress:
                 if (xev.xkey.keycode == 0x9)
                 {
                     commands.push_back(command::PausePressed);
                 }
                 break;
+
             default:
                 break;
         }
@@ -279,7 +304,8 @@ void window::terminate_display()
 
     LOGD("window::terminate_display");
 
-    if (x.display) {
+    if (x.display)
+    {
         glXMakeCurrent(x.display, None, NULL);
         glXDestroyContext(x.display, x.context);
         XDestroyWindow(x.display, x.window);
@@ -288,8 +314,6 @@ void window::terminate_display()
         x.display = nullptr;
     }
 }
-
-asset::~asset() {}
 
 asset::operator bool() const
 {
@@ -305,15 +329,17 @@ asset asset::hold(std::string path)
 {
     path.insert(0, "assets/");
 
-    if(const std::unique_ptr<FILE, decltype(&fclose)> f{ fopen(path.c_str(), "rb"), fclose })
+    if (const std::unique_ptr<FILE, decltype(&std::fclose)> f{ std::fopen(path.c_str(), "rb"), std::fclose })
     {
-        const auto size = ftell(f.get());
-        if(size <= 0 || fseek(f.get(), 0, SEEK_SET) != 0)
+        std::fseek(f.get(), 0, SEEK_END);
+
+        const auto size = std::ftell(f.get());
+        if (size <= 0 || std::fseek(f.get(), 0, SEEK_SET) != 0)
             return {};
 
         auto ptr = std::make_unique<char[]>(size);
 
-        if(fread(ptr.get(), 1, size, f.get()) == static_cast<size_t>(size))
+        if (std::fread(ptr.get(), 1, size, f.get()) == static_cast<size_t>(size))
             return { static_cast<size_t>(size), std::move(ptr) };
     }
     return {};
@@ -321,7 +347,7 @@ asset asset::hold(std::string path)
 
 asset asset::hold(const char * path)
 {
-    return hold(path);
+    return hold(std::string{path});
 }
 
 }  // namespace platform

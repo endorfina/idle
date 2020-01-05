@@ -59,7 +59,7 @@ static std::unique_ptr<font_t> create_font(font_face_t freetype_font_face, const
 
     font_t::map_t glyphs;
 
-    violet::point2<int> texture_position{0, 0};
+    math::point2<int> texture_position{0, 0};
 
 
     FT_UInt gindex;

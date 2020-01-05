@@ -20,6 +20,7 @@
 #define INCLUDE_IDLETEST_INTERFACE_HPP
 
 #include <iostream>
+#include <string>
 #include <string_view>
 #include <vector>
 #include <functional>
@@ -96,19 +97,23 @@ void IDLETEST_CLASSNAME_(classname, testname)::test_body(unsigned& IDLETEST_FAIL
 
 
 
-void _print_failed_expr_(unsigned long line, std::string_view expr, std::string_view failmsg);
+void _print_failed_expr_(unsigned long line, const std::string& failmsg);
 
 
-#define IDLETEST_EXPECTATION(expr, failpred, failmsg) do if (failpred) { \
+#define IDLETEST_EXPECTATION(pred, failmsg) do if (!(pred)) { \
     ++(IDLETEST_FAILSI_); \
-    ::idletest::_print_failed_expr_(__LINE__, expr, failmsg); \
+    ::idletest::_print_failed_expr_(__LINE__, failmsg); \
 } while (false)
 
 
 
-#define EXPECT_TRUE(x) IDLETEST_EXPECTATION(#x, !(x), "does not evaluate to true")
+#define EXPECT_TRUE(x) IDLETEST_EXPECTATION(!!(x), #x " does not evaluate to true")
 
-#define EXPECT_FALSE(x) IDLETEST_EXPECTATION(#x, !!(x), "does not evaluate to false")
+#define EXPECT_FALSE(x) IDLETEST_EXPECTATION(!(x), #x " does not evaluate to false")
+
+#define EXPECT_EQUAL(x, y) IDLETEST_EXPECTATION((x) == (y), #x " and " #y " values aren't equal")
+
+#define EXPECT_UNEQUAL(x, y) IDLETEST_EXPECTATION((x) != (y), #x " and " #y " values are equal")
 
 }
 

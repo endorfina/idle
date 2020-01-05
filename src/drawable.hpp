@@ -71,7 +71,7 @@ public:
     GLuint release();
 
     template<typename Ret>
-    violet::point2<Ret> get_size() const {
+    math::point2<Ret> get_size() const {
         return { static_cast<Ret>(width), static_cast<Ret>(height) };
     }
 };

@@ -1,26 +1,25 @@
 /*
     Copyright © 2020 endorfina <dev.endorfina@outlook.com>
 
-    This file is part of Violet.
+    This file is part of Idle.
 
-    Violet is free software: you can study it, redistribute it
+    Idle is free software: you can study it, redistribute it
     and/or modify it under the terms of the GNU General Public License
     as published by the Free Software Foundation, either version 3 of
     the License, or (at your option) any later version.
 
-    Violet is distributed in the hope that it will be useful,
+    Idle is distributed in the hope that it will be fun and useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with Violet.  If not, see <http://www.gnu.org/licenses/>.
+    along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
 #pragma once
 
 #include <type_traits>
 #include <array>
-#include <cmath>
 #include <algorithm>
 
 #include <memory.h> // memcpy
@@ -48,8 +47,368 @@
 #define M_PI F_PI
 #endif
 
-namespace violet
+#ifdef __clang__        // clang, am I right?
+#define CONST_MATH ce
+#elif __GNUC__          // gcc is love
+#include <cmath>
+#define CONST_MATH std
+#else
+#define CONST_MATH ce
+#endif
+
+namespace math
 {
+
+template <typename T>
+constexpr T sqr(T x)
+{
+    return x * x;
+}
+
+
+namespace ce
+{
+
+template <typename T>
+constexpr T abs(T x)
+{
+    return x >= 0 ? x : -x;
+}
+
+namespace detail
+{
+    template <typename T>
+    constexpr bool epsilon_equal(T x, T y)
+    {
+        return abs(x - y) <= std::numeric_limits<T>::epsilon();
+    }
+
+    template <typename N, typename F>
+    constexpr F power(F x, N nth)
+    {
+        if (nth == 0)
+            return {1};
+        if (nth == 1)
+            return x;
+        if (nth > 1)
+        {
+            if (nth & 1)
+                return x * power<N, F>(x, nth - 1);
+            return power<N, F>(x, nth / 2);
+        }
+        else
+            return F{1} / power<N, F>(x, -nth);
+    }
+
+    template <typename T>
+    constexpr T sqrt(const T x, T guess)
+    {
+        while (true)
+        {
+            const T new_guess = (guess + x / guess) / T{2};
+            if (epsilon_equal(guess, new_guess))
+                return guess;
+            guess = new_guess;
+        }
+    }
+}  // namespace detail
+
+template <typename T>
+constexpr auto sqrt(T x)
+{
+    if (x == 0)
+        return 0.f;
+
+    if constexpr (std::is_floating_point_v<T>)
+        return detail::sqrt(x, x);
+    else
+        return detail::sqrt<float>(x, x);
+}
+
+namespace detail
+{
+    template <typename T>
+    constexpr T cbrt(const T x, T guess)
+    {
+        while (true)
+        {
+            const T new_guess = (T{2} * guess + x / (guess * guess)) / T{3};
+            if (epsilon_equal(guess, new_guess))
+                return guess;
+            guess = new_guess;
+        }
+    }
+}  // namespace detail
+
+template <typename T>
+constexpr auto cbrt(T x)
+{
+    if constexpr (std::is_floating_point_v<T>)
+        return detail::cbrt(x, T{1});
+    else
+        return detail::cbrt<float>(x, 1.f);
+}
+
+template <typename T>
+constexpr T hypot(T x, T y)
+{
+    return sqrt(x * x + y * y);
+}
+
+namespace detail
+{
+    template <typename T>
+    constexpr T exp(const T x, T sum, T n, int i, T t)
+    {
+        while (true)
+        {
+            const T new_sum = sum + t / n;
+            if (epsilon_equal(sum, new_sum))
+                return sum;
+            sum = new_sum;
+            n *= i++;
+            t *= x;
+        }
+    }
+}  // namespace detail
+
+template <typename T>
+constexpr auto exp(T x)
+{
+    if constexpr (std::is_floating_point_v<T>)
+        return detail::exp(x, T{1}, T{1}, 2, x);
+    else
+        return detail::exp<float>(x, 1.f, 1.f, 2, x);
+}
+
+namespace detail
+{
+    template <typename T>
+    constexpr T trigonometry(const T x, T sum, T n, int i, int s, T t)
+    {
+        while (true)
+        {
+            const T new_sum = sum + t * s / n;
+            if (epsilon_equal(sum, new_sum))
+                return sum;
+            sum = new_sum;
+            n = n * i * (i + 1);
+            i += 2;
+            s = -s;
+            t *= x * x;
+        }
+    }
+}  // namespace detail
+
+template <typename T>
+constexpr auto sin(T x)
+{
+    if constexpr (std::is_floating_point_v<T>)
+        return detail::trigonometry(x, x, T{6}, 4, -1, x * x*x);
+    else
+        return detail::trigonometry<float>(x, x, 6.f, 4, -1, x * x*x);
+}
+
+template <typename T>
+constexpr auto cos(T x)
+{
+    if constexpr (std::is_floating_point_v<T>)
+        return detail::trigonometry(x, T{1}, T{2}, 3, -1, x * x);
+    else
+        return detail::trigonometry<float>(x, 1.f, 2.f, 3, -1, x * x);
+}
+
+template <typename T>
+constexpr T tan(T x)
+{
+    static_assert(std::is_floating_point_v<T>);
+    const auto c = cos(x);
+    if (c == 0)
+        return std::numeric_limits<T>::infinity();
+    return sin(x) / c;
+}
+
+namespace detail
+{
+    template <typename T>
+    constexpr T atan_term(T x2, int k)
+    {
+    return (T{2} * static_cast<T>(k) * x2)
+        / ((T{2} * static_cast<T>(k) + T{1}) * (T{1} + x2));
+    }
+    template <typename T>
+    constexpr T atan_product(T x, int k)
+    {
+    return k == 1 ? atan_term(x * x, k) :
+        atan_term(x * x, k) * atan_product(x, k-1);
+    }
+    template <typename T>
+    constexpr T atan_sum(T x, T sum, int n)
+    {
+    return sum + atan_product(x, n) == sum ?
+        sum :
+        atan_sum(x, sum + atan_product(x, n), n+1);
+    }
+}  // namespace detail
+
+template <typename T>
+constexpr auto atan(T x)
+{
+    if constexpr (std::is_floating_point_v<T>)
+        return x / (T{1} + x * x) * detail::atan_sum(x, T{1}, 1);
+    else
+        return x / (1.f + x * x) * detail::atan_sum<float>(x, 1.f, 1);
+}
+
+template <typename T>
+constexpr T atan2(T x, T y)
+{
+    return x > 0 ? atan(y/x) :
+    y >= 0 && x < 0 ? atan(y/x) + static_cast<T>(M_PI) :
+    y < 0 && x < 0 ? atan(y/x) - static_cast<T>(M_PI) :
+    y > 0 && x == 0 ? static_cast<T>(M_PI/2.0l) :
+    -static_cast<T>(M_PI/2.0l);
+}
+
+namespace detail
+{
+    template <typename T>
+    constexpr T floor2(T x, T guess, T inc)
+    {
+    return guess + inc <= x ? floor2(x, guess + inc, inc) :
+        inc <= T{1} ? guess : floor2(x, guess, inc/T{2});
+    }
+
+    template <typename T>
+    constexpr T floor(T x, T guess, T inc)
+    {
+    return
+        inc < T{8} ? floor2(x, guess, inc) :
+        guess + inc <= x ? floor(x, guess + inc, inc) :
+        guess + (inc/T{8})*T{7} <= x ? floor(x, guess + (inc/T{8})*T{7}, inc/T{8}) :
+        guess + (inc/T{8})*T{6} <= x ? floor(x, guess + (inc/T{8})*T{6}, inc/T{8}) :
+        guess + (inc/T{8})*T{5} <= x ? floor(x, guess + (inc/T{8})*T{5}, inc/T{8}) :
+        guess + (inc/T{8})*T{4} <= x ? floor(x, guess + (inc/T{8})*T{4}, inc/T{8}) :
+        guess + (inc/T{8})*T{3} <= x ? floor(x, guess + (inc/T{8})*T{3}, inc/T{8}) :
+        guess + (inc/T{8})*T{2} <= x ? floor(x, guess + (inc/T{8})*T{2}, inc/T{8}) :
+        guess + inc/T{8} <= x ? floor(x, guess + inc/T{8}, inc/T{8}) :
+        floor(x, guess, inc/T{8});
+    }
+
+    template <typename T>
+    constexpr T ceil2(T x, T guess, T dec)
+    {
+    return guess - dec >= x ? ceil2(x, guess - dec, dec) :
+        dec <= T{1} ? guess : ceil2(x, guess, dec/T{2});
+    }
+
+    template <typename T>
+    constexpr T ceil(T x, T guess, T dec)
+    {
+    return
+        dec < T{8} ? ceil2(x, guess, dec) :
+        guess - dec >= x ? ceil(x, guess - dec, dec) :
+        guess - (dec/T{8})*T{7} >= x ? ceil(x, guess - (dec/T{8})*T{7}, dec/T{8}) :
+        guess - (dec/T{8})*T{6} >= x ? ceil(x, guess - (dec/T{8})*T{6}, dec/T{8}) :
+        guess - (dec/T{8})*T{5} >= x ? ceil(x, guess - (dec/T{8})*T{5}, dec/T{8}) :
+        guess - (dec/T{8})*T{4} >= x ? ceil(x, guess - (dec/T{8})*T{4}, dec/T{8}) :
+        guess - (dec/T{8})*T{3} >= x ? ceil(x, guess - (dec/T{8})*T{3}, dec/T{8}) :
+        guess - (dec/T{8})*T{2} >= x ? ceil(x, guess - (dec/T{8})*T{2}, dec/T{8}) :
+        guess - dec/T{8} >= x ? ceil(x, guess - dec/T{8}, dec/T{8}) :
+        ceil(x, guess, dec/T{8});
+    }
+}  // namespace detail
+
+constexpr float ceil(float x);
+constexpr double ceil(double x);
+
+template <typename T>
+constexpr float ceil(T x);
+
+constexpr float floor(float x)
+{
+    return x < 0 ? -ceil(-x) :
+    detail::floor(
+        x, 0.0f,
+        detail::power<int>(2.0f, std::numeric_limits<float>::max_exponent-1));
+}
+constexpr double floor(double x)
+{
+    return x < 0 ? -ceil(-x) :
+    detail::floor(
+        x, 0.0,
+        detail::power<int>(2.0, std::numeric_limits<double>::max_exponent-1));
+}
+template <typename Integral>
+constexpr double floor(
+    Integral x,
+    typename std::enable_if<std::is_integral<Integral>::value>::type* = nullptr)
+{
+    return x;
+}
+
+constexpr float ceil(float x)
+{
+    return x < 0 ? -floor(-x) :
+    detail::ceil(
+        x, detail::power<int>(2.0f, std::numeric_limits<float>::max_exponent-1),
+        detail::power<int>(2.0f, std::numeric_limits<float>::max_exponent-1));
+}
+
+constexpr double ceil(double x)
+{
+    return x < 0 ? -floor(-x) :
+    detail::ceil(
+        x, detail::power<int>(2.0, std::numeric_limits<double>::max_exponent-1),
+        detail::power<int>(2.0, std::numeric_limits<double>::max_exponent-1));
+}
+
+template <typename T>
+constexpr float ceil(T x)
+{
+    static_assert(std::is_integral_v<T>);
+    return static_cast<float>(x);
+}
+
+constexpr float trunc(float x)
+{
+    return x >= 0 ? floor(x) : -floor(-x);
+}
+constexpr double trunc(double x)
+{
+    return x >= 0 ? floor(x) : -floor(-x);
+}
+
+constexpr float round(float x)
+{
+    return x >= 0 ? floor(x + 0.5f) :
+        ceil(x - 0.5f);
+}
+constexpr double round(double x)
+{
+    return x >= 0 ? floor(x + 0.5) :
+        ceil(x - 0.5);
+}
+
+constexpr float fmod(float x, float y)
+{
+    return x - trunc(x / y) * y;
+}
+constexpr double fmod(double x, double y)
+{
+    return x - trunc(x / y) * y;
+}
+
+constexpr float remainder(float x, float y)
+{
+    return x - y * round(x / y);
+}
+constexpr double remainder(double x, double y)
+{
+    return x - y * round(x / y);
+}
+
+}  // namespace ce
 
 template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
 constexpr bool is_power_of_2(const T a)
@@ -62,13 +421,7 @@ constexpr bool is_power_of_2(const T a)
 }
 
 template<typename T>
-constexpr inline T sqr(T a)
-{
-    return a * a;
-}
-
-template<typename T>
-constexpr inline auto degtorad(T a)
+constexpr T degtorad(T a)
 {
     return a * T(M_PI) / T(180);
 }
@@ -142,7 +495,7 @@ struct point2
     // Distance
     friend float operator^(const point2& first, const point2& second)
     {
-        return std::hypotf(first.x - second.x, first.y - second.y);
+        return CONST_MATH::hypot(first.x - second.x, first.y - second.y);
     }
 };
 
@@ -223,7 +576,7 @@ struct point3
     // Distance
     friend float operator^(const point3& first, const point3& second)
     {
-        return std::hypot(first.x - second.x, first.y - second.y, first.z - second.z);
+        return CONST_MATH::hypot(first.x - second.x, first.y - second.y, first.z - second.z);
     }
 };
 
@@ -348,49 +701,6 @@ struct rect {
         : left(_l), top(_t), right(_r), bottom(_b) {}
     constexpr rect(point2<value_type> _a, point2<value_type> _b)
         : left(_a.x), top(_a.y), right(_b.x), bottom(_b.y) {}
-};
-
-template<typename T>
-struct grid {
-    typedef T value_type;
-
-    value_type ** m = nullptr;
-
-    const size_t width;
-    const size_t height;
-
-private:
-    void create_arrays() {
-        m = new value_type*[width];
-        *m = new value_type[width * height]; // data
-        for (size_t i = 1; i < width; ++i)
-            m[i] = *m + (i * height);
-    }
-
-public:
-
-    grid(size_t w, size_t h) : width(w), height(h) {
-        create_arrays();
-    }
-
-    grid(const grid &_cp) : width(_cp.width), height(_cp.height) {
-        create_arrays();
-        memcpy(*m, *_cp.m, width * height * sizeof(value_type));
-    }
-
-    grid(grid &&_mv) noexcept : width(_mv.width), height(_mv.height) {
-        m = _mv.m;
-        _mv.m = nullptr;
-    }
-
-    ~grid(void) {
-        if (m) {
-            delete[](*m); // data
-            delete[]m;
-        }
-    }
-
-    value_type * operator [](size_t i) const { return m[i]; }
 };
 
 
@@ -680,8 +990,8 @@ public:
     {
         const auto r = degtorad(angle);
         matrix4x4 mat{ identity() };
-        mat[5] = mat[0] = std::cos(r);
-        mat[4] = -(mat[1] = std::sin(r));
+        mat[5] = mat[0] = CONST_MATH::cos(r);
+        mat[4] = -(mat[1] = CONST_MATH::sin(r));
 
         mat[12] = -p.x * mat[0] + -p.y * mat[4] + p.x;
         mat[13] = -p.x * mat[1] + -p.y * mat[5] + p.y;
@@ -691,32 +1001,32 @@ public:
     constexpr static matrix4x4 rotate_x(value_type rad)
     {
         matrix4x4 mat{ identity() };
-        mat[10] = mat[5] = std::cos(rad);
-        mat[9] = -(mat[6] = std::sin(rad));
+        mat[10] = mat[5] = CONST_MATH::cos(rad);
+        mat[9] = -(mat[6] = CONST_MATH::sin(rad));
         return mat;
     }
 
     constexpr static matrix4x4 rotate_y(value_type rad)
     {
         matrix4x4 mat{ identity() };
-        mat[10] = mat[0] = std::cos(rad);
-        mat[2] = -(mat[8] = std::sin(rad));
+        mat[10] = mat[0] = CONST_MATH::cos(rad);
+        mat[2] = -(mat[8] = CONST_MATH::sin(rad));
         return mat;
     }
 
     constexpr static matrix4x4 rotate(value_type rad)
     {
         matrix4x4 mat{ identity() };
-        mat[5] = mat[0] = std::cos(rad);
-        mat[4] = -(mat[1] = std::sin(rad));
+        mat[5] = mat[0] = CONST_MATH::cos(rad);
+        mat[4] = -(mat[1] = CONST_MATH::sin(rad));
         return mat;
     }
 
     constexpr static matrix4x4 rotate(value_type rad, const point2<value_type> &p)
     {
         matrix4x4 mat{ identity() };
-        mat[5] = mat[0] = std::cos(rad);
-        mat[4] = -(mat[1] = std::sin(rad));
+        mat[5] = mat[0] = CONST_MATH::cos(rad);
+        mat[4] = -(mat[1] = CONST_MATH::sin(rad));
 
         mat[12] = -p.x * mat[0] + -p.y * mat[4] + p.x;
         mat[13] = -p.x * mat[1] + -p.y * mat[5] + p.y;
@@ -777,5 +1087,7 @@ constexpr point3<T> operator*(const matrix4x4<T, O>& mat, const point3<T> p)
              mat[2] * p.x + mat[6] * p.y + mat[10] * p.z + mat[14] };
 }
 
-}
+}  // namespace math
+
+#undef CONST_MATH
 

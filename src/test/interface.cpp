@@ -83,8 +83,9 @@ unsigned int ::idletest::_register_(std::string_view name, func_t func)
     return static_cast<unsigned int>(map.size());
 }
 
-void ::idletest::_print_failed_expr_(const unsigned long line, const std::string_view expr, const std::string_view failmsg)
+void ::idletest::_print_failed_expr_(const unsigned long line, const std::string& failmsg)
 {
     std::cout << "    Expression at line no. " << line
-        << "\n    \"" << expr << "\"\n    " << failmsg << '\n';
+        << "\n    " << failmsg << '\n';
 }
+

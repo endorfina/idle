@@ -6,7 +6,7 @@ project(idle
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti -fno-exceptions -ffast-math")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Og")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -DNDEBUG -flto")
-set(CMAKE_CXX_STANDARD 17) #requires 3.8.2
+set(CMAKE_CXX_STANDARD 17) # 17 requires 3.8.2, 20 requires 3.12.4
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_SKIP_RPATH ON)
 set(CMAKE_CXX_EXTENSIONS OFF) # enforces -std=c++11 instead of -std=gnu++11
@@ -41,12 +41,11 @@ set(${PROJECT_NAME}-files
         fonts.cpp
         gl.cpp
         io.cpp
+        spinlock.cpp
         main_wrapper.cpp
         room_controller.cpp
         room_landing.cpp
-        room_model.cpp
         scoped_thread.cpp
-        these_bones.cpp
         top.cpp
         blue/script.cpp # TODO: decide if we want to keep blue
         blue/builtin.cpp
@@ -95,5 +94,8 @@ add_library(${PROJECT_NAME}-ft OBJECT "FreeType.cpp")
 
 add_subdirectory(platform)
 add_subdirectory(soloud)
-add_subdirectory(test)
+
+if(NOT ANDROID)
+    add_subdirectory(test)
+endif()
 

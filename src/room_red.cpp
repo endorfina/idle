@@ -97,7 +97,7 @@
 //          }
 //  };
 
-static_assert(violet::is_power_of_2(DARKNESS_TEXTURE_SIZE));
+static_assert(math::is_power_of_2(DARKNESS_TEXTURE_SIZE));
 
 namespace idle
 {
@@ -363,7 +363,7 @@ bool red_room::step(::overlay& parent)
     //             point_t text_size;
     //             for (int n = FONT_ANIMATION1_ARRAY - 1; n > 0; --n)
     //                 dialogSys.animation[n] = dialogSys.animation[n - 1];
-    //             dialogSys.animation[0] = { 0.f, (violet::degtorad(rand() % 100 + 15) - F_PI_4) * 1.274f };
+    //             dialogSys.animation[0] = { 0.f, (math::degtorad(rand() % 100 + 15) - F_PI_4) * 1.274f };
     //          dialogSys.delay = rand() % 4;
     //             parent.font->getExtent(dialogSys.text.c_str(), FONTSIZE, text_size, ++dialogSys.current_text);
     //             dialogSys.height = text_size.height;
@@ -476,7 +476,7 @@ bool red_room::step(::overlay& parent)
 }
 
 // static bool is_reachable(const object &o, const object &n) {
-//     return sqrt(violet::sqr(o.pos.x - n.pos.x) + violet::sqr(o.pos.y - n.pos.y) * 1.2f) < TILE_WIDTH * 1.2f;
+//     return sqrt(math::sqr(o.pos.x - n.pos.x) + violet::sqr(o.pos.y - n.pos.y) * 1.2f) < TILE_WIDTH * 1.2f;
 // }
 
 void red_room::post_step(::overlay& parent)

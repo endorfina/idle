@@ -17,7 +17,6 @@
     along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <cmath>
 #include <type_traits>
 #include <variant>
 #include "top.hpp"

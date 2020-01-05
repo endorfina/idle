@@ -75,7 +75,7 @@ void font_t::draw(const graphics::text_program_t& rcp, const std::string_view &s
     }
 }
 
-void font_t::draw_custom_animation(const graphics::text_program_t& rcp, const std::string_view &str, const ::violet::color<float> &col, const idle::text_animation_data* anim, const unsigned start, const unsigned end) const
+void font_t::draw_custom_animation(const graphics::text_program_t& rcp, const std::string_view &str, const ::math::color<float> &col, const idle::text_animation_data* anim, const unsigned start, const unsigned end) const
 {
     gl::ActiveTexture(gl::TEXTURE0);
     gl::BindTexture(gl::TEXTURE_2D, tex);
@@ -98,7 +98,7 @@ void font_t::draw_custom_animation(const graphics::text_program_t& rcp, const st
             if (auto gi = character_map.find(u8c); gi != character_map.end()) {
                 if (i >= start) {
                     if (anim[1].scale < F_TAU_4)
-                        rcp.set_color(col, col.a * (1 - ::violet::sqr(cosf(anim->scale))));
+                        rcp.set_color(col, col.a * (1 - ::math::sqr(cosf(anim->scale))));
                     rcp.set_transform(idle::mat4x4_t::scale(1 - cosf(anim->scale) / 2) * idle::mat4x4_t::rotate(anim->rotation));
                     gi->second.draw(rcp, cell_size, pos);
                     ++anim;

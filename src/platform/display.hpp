@@ -28,7 +28,7 @@
 namespace platform
 {
 
-constexpr violet::color<float> background{.35f, .3f, .35f};
+constexpr math::color<float> background{.35f, .3f, .35f};
 
 enum class command : uint_fast8_t
 {

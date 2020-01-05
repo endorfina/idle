@@ -23,6 +23,7 @@
 #include <future>
 #include <vector>
 #include <zlib.hpp>
+#include "gl.hpp"
 #include "platform/asset_access.hpp"
 #include "platform/display.hpp"
 #include "drawable.hpp"
@@ -63,7 +64,7 @@ struct image_data
     std::unique_ptr<unsigned char[]> image;
     unsigned width, height, real_width, real_height, size;
 
-    std::vector<unsigned char> png(const unsigned char *src, size_t datalen)
+    std::vector<unsigned char> png(const unsigned char * const src, const size_t datalen)
     {
         std::vector<unsigned char> out;
         lodepng::State st;
@@ -90,21 +91,27 @@ struct image_data
             while (real_height < height) real_height *= 2;
 
             image = std::make_unique<unsigned char[]>(real_width * real_height * size);
-            memset(image.get(), 0, real_width * real_height * size);
+            ::memset(image.get(), 0, real_width * real_height * size);
 
-            if (source_size != size) {
+            if (source_size != size)
+            {
                 for (unsigned y = 0; y < height; ++y)
                 for (unsigned x = 0; x < width; ++x)
-                    memcpy(image.get() + size * (real_width * y + x),
+                    ::memcpy(image.get() + size * (real_width * y + x),
                         temp.data() + source_size * (width * y + x),
                         size);
             }
-            else {
+            else
+            {
                 for (unsigned y = 0; y < height; ++y)
-                    memcpy(image.get() + size * real_width * y,
+                    ::memcpy(image.get() + size * real_width * y,
                         temp.data() + source_size * width * y,
                         source_size * width);
             }
+        }
+        else
+        {
+            LOGE("PNG fail");
         }
     }
 };
@@ -119,9 +126,16 @@ bool verify_file_extension(const char * const fn)
 
 image_data make_pic(const char * fn)
 {
-    if (verify_file_extension(fn))
-        if (const auto b = platform::asset::hold(fn))
-            return { b.view() };
+    if (!verify_file_extension(fn))
+    {
+        return {};
+    }
+
+    if (const auto b = platform::asset::hold(fn))
+    {
+        return { b.view() };
+    }
+
     return {};
 }
 

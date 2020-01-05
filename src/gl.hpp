@@ -25,15 +25,23 @@
 #include "gl_programs.hpp"
 #include "fonts.hpp"
 
-#define TEMPLATE_CHECK_METHOD(fname, ...) template<typename T, typename = void>\
+#define TEMPLATE_CHECK_METHOD(fname) template<typename T, typename = void>\
     struct has_##fname##_method : std::false_type {};\
-    template<typename... Ts>\
-    struct has_##fname##_helper {};\
     template<typename T>\
     struct has_##fname##_method<\
         T,\
         std::enable_if_t<\
             std::is_member_function_pointer_v<decltype(&T::fname)>\
+        >\
+    > : public std::true_type {}
+
+#define TEMPLATE_CHECK_MEMBER(fname) template<typename T, typename = void>\
+    struct has_##fname##_member : std::false_type {};\
+    template<typename T>\
+    struct has_##fname##_member<\
+        T,\
+        std::enable_if_t<\
+            std::is_member_pointer_v<decltype(&T::fname)>\
         >\
     > : public std::true_type {}
 
@@ -79,8 +87,8 @@ struct core
     GLint render_quality = gl::LINEAR;
     std::optional<font_t> font;
     std::optional<render_buffer_t> render_buffer;
-    violet::point2<int> draw_size{0, 0}, screen_size{0, 0}, internal_size{0, 0};
-    violet::point2<float> translate_vector;
+    math::point2<int> draw_size{0, 0}, screen_size{0, 0}, internal_size{0, 0};
+    math::point2<float> translate_vector;
 
 
     bool all_programs_are_functional() const;
