@@ -1,9 +1,10 @@
 #!/bin/bash
 
 SOURCE=$(sed -E -e 's~//.*$~~' \
-    -e 's~^[[:space:]]*~~' \
-    -e 's~[[:space:]]*$~~' \
-    -e 's~[[:space:]]*([^_ a-zA-Z0-9])[[:space:]]*~\1~g' \
+    -e 's~^[[:space:]]+~~' \
+    -e 's~[[:space:]]+$~~' \
+    -e 's~([^_ a-zA-Z0-9])[[:space:]]+~\1~g' \
+    -e 's~[[:space:]]+([^_ a-zA-Z0-9])~\1~g' \
     -e '/^$/d')
 
 indent()
@@ -11,34 +12,36 @@ indent()
     echo -n '    '
 }
 
-readonly OUTPUT=$(mktemp)
-test ! -w "$OUTPUT" && exit 1
-
-echo '/*'
-indent
-echo 'Generated on' "$(date)"
-printf '*/\n\n#pragma once\n#include<string_view>\n\n#define Ss(byte) static_cast<char>(0x##byte)\n\nnamespace'
-
-if [[ $# -gt 0 ]]
-then
-    echo " ${1}"
-else
-    echo
-fi
-
-echo '{'
-echo
-
 get_file_size()
 {
-    wc -c < "${1}" \
-        | head -n1 \
-        | sed -E 's~[[:space:]]*([0-9]+)[[:space:]]*~\1~'
+    local var
+    var=$(wc -c < "${1}")
+    var=${var#"${var%%[![:space:]]*}"}
+    var=${var%"${var##*[![:space:]]}"}
+    echo -n "$var"
 }
+
+readonly OUTPUT=$(mktemp)
+[[ -z $OUTPUT || ! -w $OUTPUT ]] && exit 1
+
+cat << _EOF
+/*  Generated on $(date)  */
+
+#pragma once
+#include<string_view>
+
+#define Ss(byte) static_cast<char>(0x##byte)
+
+namespace
+_EOF
+
+[[ $# -gt 0 ]] && echo "${1}"
+
+echo $'{\n'
 
 while [[ $SOURCE =~ [[:space:]]*@@[[:space:]]*([a-zA-Z0-9_]+)[^a-zA-Z0-9_#]*([^@]+\})(.*)$ ]]
 do
-    echo 'constexpr unsigned int' "_shader_source_pos_${BASH_REMATCH[1]}_" '=' "$(get_file_size "$OUTPUT");"
+    echo "constexpr unsigned int _shader_source_pos_${BASH_REMATCH[1]}_ = $(get_file_size "$OUTPUT");"
 
     echo "${BASH_REMATCH[2]}" >> "${OUTPUT}"
     dd if=/dev/zero bs=1 count=1 >> "${OUTPUT}" 2>/dev/null
@@ -46,11 +49,13 @@ do
     SOURCE="${BASH_REMATCH[3]}"
 done
 
-echo
-echo 'constexpr unsigned int _shader_source_size_uncompressed_ =' "$(get_file_size "$OUTPUT");"
-echo
-echo 'constexpr char _shader_raw_data_ []'
-echo '{'
+cat << _EOF
+
+constexpr unsigned int _shader_source_size_uncompressed_ = $(get_file_size "$OUTPUT");
+
+constexpr char _shader_raw_data_ []
+{
+_EOF
 indent
 
 counter=0
@@ -67,7 +72,7 @@ do
     (( counter = counter + 1 ))
     echo -n "${i}"
 
-    if test "$counter" -eq 12
+    if [[ $counter -eq 12 ]]
     then
         echo
         indent
@@ -75,18 +80,19 @@ do
     fi
 done
 
-echo
-echo '};'
-echo
-echo 'constexpr std::string_view get_shader_file()'
-echo '{'
-indent
-echo 'return { _shader_raw_data_, sizeof(_shader_raw_data_) };'
-echo '}'
-echo
-echo '}  // namespace'
-echo
-echo '#undef Ss'
+cat << _EOF
+
+};
+
+constexpr std::string_view get_shader_file()
+{
+    return { _shader_raw_data_, sizeof(_shader_raw_data_) };
+}
+
+}  // namespace
+
+#undef Ss
+_EOF
 
 rm "$OUTPUT" >&2
 
