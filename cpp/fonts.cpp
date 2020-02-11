@@ -18,17 +18,36 @@
 */
 
 #include <utf8.hpp>
+#include <log.hpp>
 
 #include "fonts.hpp"
 
 
 font_t::font_t (GLuint atlasTex, font_t::map_t _glyphMap, float _glyphSize)
-  : tex(atlasTex), character_map(std::move(_glyphMap)), cell_size(_glyphSize)
+  : tex{atlasTex}, character_map(std::move(_glyphMap)), cell_size(_glyphSize)
 {
     for (auto &gi : character_map)
         if (gi.second.offset.y < topmost_margin)
             topmost_margin = gi.second.offset.y;
     topmost_margin *= .966f;
+}
+
+font_t::font_t(font_t&& other)
+:
+    tex(std::move(other.tex)),
+    character_map(std::move(other.character_map)),
+    cell_size(other.cell_size)
+{
+    other.tex.reset();
+}
+
+font_t::~font_t()
+{
+    if (tex)
+    {
+        LOGD("Destroying font texture #%u", *tex);
+        gl::DeleteTextures(1, &*tex);
+    }
 }
 
 void font_t::glyph_t::draw(const graphics::text_program_t& rcp, float size, idle::point_t pos) const
@@ -52,7 +71,7 @@ void font_t::draw(const graphics::text_program_t& rcp, const std::string_view &s
     if (limit == 0)
         return;
     gl::ActiveTexture(gl::TEXTURE0);
-    gl::BindTexture(gl::TEXTURE_2D, tex);
+    gl::BindTexture(gl::TEXTURE_2D, *tex);
     rcp.position_vertex(idle::square_coordinates);
 
     idle::point_t pos{-LEFT_MARGIN, -topmost_margin};
@@ -78,7 +97,7 @@ void font_t::draw(const graphics::text_program_t& rcp, const std::string_view &s
 void font_t::draw_custom_animation(const graphics::text_program_t& rcp, const std::string_view &str, const ::math::color<float> &col, const idle::text_animation_data* anim, const unsigned start, const unsigned end) const
 {
     gl::ActiveTexture(gl::TEXTURE0);
-    gl::BindTexture(gl::TEXTURE_2D, tex);
+    gl::BindTexture(gl::TEXTURE_2D, *tex);
     rcp.position_vertex(idle::square_coordinates);
 
     idle::point_t pos{-LEFT_MARGIN, -topmost_margin};

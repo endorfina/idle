@@ -67,6 +67,7 @@ TEMPLATE_CHECK_METHOD(draw);
 
 controller::~controller()
 {
+    LOGD("controller::~controller");
     slumber();
     kill_during_sleep();
 }

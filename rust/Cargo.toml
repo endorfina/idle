@@ -1,0 +1,18 @@
+[package]
+name = "idlerust"
+version = "0.1.0"
+authors = ["endorfina <dev.endorfina@outlook.com>"]
+
+[lib]
+crate_type = ["staticlib"]
+
+# [profile.release]
+# opt-level = 3
+# debug = false
+# rpath = false
+# lto = true
+# debug-assertions = false
+# panic = 'abort'
+
+# [dependencies]
+# libc = "0.2"

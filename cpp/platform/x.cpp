@@ -37,8 +37,6 @@ namespace platform
 namespace
 {
 
-std::atomic_bool xshutdown_requested = false;
-
 struct x11_display
 {
     Display                 *display;
@@ -61,17 +59,17 @@ struct x11_display
 
 //Atom                    wmDeleteMessage;
 
-int x_fatal_error_handler(Display *) {
+int x_fatal_error_handler(Display *)
+{
     LOGE(u8"\U0001F480 (Display destroyed)");
-    xshutdown_requested.store(true, std::memory_order_release);
     return 0;
 }
 
-int x_error_handler(Display *dpy, XErrorEvent *ev) {
+int x_error_handler(Display *dpy, XErrorEvent *ev)
+{
     char str[250];
     XGetErrorText(dpy, ev->error_code, str, 250);
     LOGE("%s", str);
-    xshutdown_requested.store(true, std::memory_order_release);
     return 0;
 }
 
@@ -224,6 +222,7 @@ window::window()
 
     resize_request.emplace(resize_request_t{ initial_width, initial_height, -1, -1, std::chrono::system_clock::now() });
     commands.push_back(command::InitWindow);
+    commands.push_back(command::GainedFocus);
 }
 
 void window::buffer_swap()
@@ -232,14 +231,8 @@ void window::buffer_swap()
     glXSwapBuffers(x.display, x.window);
 }
 
-void window::event_loop_back(bool block_if_possible)
+void window::event_loop_back(bool)
 {
-    if (xshutdown_requested.load(std::memory_order_acquire))
-    {
-        commands.push_back(command::CloseWindow);
-        return;
-    }
-
     auto& x = x11_display::cast(data);
     XEvent xev;
     {
@@ -322,7 +315,7 @@ asset::operator bool() const
 
 std::string_view asset::view() const
 {
-    return { ptr.get(), size };
+    return { reinterpret_cast<const char*>(ptr.get()), size };
 }
 
 asset asset::hold(std::string path)
@@ -337,11 +330,17 @@ asset asset::hold(std::string path)
         if (size <= 0 || std::fseek(f.get(), 0, SEEK_SET) != 0)
             return {};
 
-        auto ptr = std::make_unique<char[]>(size);
+        LOGD("\"%s\" - loaded %ld %s", path.c_str(), size >= 1024 ? size / 1024 : size, size >= 1024 ? "KB" : "bytes");
+
+        std::unique_ptr<unsigned char[]> ptr(new unsigned char[size]);
 
         if (std::fread(ptr.get(), 1, size, f.get()) == static_cast<size_t>(size))
-            return { static_cast<size_t>(size), std::move(ptr) };
+        {
+            return { std::move(ptr), static_cast<size_t>(size) };
+        }
     }
+
+    LOGE("Couldn't get a hold of \"%s\"", path.c_str());
     return {};
 }
 

@@ -50,5 +50,6 @@ int main(void)
     //     LOGE("%s Fatal exception:\n%s %s", haiku_leaf, haiku.tell(), haiku_leaf);
     //     MAIN_RETURN(0x1);
     // }
+    LOGD("Hit EOM");
 }
 

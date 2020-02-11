@@ -43,14 +43,14 @@ public:
     ~asset();
 
 #else
-    std::unique_ptr<char[]> ptr;
+    std::unique_ptr<unsigned char[]> ptr;
     size_t size = 0;
 
     asset() = default;
 
     template<typename Ptr>
-    asset(size_t s, Ptr&& p)
-        : ptr(std::forward<Ptr>(ptr)), size(s) {}
+    asset(Ptr&& p, size_t s)
+        : ptr(std::forward<Ptr>(p)), size(s) {}
 
 public:
     asset(asset&&) = default;

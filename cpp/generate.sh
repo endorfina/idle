@@ -12,36 +12,26 @@ indent()
     echo -n '    '
 }
 
-get_file_size()
-{
-    local var
-    var=$(wc -c < "${1}")
-    var=${var#"${var%%[![:space:]]*}"}
-    var=${var%"${var##*[![:space:]]}"}
-    echo -n "$var"
-}
-
 readonly OUTPUT=$(mktemp)
 [[ -z $OUTPUT || ! -w $OUTPUT ]] && exit 1
 
 cat << _EOF
-/*  Generated on $(date)  */
+/*  Generated on $(date) by ${0##*/}  */
 
 #pragma once
 #include<string_view>
 
 #define Ss(byte) static_cast<char>(0x##byte)
 
-namespace
+namespace shaders
+{
+namespace ${*}
+{
 _EOF
 
-[[ $# -gt 0 ]] && echo "${1}"
-
-echo $'{\n'
-
-while [[ $SOURCE =~ [[:space:]]*@@[[:space:]]*([a-zA-Z0-9_]+)[^a-zA-Z0-9_#]*([^@]+\})(.*)$ ]]
+while [[ $SOURCE =~ [[:space:]]*@@[[:space:]]*([_[:alnum:]]+)[^_#[:alnum:]]*([^@]+\})(.*)$ ]]
 do
-    echo "constexpr unsigned int _shader_source_pos_${BASH_REMATCH[1]}_ = $(get_file_size "$OUTPUT");"
+    echo "constexpr unsigned int source_pos_${BASH_REMATCH[1]} = $(wc -c < "$OUTPUT");"
 
     echo "${BASH_REMATCH[2]}" >> "${OUTPUT}"
     dd if=/dev/zero bs=1 count=1 >> "${OUTPUT}" 2>/dev/null
@@ -51,26 +41,26 @@ done
 
 cat << _EOF
 
-constexpr unsigned int _shader_source_size_uncompressed_ = $(get_file_size "$OUTPUT");
+constexpr unsigned int source_size_uncompressed = $(wc -c < "$OUTPUT");
 
-constexpr char _shader_raw_data_ []
+constexpr char _raw_data []
 {
 _EOF
 indent
 
 counter=0
 
-for i in $(gzip -cn9q < "$OUTPUT" \
+for iter in $(gzip -cn9q < "$OUTPUT" \
     | od -t x1 -An \
-    | tr "\t " "\n" \
+    | tr '\t ' '\n' \
     | sed -e '/^$/d' \
         -e 's~$~),~' \
         -e 's~^~Ss(~' \
-    | tr "\n" " " \
+    | tr '\n' ' ' \
     | sed -E 's~,[[:space:]]*$~~')
 do
     (( counter = counter + 1 ))
-    echo -n "${i}"
+    echo -n "$iter"
 
     if [[ $counter -eq 12 ]]
     then
@@ -84,12 +74,13 @@ cat << _EOF
 
 };
 
-constexpr std::string_view get_shader_file()
+constexpr std::string_view get_data()
 {
-    return { _shader_raw_data_, sizeof(_shader_raw_data_) };
+    return { _raw_data, sizeof(_raw_data) };
 }
 
-}  // namespace
+}  // namespace ${*}
+}  // namespace shaders
 
 #undef Ss
 _EOF

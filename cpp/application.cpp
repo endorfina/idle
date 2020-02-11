@@ -23,13 +23,15 @@
 #include "application.hpp"
 #include "drawable.hpp"
 #include "draw_text.hpp"
-#include "hsv.hpp"
 #include "room_variant.hpp"
 #include "room_controller.hpp"
-#include "glass.hpp"
+#include "lodge.hpp"
 
 namespace
 {
+
+// These need to be global to allow for proper clean up with X11
+
 idle::controller room_ctrl;
 overlay top;
 
@@ -269,70 +271,7 @@ void wait_one_frame_with_skipping(std::chrono::steady_clock::time_point& new_tim
     }
 }
 
-struct loading_animation
-{
-    unsigned int iterator = (-1);
-    idle::image_t picture, background;
-    float alpha = 0;
-    bool loaded = false;
-
-    template<typename Im1, typename Im2>
-    loading_animation(Im1&& i1, Im2&& i2)
-        : picture(std::forward<Im1>(i1)), background(std::forward<Im2>(i2))
-    {
-    }
-
-    void draw()
-    {
-        auto bgsz = background.get_size<float>();
-        const float bgsc = std::max(static_cast<float>(top.gl.draw_size.y) / bgsz.y, static_cast<float>(top.gl.draw_size.x) / bgsz.x);
-        constexpr idle::rect_t emily{0, 0, 398, 432}, /* text_loading{0, 512 - 70, 360, 512},*/ text_cp{450, 0, 512, 512};
-        const float hdiv = top.gl.draw_size.y / 6.f;
-        constexpr auto rbw = idle::rainbow_from_saturation(.96f);
-
-        top.gl.pnormal.use();
-        top.gl.pnormal.set_color(1, 1, 1, 1);
-        top.gl.pnormal.set_transform(idle::mat4x4_t::translate((top.gl.draw_size.x - bgsz.x) * .5f, (top.gl.draw_size.y - bgsz.y) * .5f) * idle::mat4x4_t::scale(bgsc, bgsc, {top.gl.draw_size.x / 2.f, top.gl.draw_size.y / 2.f}));
-        background.draw(top.gl.pnormal);
-
-        if (alpha < .998f) {
-            top.gl.pnormal.set_transform(idle::mat4x4_t::scale(sinf(alpha * F_TAU_4) *.5f + .5f, idle::point_t((emily.right - emily.left) / 2, (emily.bottom - emily.top) / 2))
-                * idle::mat4x4_t::scale(.6f) * idle::mat4x4_t::translate(top.gl.draw_size.x / 2 - 80.f, 25.f));
-            alpha += .025f;
-            top.gl.pnormal.set_color(1, 1, 1, alpha * alpha);
-        }
-        else
-        top.gl.pnormal.set_transform(idle::mat4x4_t::scale(.6f) * idle::mat4x4_t::translate(top.gl.draw_size.x / 2 - 80.f, 25.f));
-        picture.draw(top.gl.pnormal, emily);
-
-        top.gl.pnormal.set_color(1, 1, 1, 1);
-        top.gl.pnormal.set_identity();
-        top.gl.pnormal.set_view_identity();
-
-        top.gl.pfill.use();
-        top.gl.pfill.set_identity();
-        top.gl.pfill.set_view_identity();
-
-        for (int i = 0; i < 6; ++i) {
-            top.gl.pfill.set_color(rbw[i], .51f);
-            float ht = hdiv * i + iterator;
-            if (ht >= static_cast<float>(top.gl.draw_size.y))
-                ht -= static_cast<float>(top.gl.draw_size.y);
-            else if (ht + hdiv >= static_cast<float>(top.gl.draw_size.y))
-                idle::fill_rectangle(top.gl.pfill, idle::rect_t(0, ht - static_cast<float>(top.gl.draw_size.y), 30.f, ht + hdiv - static_cast<float>(top.gl.draw_size.y)));
-            idle::fill_rectangle(top.gl.pfill, idle::rect_t(0, ht, 30.f, ht + hdiv));
-        }
-        if (++iterator >= static_cast<unsigned>(top.gl.draw_size.y))
-            iterator = 0;
-
-        top.gl.pnormal.use();
-        top.gl.pnormal.set_color(1, 1, 1, 1);
-        top.gl.pnormal.set_transform(idle::mat4x4_t::rotate(math::degtorad<float>(90)) * idle::mat4x4_t::scale(.4f) * idle::mat4x4_t::translate(top.gl.draw_size.x - 1, 1));
-        picture.draw(top.gl.pnormal, text_cp);
-    }
-};
-
-}
+}  // namespace
 
 
 void application::draw()
@@ -391,7 +330,9 @@ int application::real_main()
         if (window.has_gl_context())
         {
             if (update_display)
+            {
                 draw();
+            }
 
             idle::image_t::load_topmost_queued_picture();
         }
@@ -414,15 +355,13 @@ bool application::load()
 
     LOGI("Asset refresh requested");
 
-    loading_animation la {
+    idle::lodge la {
         idle::image_t::load_from_assets_immediate("path4368.png"),
         idle::image_t::load_from_assets_immediate("space-1.png")
     };
 
     room_ctrl.slumber();
     room_ctrl.kill_during_sleep();
-
-    la.iterator = top.gl.draw_size.y - top.gl.draw_size.y / 12;
 
     std::chrono::time_point<std::chrono::steady_clock> lt = std::chrono::steady_clock::now();
     std::promise<bool> loader_callback;
@@ -453,7 +392,7 @@ bool application::load()
             {
                 lt += std::chrono::duration_cast<std::chrono::steady_clock::time_point::duration>(minimum_elapsed);
                 render_frame _frame_buffer_{window};
-                la.draw();
+                la.draw(top.gl);
             }
         }
     }

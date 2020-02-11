@@ -34,16 +34,24 @@
 
 #include <cstdio>
 
-#define LOGE(...) ((void)std::fprintf(stderr, __VA_ARGS__));\
+#define LOGE(...) ((void)std::fputs(u8"🚨", stderr));\
+                    ((void)std::fprintf(stderr, __VA_ARGS__));\
                     ((void)std::putc('\n', stderr))
-#define LOGI(...) ((void)std::fprintf(stdout, __VA_ARGS__));\
+
+#define LOGI(...) ((void)std::fputs(u8"ℹ️", stdout));\
+                    ((void)std::fprintf(stdout, __VA_ARGS__));\
                     ((void)std::putc('\n', stdout))
-#define LOGW LOGE
+
+#define LOGW(...) ((void)std::fputs(u8"⚠️", stderr));\
+                    ((void)std::fprintf(stderr, __VA_ARGS__));\
+                    ((void)std::putc('\n', stderr))
 
 #endif
 
 #ifdef DEBUG
-#define LOGD LOGI
+#define LOGD(...) ((void)std::putc(' ', stdout));\
+                    ((void)std::fprintf(stdout, __VA_ARGS__));\
+                    ((void)std::putc('\n', stdout))
 #else
 #define LOGD(...) ((void)0)
 #endif

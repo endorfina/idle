@@ -27,7 +27,7 @@
 #include "platform/asset_access.hpp"
 #include "platform/display.hpp"
 #include "drawable.hpp"
-#include "lodepng.h"
+#include <lodepng.h>
 
 namespace idle
 {
@@ -71,8 +71,11 @@ struct image_data
         st.info_raw.colortype = LodePNGColorType::LCT_RGBA;
         st.decoder.zlibsettings.custom_zlib = wasteful_zlib_decompress;
 
-        if (lodepng::decode(out, width, height, st, src, datalen) != 0)
+        if (const auto er = lodepng::decode(out, width, height, st, src, datalen); !!er)
         {
+#ifdef DEBUG
+            LOGE("Lodepng error no. %u: %s", er, lodepng_error_text(er));
+#endif
             out.clear();
         }
         size = st.info_png.color.colortype == LodePNGColorType::LCT_RGBA ? 4 : 3;
@@ -133,7 +136,8 @@ image_data make_pic(const char * fn)
 
     if (const auto b = platform::asset::hold(fn))
     {
-        return { b.view() };
+        image_data idt { b.view() };
+        return idt;
     }
 
     return {};

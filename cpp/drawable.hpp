@@ -19,6 +19,7 @@
 #pragma once
 
 #include <vector>
+#include <memory>
 #include <math.hpp>
 #include "gl_programs.hpp"
 

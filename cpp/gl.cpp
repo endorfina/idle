@@ -21,7 +21,7 @@
 #include <zlib.hpp>
 #include <math.hpp>
 #include "gl.hpp"
-#include "embedded_shaders.hpp"
+#include <embedded_shaders.hpp>
 
 void printGLString(const char *name, GLenum s) {
     LOGI("GL %s = %s\n", name, reinterpret_cast<const char *>(gl::GetString(s)));
@@ -140,14 +140,14 @@ bool core::setup_graphics()
     gl::Enable(gl::BLEND);
 
     {
-        shader_compiler sc{ get_shader_file(), _shader_source_size_uncompressed_};
+        shader_compiler sc{ shaders::get_data(), shaders::source_size_uncompressed };
 
-        render_program = sc.compile(_shader_source_pos_renderv_, _shader_source_pos_renderf_);
-        pnormal.pid = sc.compile(_shader_source_pos_normv_, _shader_source_pos_normf_);
-        pdouble.pid = sc.compile(_shader_source_pos_doublev_, _shader_source_pos_normf_);
-        pfill.pid = sc.compile(_shader_source_pos_solidv_, _shader_source_pos_solidf_);
-        ptext.pid = sc.compile(_shader_source_pos_textv_, _shader_source_pos_textf_);
-        pfullbg.pid = sc.compile(_shader_source_pos_solidv_, _shader_source_pos_fullbgf_);
+        render_program = sc.compile(shaders::source_pos_renderv, shaders::source_pos_renderf);
+        pnormal.pid = sc.compile(shaders::source_pos_normv, shaders::source_pos_normf);
+        pdouble.pid = sc.compile(shaders::source_pos_doublev, shaders::source_pos_normf);
+        pfill.pid = sc.compile(shaders::source_pos_solidv, shaders::source_pos_solidf);
+        ptext.pid = sc.compile(shaders::source_pos_textv, shaders::source_pos_textf);
+        pfullbg.pid = sc.compile(shaders::source_pos_solidv, shaders::source_pos_fullbgf);
 
 
         if (sc.has_failed())

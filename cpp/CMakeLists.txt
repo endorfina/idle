@@ -1,18 +1,15 @@
 cmake_minimum_required(VERSION 3.8.2)
 
 project(idle
+    VERSION 0.1
     LANGUAGES C CXX)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti -fno-exceptions -ffast-math")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Og")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -DNDEBUG -flto")
 set(CMAKE_CXX_STANDARD 17) # 17 requires 3.8.2, 20 requires 3.12.4
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_SKIP_RPATH ON)
 set(CMAKE_CXX_EXTENSIONS OFF) # enforces -std=c++11 instead of -std=gnu++11
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 
 if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING "${PROJECT_NAME} build configuration" FORCE)
@@ -27,10 +24,13 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     set(MACOSX TRUE)
 endif()
 
+option(PRUNE_SYMBOLS "Removes symbols at build time" OFF)
+
 option(MAKESHIFT_UNITY "Tries to build the main library in unity mode, when cmake doesn't provide one" OFF)
 
-add_library(lodepng STATIC "lodepng.cpp")
-target_compile_definitions(lodepng PUBLIC LODEPNG_NO_COMPILE_ERROR_TEXT LODEPNG_NO_COMPILE_ZLIB LODEPNG_NO_COMPILE_DISK)
+add_library(lodepng STATIC "lodepng/lodepng.cpp")
+target_compile_definitions(lodepng PUBLIC LODEPNG_NO_COMPILE_ZLIB LODEPNG_NO_COMPILE_DISK)
+target_include_directories(lodepng INTERFACE lodepng)
 
 include_directories(${PROJECT_SOURCE_DIR}/include)
 
@@ -49,6 +49,7 @@ set(${PROJECT_NAME}-files
         top.cpp
         blue/script.cpp # TODO: decide if we want to keep blue
         blue/builtin.cpp
+        lodge.cpp
         application.cpp)
 
 function(jumbo library filelist)
@@ -62,18 +63,26 @@ function(jumbo library filelist)
     target_sources(${library} PRIVATE ${UNITY_FILE})
 endfunction()
 
-add_library(${PROJECT_NAME}-obj STATIC)
+set(SHADER_OUTPUT "${PROJECT_NAME}-include/embedded_shaders.hpp")
+set(SHADER_SOURCE "${CMAKE_SOURCE_DIR}/shader_source.txt")
+set(SHADER_GENERATOR "${CMAKE_SOURCE_DIR}/generate.sh")
 
-set(SHADER_OUTPUT "embedded_shaders.hpp")
-set(SHADER_SOURCE "shader_source.txt")
-set(SHADER_GENERATOR "generate.sh")
+add_library(${PROJECT_NAME}-obj STATIC "${CMAKE_BINARY_DIR}/${SHADER_OUTPUT}")
+target_link_libraries(${PROJECT_NAME}-obj lodepng)
+
+add_custom_target(${PROJECT_NAME}-generate-dir
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_NAME}-include")
 
 add_custom_target(${PROJECT_NAME}-generate-sh
-    COMMAND test ! "${SHADER_SOURCE}" -nt "${SHADER_OUTPUT}" -a ! "${SHADER_GENERATOR}" -nt "${SHADER_OUTPUT}" || bash "${SHADER_GENERATOR}" < "${SHADER_SOURCE}" > "${SHADER_OUTPUT}"
-    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-    COMMENT "Preparing ${SHADER_OUTPUT}")
+    COMMAND test -r "${SHADER_OUTPUT}" -a "${SHADER_OUTPUT}" -ot "${SHADER_SOURCE}" -a "${SHADER_OUTPUT}" -ot "${SHADER_GENERATOR}" && echo "${SHADER_OUTPUT} is up-to-date." || "${SHADER_GENERATOR}" < "${SHADER_SOURCE}" > "${SHADER_OUTPUT}"
+    BYPRODUCTS "${SHADER_OUTPUT}"
+    COMMENT "Preparing ${SHADER_OUTPUT}"
+    VERBATIM)
 
+add_dependencies(${PROJECT_NAME}-generate-sh ${PROJECT_NAME}-generate-dir)
 add_dependencies(${PROJECT_NAME}-obj ${PROJECT_NAME}-generate-sh)
+
+target_include_directories(${PROJECT_NAME}-obj PRIVATE "${CMAKE_BINARY_DIR}/${PROJECT_NAME}-include")
 
 if(MAKESHIFT_UNITY)
     jumbo(${PROJECT_NAME}-obj "${${PROJECT_NAME}-files}")
@@ -87,10 +96,9 @@ set_source_files_properties(jpeg.cpp PROPERTIES COMPILE_FLAGS "-Wno-sign-compare
 
 if(DEFINED CMAKE_BUILD_TYPE AND CMAKE_BUILD_TYPE STREQUAL "Debug")
     target_compile_definitions(${PROJECT_NAME}-obj PUBLIC DEBUG)
+else()
+    target_compile_definitions(lodepng PUBLIC LODEPNG_NO_COMPILE_ERROR_TEXT)
 endif()
-
-find_package(ZLIB REQUIRED)
-add_library(${PROJECT_NAME}-ft OBJECT "FreeType.cpp")
 
 add_subdirectory(platform)
 add_subdirectory(soloud)

@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include <optional>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -51,10 +52,14 @@ struct font_t
 
     font_t(GLuint texture, map_t character_map, float cell_size);
 
-    ~font_t() { gl::DeleteTextures(1, &tex); }
+    ~font_t();
+
+    font_t(const font_t&) = delete;
+
+    font_t(font_t&&);
 
 private:
-    GLuint tex;
+    std::optional<GLuint> tex;
     std::unordered_map<unsigned long, glyph_t> character_map;
     float cell_size, topmost_margin = 0.f;
 };

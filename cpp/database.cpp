@@ -211,6 +211,7 @@ bool Database::load_everything(const ::platform::window& sys, ::overlay& parent)
 #endif
             if (auto ptr = fonts::FreeType{}.load(fontfile.view(), resolution))
             {
+                LOGD("Font acquired!");
                 parent.gl.font.emplace(std::move(*ptr));
             }
         }
@@ -229,6 +230,8 @@ bool Database::load_everything(const ::platform::window& sys, ::overlay& parent)
     // load_speechlist(speechfile.view(), speech_keys, create_character_name_map(p, u8"🎤"));
     // parent.gl.image_id_noise = create_noise_texture();
     // parent.gl.image_id_fade = create_fade_texture();
+
+    LOGD("Asset refresh was successful");
     return true;
 }
 
