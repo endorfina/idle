@@ -57,7 +57,9 @@ struct x11_display
     }
 };
 
-//Atom                    wmDeleteMessage;
+#ifdef X11_USE_CLIENTMESSAGE
+Atom wmDeleteMessage;
+#endif
 
 int x_fatal_error_handler(Display *)
 {
@@ -185,8 +187,10 @@ window::window()
         return;
     }
 
-    // wmDeleteMessage = XInternAtom(display.get(), "WM_DELETE_WINDOW", False);
-    // XSetWMProtocols(display.get(), window, &wmDeleteMessage, 1);
+#ifdef X11_USE_CLIENTMESSAGE
+    wmDeleteMessage = XInternAtom(display.get(), "WM_DELETE_WINDOW", False);
+    XSetWMProtocols(display.get(), x.window, &wmDeleteMessage, 1);
+#endif
 
     // Sync to ensure any errors generated are processed.
     XSync(display.get(), False);
@@ -222,7 +226,7 @@ window::window()
 
     resize_request.emplace(resize_request_t{ initial_width, initial_height, -1, -1, std::chrono::system_clock::now() });
     commands.push_back(command::InitWindow);
-    commands.push_back(command::GainedFocus);
+    commands.push_back(command::GainedFocus); // TODO: Make X handle focus as to reduce resource usage when idle
 }
 
 void window::buffer_swap()
@@ -272,6 +276,12 @@ void window::event_loop_back(bool)
                     commands.push_back(command::PausePressed);
                 }
                 break;
+
+#ifdef X11_USE_CLIENTMESSAGE
+            case ClientMessage:
+                commands.push_back(command::CloseWindow);
+                break;
+#endif
 
             default:
                 break;

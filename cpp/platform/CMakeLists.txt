@@ -80,6 +80,8 @@ else()
 
     # mostly so I can run tests in isolation at work
     if(NOT MACOSX)
+        option(X11_USE_CLIENTMESSAGE "Makes x11 handle closing in a cleaner manner by intercepting close calls from your WM" OFF)
+
         find_package(X11 REQUIRED)
         cmake_policy(SET CMP0072 NEW)
         find_package(OpenGL REQUIRED)
@@ -89,6 +91,10 @@ else()
 
         set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "-Wall")
         target_include_directories(${PROJECT_NAME} PRIVATE ${X11_X11_INCLUDE_PATH})
+
+        if (X11_USE_CLIENTMESSAGE)
+            target_compile_definitions(${PROJECT_NAME} PRIVATE X11_USE_CLIENTMESSAGE)
+        endif()
 
         set_target_properties(${PROJECT_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_PATH})
     endif()

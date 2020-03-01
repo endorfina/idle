@@ -1,89 +1,101 @@
 #!/bin/bash
 
+# (ɔ) 2020 endorfina <dev.endorfina@outlook.com>
+# GPLv3
+
 readonly PROJECT_NAME='idle'
 readonly SOURCE_DIR='cpp'
 readonly BUILD_DIR='.cxx'
 readonly COMPC_FILE='compile_commands.json'
 
+if [[ -t 1 && -t 2 ]]
+then
+  ESC=$(printf '\033')'['
+  readonly ESC
+
+  readonly color_red=$ESC'1;31m'
+  readonly color_norm=$ESC'0m'
+else
+  readonly color_red=
+  readonly color_norm=
+fi
+
 die()
 {
-    local color_red
-    local color_norm
-
-    if [[ -t 2 ]]
-    then
-        local esc
-        esc=$(printf '\033')
-
-        color_red=$esc'[1;31m'
-        color_norm=$esc'[0m'
-    fi
-
-    echo >&2 "${color_red}${0##*/} !!${color_norm}" "$@"
-    exit 1
+  echo >&2 '💀' "${color_red}${BASH_SOURCE[0]##*/} !!${color_norm}" "$@"
+  exit 1
 }
 
 cd "$(dirname "${BASH_SOURCE[0]}")" || die "Couldn't move to the root directory"
 
+[[ -d $SOURCE_DIR ]] || die "Source dir \"$SOURCE_DIR\" not found!"
+
 BUILD_TYPE='Release'
-
-[[ -d ${SOURCE_DIR} ]] || die "Source dir \"${SOURCE_DIR}\" not found!"
-
 CM_OPTS=()
 CM_OPTS_CXX=()
 
+if [[ $# -gt 0 && $1 == dev ]]
+then
+    shift
+    set -- '-njdcx' "$@"
+fi
+
 for CLI_ARG in "$@"
 do
-    CLI_ARG=${CLI_ARG#-}
+  CLI_ARG=${CLI_ARG#-}
 
-    while [[ -n ${CLI_ARG} ]]
-    do
-        OPT=${CLI_ARG:0:1}
-        CLI_ARG=${CLI_ARG#?}
+  while [[ -n $CLI_ARG ]]
+  do
+    OPT=${CLI_ARG:0:1}
+    CLI_ARG=${CLI_ARG#?}
 
-        case $OPT in
-            d)
-                BUILD_TYPE='Debug'
-                ;;
+    case $OPT in
+      d)
+        BUILD_TYPE='Debug'
+        ;;
 
-            l)
-                CM_OPTS+=("-DCMAKE_CXX_COMPILER=clang++")
-                CM_OPTS_CXX+=("-stdlib=libc++")
-                ;;
+      l)
+        CM_OPTS+=("-DCMAKE_CXX_COMPILER=clang++")
+        CM_OPTS_CXX+=("-stdlib=libc++")
+        ;;
 
-            n)
-                CM_OPTS_CXX+=("-march=native" "-mtune=native")
-                ;;
+      n)
+        CM_OPTS_CXX+=("-march=native" "-mtune=native")
+        ;;
 
-            u)
-                CM_OPTS+=("-DCMAKE_UNITY_BUILD=ON")  # since cmake 3.16
-                ;;
+      u)
+        CM_OPTS+=("-DCMAKE_UNITY_BUILD=ON")  # since cmake 3.16
+        ;;
 
-            j)
-                CM_OPTS+=("-DMAKESHIFT_UNITY=ON")
-                ;;
+      j)
+        CM_OPTS+=("-DMAKESHIFT_UNITY=ON")
+        ;;
 
-            c)
-                CM_OPTS+=("-DCMAKE_EXPORT_COMPILE_COMMANDS=ON")
-                ;;
+      c)
+        CM_OPTS+=("-DCMAKE_EXPORT_COMPILE_COMMANDS=ON")
+        ;;
 
-            s)
-                CM_OPTS+=("-DPRUNE_SYMBOLS=ON")
-                ;;
+      s)
+        CM_OPTS+=("-DPRUNE_SYMBOLS=ON")
+        ;;
 
-            v)
-                CM_OPTS+=("-DCMAKE_VERBOSE_MAKEFILE=ON")
-                ;;
+      x)
+        CM_OPTS+=("-DX11_USE_CLIENTMESSAGE=ON")
+        ;;
 
-            *)
-                echo >&2 "${0##*/}: Unknown option \"${OPT}\"."
-                ;;
-        esac
-    done
+      v)
+        CM_OPTS+=("-DCMAKE_VERBOSE_MAKEFILE=ON")
+        ;;
+
+      *)
+        echo >&2 "${0##*/}: Ignoring unknown option \"$OPT\""
+        ;;
+    esac
+  done
 done
 
 ARGS=("-H${SOURCE_DIR}" "-B${BUILD_DIR}") # TODO: change to -S for cmake 3.14 compliance
-                                          # once it becomes available on android
+                                          #       once it becomes available on android
 ARGS+=("-DCMAKE_BUILD_TYPE=${BUILD_TYPE}")
 
 command -v 'ninja' &>/dev/null && ARGS+=('-GNinja')
@@ -92,25 +104,47 @@ command -v 'ninja' &>/dev/null && ARGS+=('-GNinja')
 
 [[ ${#CM_OPTS[*]} -gt 0 ]] && ARGS+=("${CM_OPTS[@]}")
 
+readonly ARGS
+
+# READY TO BOOT
+
 [[ ! -r $SOURCE_DIR/lodepng/lodepng.h ]] && git submodule update --init --recursive
 
 if [[ -d $BUILD_DIR ]]
 then
-    echo 'Clearing existing cmake configuration files'
-    find "$BUILD_DIR" -type f -delete
+  echo 'Clearing existing cmake configuration files'
+  find "$BUILD_DIR" -type f -delete
 fi
 
-echo "CMake args: ${ARGS[*]}"
-echo '--'
-cmake "${ARGS[@]}" || die "CMake configuration failed. Given cli arguments: \"${ARGS[*]}\""
+hearts_iter=0
+hearts=('💖' '🧡' '💛' '💚' '💙' '💜')
+readonly hearts
 
-[[ ! -f "${SOURCE_DIR}/${COMPC_FILE}" \
-    && -f "${BUILD_DIR}/${COMPC_FILE}" ]] \
-    && ln -s "../${BUILD_DIR}/${COMPC_FILE}" "${SOURCE_DIR}/${COMPC_FILE}"
+echo "Using following CMake args:"
+echo '--'
+for ARG_ITER in "${ARGS[@]}"
+do
+    echo -n "    ${hearts[$hearts_iter]} "
+    if [[ $ARG_ITER == -* ]]
+    then
+        echo "${color_red}${ARG_ITER:1:1} :${color_norm} '${ARG_ITER:2}'"
+    else
+        echo "$ARG_ITER"
+    fi
+    (( hearts_iter++ ))
+    [[ $hearts_iter -ge ${#hearts[*]} ]] && hearts_iter=0
+done
+
+echo '--'
+cmake "${ARGS[@]}" || die "CMake configuration failed. Verbatim CLI arguments: \"${ARGS[*]}\""
+
+[[ ! -f "$SOURCE_DIR/$COMPC_FILE" \
+  && -f "$BUILD_DIR/$COMPC_FILE" ]] \
+  && ln -s "../$BUILD_DIR/$COMPC_FILE" "$SOURCE_DIR/$COMPC_FILE"
 
 readonly INDENT=$'\t' # required by GNU make
 
-tee "${SOURCE_DIR}/Makefile" << _EOF | sed 's~\.\./~~' > 'Makefile'
+tee "$SOURCE_DIR/Makefile" << _EOF | sed 's~\.\./~~' > 'Makefile'
 ## Makefile generated by ${0##*/} ##
 
 ${PROJECT_NAME}:
@@ -123,7 +157,7 @@ clean:
 ${INDENT}cmake --build '../${BUILD_DIR}' --target 'clean'
 
 run: ${PROJECT_NAME}
-${INDENT}cd '../out/' && './${PROJECT_NAME}'
+${INDENT}@cd '../out/' && './${PROJECT_NAME}' || true
 
 .PHONY: ${PROJECT_NAME} test clean run
 _EOF
