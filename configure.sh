@@ -124,15 +124,15 @@ echo "Using following CMake args:"
 echo '--'
 for ARG_ITER in "${ARGS[@]}"
 do
-    echo -n "    ${hearts[$hearts_iter]} "
-    if [[ $ARG_ITER == -* ]]
-    then
-        echo "${color_red}${ARG_ITER:1:1} :${color_norm} '${ARG_ITER:2}'"
-    else
-        echo "$ARG_ITER"
-    fi
-    (( hearts_iter++ ))
-    [[ $hearts_iter -ge ${#hearts[*]} ]] && hearts_iter=0
+  echo -n "    ${hearts[$hearts_iter]} "
+  if [[ $ARG_ITER == -* ]]
+  then
+    echo "${color_red}${ARG_ITER:1:1} :${color_norm} '${ARG_ITER:2}'"
+  else
+    echo "$ARG_ITER"
+  fi
+  (( hearts_iter++ ))
+  [[ $hearts_iter -ge ${#hearts[*]} ]] && hearts_iter=0
 done
 
 echo '--'
