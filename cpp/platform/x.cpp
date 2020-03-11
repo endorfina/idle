@@ -17,11 +17,11 @@
     along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include<cstdio>
-#include<memory>
-#include<X11/X.h>
-#include<X11/Xlib.h>
-#include<X11/Xutil.h>
+#include <cstdio>
+#include <memory>
+#include <X11/X.h>
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
 
 #include "opengl_core_adaptive.hpp"
 #include <GL/glx.h>
@@ -106,7 +106,7 @@ window::window()
 
     if(!display) {
         LOGE("Cannot connect to X server");
-        commands.push_back(command::CloseWindow);
+        commands.insert(command::CloseWindow);
         return;
     }
 
@@ -115,7 +115,7 @@ window::window()
         || ((glx_major == 1) && (glx_minor < 3)) || (glx_major < 1))
     {
         LOGE("Invalid GLX version");
-        commands.push_back(command::CloseWindow);
+        commands.insert(command::CloseWindow);
         return;
     }
 
@@ -140,7 +140,7 @@ window::window()
     }
     else {
         LOGE("Failed to retrieve a framebuffer config");
-        commands.push_back(command::CloseWindow);
+        commands.insert(command::CloseWindow);
         return;
     }
 
@@ -148,7 +148,7 @@ window::window()
 
     if(!visualinfo) {
         LOGE("No appropriate visual found");
-        commands.push_back(command::CloseWindow);
+        commands.insert(command::CloseWindow);
         return;
     }
 
@@ -167,7 +167,7 @@ window::window()
     if(!x.window) {
         LOGE("Failed to create a window");
         XFreeColormap(display.get(), x.colormap);
-        commands.push_back(command::CloseWindow);
+        commands.insert(command::CloseWindow);
         return;
     }
     XStoreName(display.get(), x.window, "idle/crimson");
@@ -183,7 +183,7 @@ window::window()
         XDestroyWindow(display.get(), x.window);
         XFreeColormap(display.get(), x.colormap);
         LOGE("Failed to create a proper gl context");
-        commands.push_back(command::CloseWindow);
+        commands.insert(command::CloseWindow);
         return;
     }
 
@@ -210,7 +210,7 @@ window::window()
         glXDestroyContext(display.get(), x.context);
         XDestroyWindow(display.get(), x.window);
         XFreeColormap(display.get(), x.colormap);
-        commands.push_back(command::CloseWindow);
+        commands.insert(command::CloseWindow);
         return;
     }
     else if (const auto amt = glTest.GetNumMissing(); amt > 0)
@@ -225,8 +225,8 @@ window::window()
     x.display = display.release();
 
     resize_request.emplace(resize_request_t{ initial_width, initial_height, -1, -1, std::chrono::system_clock::now() });
-    commands.push_back(command::InitWindow);
-    commands.push_back(command::GainedFocus); // TODO: Make X handle focus as to reduce resource usage when idle
+    commands.insert(command::InitWindow);
+    commands.insert(command::GainedFocus); // TODO: Make X handle focus as to reduce resource usage when idle
 }
 
 void window::buffer_swap()
@@ -247,7 +247,7 @@ void window::event_loop_back(bool)
         XQueryPointer(x.display, x.window, &root_window, &root_window, &root_x, &root_y, &root_x, &root_y, &mask);
     }
 
-    while(!!XQLength(x.display))
+    while(!commands.is_full() && XQLength(x.display))
     {
         XNextEvent(x.display, &xev);
         switch (xev.type) {
@@ -273,13 +273,13 @@ void window::event_loop_back(bool)
             case KeyPress:
                 if (xev.xkey.keycode == 0x9)
                 {
-                    commands.push_back(command::PausePressed);
+                    commands.insert(command::PausePressed);
                 }
                 break;
 
 #ifdef X11_USE_CLIENTMESSAGE
             case ClientMessage:
-                commands.push_back(command::CloseWindow);
+                commands.insert(command::CloseWindow);
                 break;
 #endif
 

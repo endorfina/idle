@@ -306,6 +306,8 @@ int application::real_main()
     LOGD("### GCC %d.%d", __GNUC__, __GNUC_MINOR__);
 #endif
 
+    LOGD("Command queue size: %zu", window.commands.queue.size());
+
     auto app_time = std::chrono::steady_clock::now();
 
     while (execute_commands() && room_ctrl.execute_pending_room_change(top))

@@ -101,7 +101,7 @@ else()
 endif()
 
 if(NOT MACOSX)
-    target_sources(${PROJECT_NAME} PRIVATE "opengl_core_adaptive.cpp")
+    target_sources(${PROJECT_NAME} PRIVATE "opengl_core_adaptive.cpp" "cmd_queue.cpp")
 
     target_link_libraries(${PROJECT_NAME}
                   ${PROJECT_NAME}-obj

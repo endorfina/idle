@@ -18,54 +18,37 @@
 */
 #pragma once
 #include <array>
-#include <optional>
-#include <chrono>
-
-#include <log.hpp>
-#include "pointer.hpp"
-#include "cmd_queue.hpp"
-#include "opengl_core_adaptive.hpp"
 
 namespace platform
 {
 
-constexpr math::color<float> background{.35f, .3f, .35f};
-
-/* To be implemented: */
-
-void recreate_matrices();
-
-struct resize_request_t
+enum class command : uint_fast8_t
 {
-    int w, h, r, q;
-    std::chrono::system_clock::time_point tp;
+    SaveState,
+    InitWindow,
+    CloseWindow,
+    GainedFocus,
+    LostFocus,
+    GLCleanUp,
+    PausePressed
 };
 
-
-struct window
+struct command_queue_t
 {
-    using data_t = std::byte[sizeof(void*) * 4];
+    unsigned count = 0;
+    std::array<command, (sizeof(void*) * 2) / sizeof(command)> queue;
 
-    data_t data;
-    pointer cursor;
-    command_queue_t commands;
-    std::optional<resize_request_t> resize_request;
+    bool is_full() const;
 
-#ifdef __ANDROID__
-    window(struct android_app *);
-#else
-    window();
-#endif
+    const command * begin() const;
 
-    ~window();
+    const command * end() const;
 
-    void terminate_display();
+    void insert(command cmd);
 
-    void buffer_swap();
+    void clear();
 
-    void event_loop_back(bool block_if_possible);
-
-    bool has_gl_context() const;
+    unsigned size() const;
 };
 
 }  // namespace platform

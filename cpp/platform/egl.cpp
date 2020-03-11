@@ -21,6 +21,7 @@
 #include <chrono>
 #include <thread>
 #include <memory>
+#include <vector>
 
 #include <EGL/egl.h>
 #include "opengl_core_adaptive.hpp"
@@ -178,7 +179,7 @@ int32_t android_handle_input(android_app * app, AInputEvent* event)
         {
             int key = AKeyEvent_getKeyCode(event);
             if (key == AKEYCODE_BACK) {
-                win.commands.push_back(command::PausePressed);
+                win.commands.insert(command::PausePressed);
                 return 1;
             }
         }
@@ -194,31 +195,31 @@ void android_handle_command(struct android_app* app, const int32_t cmd)
 
     switch (cmd) {
         case APP_CMD_SAVE_STATE:
-            win.commands.push_back(command::SaveState);
+            win.commands.insert(command::SaveState);
             break;
 
         case APP_CMD_INIT_WINDOW:
             // The window is being shown, get it ready.
             if (!!app->window && (win.resize_request = create_window(egl_display::cast(win.data))))
             {
-                win.commands.push_back(command::InitWindow);
+                win.commands.insert(command::InitWindow);
             }
             else {
                 LOGE("Cannot create the window!");
-                win.commands.push_back(command::CloseWindow);
+                win.commands.insert(command::CloseWindow);
             }
             break;
 
         case APP_CMD_TERM_WINDOW:
-            win.commands.push_back(command::GLCleanUp);
+            win.commands.insert(command::GLCleanUp);
             break;
 
         case APP_CMD_GAINED_FOCUS:
-            win.commands.push_back(command::GainedFocus);
+            win.commands.insert(command::GainedFocus);
             break;
 
         case APP_CMD_LOST_FOCUS:
-            win.commands.push_back(command::LostFocus);
+            win.commands.insert(command::LostFocus);
             break;
 
         default:
@@ -257,8 +258,8 @@ void window::event_loop_back(bool block_if_possible)
     android_poll_source * source;
     auto& egl = egl_display::cast(data);
 
-    while ((/*ident =*/ ALooper_pollAll(block_if_possible ? -1 : 0, nullptr, &events,
-        reinterpret_cast<void**>(&source))) >= 0)
+    while (!commands.is_full() &&
+            (/*ident =*/ ALooper_pollAll(block_if_possible ? -1 : 0, nullptr, &events, reinterpret_cast<void**>(&source))) >= 0)
     {
         // Process this event.
         if (!!source)
@@ -268,7 +269,7 @@ void window::event_loop_back(bool block_if_possible)
         if (!!egl.android->destroyRequested)
         {
             LOGW("Activity destruction requested.");
-            commands.push_back(command::CloseWindow);
+            commands.insert(command::CloseWindow);
         }
 
         block_if_possible = false;

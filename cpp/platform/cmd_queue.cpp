@@ -16,57 +16,40 @@
     You should have received a copy of the GNU General Public License
     along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
-#pragma once
-#include <array>
-#include <optional>
-#include <chrono>
 
-#include <log.hpp>
-#include "pointer.hpp"
 #include "cmd_queue.hpp"
-#include "opengl_core_adaptive.hpp"
 
 namespace platform
 {
 
-constexpr math::color<float> background{.35f, .3f, .35f};
-
-/* To be implemented: */
-
-void recreate_matrices();
-
-struct resize_request_t
+bool command_queue_t::is_full() const
 {
-    int w, h, r, q;
-    std::chrono::system_clock::time_point tp;
-};
+    return count < queue.size();
+}
 
-
-struct window
+const command * command_queue_t::begin() const
 {
-    using data_t = std::byte[sizeof(void*) * 4];
+    return &queue[0];
+}
 
-    data_t data;
-    pointer cursor;
-    command_queue_t commands;
-    std::optional<resize_request_t> resize_request;
+const command * command_queue_t::end() const
+{
+    return begin() + count;
+}
 
-#ifdef __ANDROID__
-    window(struct android_app *);
-#else
-    window();
-#endif
+void command_queue_t::insert(const command new_cmd)
+{
+    queue[count++] = new_cmd;
+}
 
-    ~window();
+void command_queue_t::clear()
+{
+    count = 0;
+}
 
-    void terminate_display();
-
-    void buffer_swap();
-
-    void event_loop_back(bool block_if_possible);
-
-    bool has_gl_context() const;
-};
+unsigned command_queue_t::size() const
+{
+    return count;
+}
 
 }  // namespace platform
-
