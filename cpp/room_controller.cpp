@@ -42,7 +42,7 @@ void wait_one_frame(std::chrono::steady_clock::time_point& new_time)
 }
 
 
-void dance(controller& ctrl, ::overlay& top, std::chrono::steady_clock::time_point step_time)
+void dance(controller& ctrl, graphics::core& gl, std::chrono::steady_clock::time_point step_time)
 {
     if (ctrl.get_crashed())
         return;
@@ -52,7 +52,7 @@ void dance(controller& ctrl, ::overlay& top, std::chrono::steady_clock::time_poi
     while (ctrl.should_stay_awake())
     {
         wait_one_frame(step_time);
-        ctrl.do_step(top);
+        ctrl.do_step(gl);
     }
     LOGD("Dancer closed shop.");
 }
@@ -83,7 +83,7 @@ bool controller::get_crashed() const
     return crashed;
 }
 
-void controller::wake(::overlay& top, const std::chrono::steady_clock::time_point& step_time)
+void controller::wake(graphics::core& gl, const std::chrono::steady_clock::time_point& step_time)
 {
     using namespace std::chrono_literals;
     constexpr auto skip_two_beats = std::chrono::duration_cast<
@@ -92,7 +92,7 @@ void controller::wake(::overlay& top, const std::chrono::steady_clock::time_poin
     slumber();
     kill_during_sleep();
     worker_active_flag.store(true, std::memory_order_relaxed);
-    worker_thread.emplace(dance, std::ref(*this), std::ref(top), step_time + skip_two_beats);
+    worker_thread.emplace(dance, std::ref(*this), std::ref(gl), step_time + skip_two_beats);
 }
 
 void controller::slumber()
@@ -122,11 +122,11 @@ void controller::resize(point_t size)
     }, current_variant);
 }
 
-void controller::do_step(::overlay& top)
+void controller::do_step(graphics::core& gl)
 {
-    std::visit([&top](auto& room) {
+    std::visit([&gl](auto& room) {
         if constexpr (has_step_method<TYPE_REMOVE_CVR(room)>::value) {
-            room.step(top);
+            room.step(gl);
         }
     }, current_variant);
 }
@@ -153,56 +153,46 @@ void controller::draw_frame(const graphics::core& gl)
     }
 }
 
-bool controller::execute_pending_room_change(::overlay& top)
+namespace
 {
-    if (room_current_id != room_next_id)
-    {
-        const char * const text = "Switching context to:";
+template<typename T>
+constexpr char room_label[] = "UNNAMED";
 
-        kill_during_sleep();
-        room_current_id = room_next_id;
+template<>
+constexpr char room_label<landing_room>[] = "LANDING";
 
-        switch (room_next_id)
-        {
-        case idle::room_id_enum::room_landing:
-            LOGI("%s LANDING", text);
-            current_variant.emplace<idle::landing_room>(top);
-            break;
-
-#ifdef COMPILE_M_ROOM
-        case idle::room_id_enum::room_models:
-            LOGI("%s MODEL", text);
-            current_variant.emplace<idle::model_room>(top);
-            break;
+#ifdef COMPILE_GALLERY
+template<>
+constexpr char room_label<model_room>[] = "MODEL";
 #endif
 
-        // case idle::room_id_enum::room_red:
-        //     LOGI("%s RED", text);
-        //     current_variant.emplace<idle::red_room>(top);
-        //     break;
+}  // namespace
 
-        default:
-            current_variant.emplace<std::monostate>();
-            return false;
-        }
+bool controller::execute_pending_room_change(graphics::core& gl)
+{
+    if (next_variant.rooms)
+    {
+        kill_during_sleep();
+
+        std::visit(
+            [&gl, this] (const auto& gate)
+            {
+                LOGI("Switching context to: %s", room_label<typename TYPE_REMOVE_CVR(gate)::opened_type>);
+                gate.open(current_variant, gl);
+            },
+            *next_variant.rooms);
+
+        next_variant.rooms.reset();
     }
     return true;
 }
 
-void controller::change_room(room_id_enum id)
-{
-    slumber();
-    room_next_id = id;
-}
-
 void controller::default_room_if_none_set()
 {
-    if (room_next_id == room_id_enum::room_uninitialized)
-#ifdef COMPILE_M_ROOM
-        room_next_id = room_id_enum::room_models;
-#else
-        room_next_id = room_id_enum::room_landing;
-#endif
+    if (const auto ptr = std::get_if<std::monostate>(&current_variant); ptr && !next_variant.rooms)
+    {
+        next_variant.rooms.emplace(door<landing_room>{});
+    }
 }
 
 }  // namespace idle

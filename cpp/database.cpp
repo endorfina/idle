@@ -17,13 +17,12 @@
     along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <thread>
-#include <unordered_set>
 #include "platform/asset_access.hpp"
-#include "top.hpp"
+#include "gl.hpp"
 #include "database.hpp"
-#include "blue/script.hpp"
-#include "FreeType.hpp"
+#include "config/head.hpp"
+#include "freetype_glue.hpp"
+#include "additional_textures.hpp"
 
 // #include <soloud.h>
 // #include <soloud_modplug.h>
@@ -46,8 +45,9 @@
 
 namespace idle
 {
-namespace
-{
+
+// namespace
+// {
 // std::unordered_set<minimal_string, std::hash<minimal_string>, minimal_string::compare> unique_name_set;
 
 // std::string_view unique(const std::string_view c)
@@ -149,126 +149,33 @@ namespace
 //     return out;
 // }
 
-std::optional<std::string> get_string_value(const blue::dictionary& dict, std::string_view name)
+// }
+
+bool load_everything(const ::platform::window& sys, graphics::core& gl)
 {
-    if (auto f = dict.yield<blue::string_t>(name))
-        return { static_cast<std::string>(*f) };
-    return {};
-}
-
-}
-
-bool Database::load_everything(const ::platform::window& sys, ::overlay& parent)
-{
-    const auto wtf = platform::asset::hold("wtf.txt");
-    if (!wtf)
+    if (const auto fontfile = platform::asset::hold(config::font_asset))
     {
-        LOGE("Configuration file missing!");
-        return false;
-    }
-
-    std::unordered_map<std::string_view, std::string_view> character_name_map;
-    blue::parser p;
-    const blue::dictionary* files = nullptr;
-    p << wtf.view();
-
-    if (!p.has_defined("files") || !(files = std::get_if<blue::dictionary>(&p["files"])))
-    {
-        LOGE("\"files\" dictionary must be defined.");
-        return false;
-    }
-
-    const auto speechfile_fn = get_string_value(*files, "speech");
-    if (!speechfile_fn)
-    {
-        LOGE("No speech file defined");
-        return false;
-    }
-
-    const auto speechfile = platform::asset::hold(speechfile_fn->c_str());
-    if (!speechfile)
-    {
-        LOGE("No speech file defined");
-        return false;
-    }
-
-    if (auto mf = get_string_value(*files, "models"))
-    {
-        file_models = std::move(*mf);
-    }
-    else {
-        LOGE("No model file defined");
-    }
-
-    if (auto ff = get_string_value(*files, "font"))
-    {
-        file_font = std::move(*ff);
-        if (const auto fontfile = platform::asset::hold(file_font.c_str())) {
 #ifndef __ANDROID__
-            constexpr int resolution = 72;
+        constexpr int resolution = 72;
 #else
-            constexpr int resolution = 48;
+        constexpr int resolution = 48;
 #endif
-            if (auto ptr = fonts::FreeType{}.load(fontfile.view(), resolution))
-            {
-                LOGD("Font acquired!");
-                parent.gl.font.emplace(std::move(*ptr));
-            }
-        }
-        else
+        if (auto opt = fonts::freetype_glue{}.load(fontfile.view(), resolution))
         {
-            LOGE("Asset %s not found!", file_font.c_str());
-            return false;
+            LOGD("Font acquired!");
+            gl.font.swap(opt);
         }
     }
     else
     {
-        LOGE("No font file defined");
+        LOGE("Asset %s not found!", config::font_asset);
         return false;
     }
 
-    // load_speechlist(speechfile.view(), speech_keys, create_character_name_map(p, u8"🎤"));
-    // parent.gl.image_id_noise = create_noise_texture();
-    // parent.gl.image_id_fade = create_fade_texture();
+    gl.image_id_fade = create_fade_texture();
 
     LOGD("Asset refresh was successful");
     return true;
-}
-
-
-uint_least16_t minimal_string::turncate(size_t s) {
-    return static_cast<uint_least16_t>(std::min<size_t>(s, UINT_LEAST16_MAX));
-}
-
-minimal_string::minimal_string(view_t str)
-    : _size(turncate(str.size())),
-    _data{std::make_unique<char[]>(_size)}
-{
-    memcpy(_data.get(), str.data(), _size);
-}
-
-minimal_string& minimal_string::operator=(view_t str)
-{
-    if (str.size() != _size) {
-        _size = turncate(str.size());
-        _data = std::make_unique<char[]>(_size);
-    }
-    memcpy(_data.get(), str.data(), _size);
-    return *this;
-}
-
-minimal_string::view_t minimal_string::view() const { return { _data.get(), _size }; }
-minimal_string::operator minimal_string::view_t() const { return { _data.get(), _size }; }
-auto minimal_string::size() const { return _size; }
-
-bool minimal_string::compare::operator()(const minimal_string& lhs, const minimal_string& rhs) const {
-    return lhs.view() == rhs.view();
-}
-bool minimal_string::compare::operator()(const minimal_string& lhs, const minimal_string::view_t& rhs) const {
-    return lhs.view() == rhs;
-}
-bool minimal_string::compare::operator()(const minimal_string::view_t& lhs, const minimal_string& rhs) const {
-    return lhs == rhs.view();
 }
 
 }  // namespace idle

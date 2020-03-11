@@ -19,7 +19,7 @@
 
 #include "room_landing.hpp"
 #include "room_model.hpp"
-#include "top.hpp"
+#include "gl.hpp"
 #include "draw_text.hpp"
 
 namespace idle
@@ -43,14 +43,14 @@ namespace idle
 // #endif
 
 
-landing_room::landing_room(::overlay& parent)
+landing_room::landing_room(graphics::core& parent)
 {
 // #ifdef COMPILE_M_ROOM
 //     create_gui_elem(parent.collection, {0, 0}, {100, 50}, gui_elem::trigger_t::MakerRoom, _draw_maker_room_button_, false, {1.f, 0.f, .1f});
 // #endif
 }
 
-bool landing_room::step(::overlay& parent)
+bool landing_room::step(graphics::core& parent)
 {
     // if (auto clicked_obj = check_hover_and_get_clicked(parent))
     //     switch (std::get<gui_elem>(clicked_obj->data).trigger)

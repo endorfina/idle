@@ -49,6 +49,21 @@ struct text_animation_data
 namespace graphics
 {
 
+struct unique_texture
+{
+    GLuint value;
+
+    unique_texture(GLuint);
+
+    unique_texture(const unique_texture&) = delete;
+    unique_texture& operator=(const unique_texture&) = delete;
+
+    unique_texture(unique_texture&&);
+    unique_texture& operator=(unique_texture&&);
+
+    ~unique_texture();
+};
+
 struct program_t
 {
     GLuint pid = 0;

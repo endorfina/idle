@@ -22,7 +22,7 @@
 #include <mutex>
 #include <math.hpp>
 
-#include "top.hpp"
+#include "gl.hpp"
 #include "objects.hpp"
 #include "scoped_thread.hpp"
 

@@ -233,7 +233,7 @@ image_t image_t::load_from_assets_immediate(const char * fn, GLint quality)
     gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE);
     gl::TexImage2D(gl::TEXTURE_2D, 0, picture.size > 3 ? gl::RGBA : gl::RGB, picture.real_width, picture.real_height, 0, picture.size > 3 ? gl::RGBA : gl::RGB, gl::UNSIGNED_BYTE, picture.image.get());
 
-    if (assertGlErrors())
+    if (graphics::assert_opengl_errors())
     {
         LOGE("Texture creation error: %s", fn);
         std::abort();

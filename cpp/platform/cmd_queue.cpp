@@ -24,12 +24,12 @@ namespace platform
 
 bool command_queue_t::is_full() const
 {
-    return count < queue.size();
+    return count >= raw_queue.size();
 }
 
 const command * command_queue_t::begin() const
 {
-    return &queue[0];
+    return &raw_queue[0];
 }
 
 const command * command_queue_t::end() const
@@ -39,7 +39,7 @@ const command * command_queue_t::end() const
 
 void command_queue_t::insert(const command new_cmd)
 {
-    queue[count++] = new_cmd;
+    raw_queue[count++] = new_cmd;
 }
 
 void command_queue_t::clear()

@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# (ɔ) 2020 endorfina <dev.endorfina@outlook.com>
+# GPLv3
+
 SOURCE=$(sed -E -e 's~//.*$~~' \
     -e 's~^[[:space:]]+~~' \
     -e 's~[[:space:]]+$~~' \
@@ -16,10 +19,10 @@ readonly OUTPUT=$(mktemp)
 [[ -z $OUTPUT || ! -w $OUTPUT ]] && exit 1
 
 cat << _EOF
-/*  Generated on $(date) by ${0##*/}  */
+/*  Generated on $(date) by ${BASH_SOURCE[0]##*/}  */
 
 #pragma once
-#include<string_view>
+#include <string_view>
 
 #define Ss(byte) static_cast<char>(0x##byte)
 

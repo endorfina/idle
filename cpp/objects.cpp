@@ -19,7 +19,7 @@
 
 #include <type_traits>
 #include <variant>
-#include "top.hpp"
+#include "gl.hpp"
 #include "objects.hpp"
 #include "drawable.hpp"
 #include "draw_text.hpp"

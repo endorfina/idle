@@ -19,13 +19,14 @@
 
 #include <future>
 #include "platform/display.hpp"
-#include "top.hpp"
+#include "gl.hpp"
 #include "application.hpp"
 #include "drawable.hpp"
 #include "draw_text.hpp"
 #include "room_variant.hpp"
 #include "room_controller.hpp"
 #include "lodge.hpp"
+#include "database.hpp"
 
 namespace
 {
@@ -33,7 +34,7 @@ namespace
 // These need to be global to allow for proper clean up with X11
 
 idle::controller room_ctrl;
-overlay top;
+graphics::core opengl;
 
 }  // namespace
 
@@ -82,15 +83,15 @@ bool application::execute_commands()
                 pause->buffer.reset();
                 pause->buffer_blur.reset();
             }
-            top.gl.clean();
+            opengl.clean();
             window.terminate_display();
             break;
 
         case ::platform::command::CloseWindow:
             LOGI(log_prefix, "CloseWindow");
-            top.gl.clean();
+            opengl.clean();
             window.terminate_display();
-            top.request_shutdown();
+            opengl.shutdown_was_requested = true;
             return false;
 
         case ::platform::command::PausePressed:
@@ -103,7 +104,8 @@ bool application::execute_commands()
 
     window.commands.clear();
 
-    if (perform_load && !top.gl.setup_graphics()) {
+    if (perform_load && !opengl.setup_graphics())
+    {
         return false;
     }
 
@@ -112,24 +114,20 @@ bool application::execute_commands()
         resize_internal();
     }
 
-    if (perform_load && !load()) {
-        return false;
-    }
-
-    return !top.shutdown_was_requested();
+    return !(perform_load && !load()) && !opengl.shutdown_was_requested;
 }
 
 
 void application::resize_internal()
 {
     const auto& rq = *window.resize_request;
-    top.gl.resize(rq.w, rq.h, rq.q, rq.r);
+    opengl.resize(rq.w, rq.h, rq.q, rq.r);
 
     window.resize_request.reset();
 
     room_ctrl.resize({
-        static_cast<float>(top.gl.draw_size.x),
-        static_cast<float>(top.gl.draw_size.y)
+        static_cast<float>(opengl.draw_size.x),
+        static_cast<float>(opengl.draw_size.y)
     });
 }
 
@@ -153,29 +151,29 @@ class render_frame
 
 public:
     render_frame(::platform::window& win)
-        : default_frame_buffer(setup_buffer_frame(*top.gl.render_buffer, top.gl.internal_size, ::platform::background))
+        : default_frame_buffer(setup_buffer_frame(*opengl.render_buffer, opengl.internal_size, ::platform::background))
         , window(win)
     {}
 
     ~render_frame()
     {
         gl::BindFramebuffer(gl::FRAMEBUFFER, default_frame_buffer);
-        gl::UseProgram(top.gl.render_program);
-        gl::Viewport(0, 0, top.gl.screen_size.x, top.gl.screen_size.y);
+        gl::UseProgram(opengl.render_program);
+        gl::Viewport(0, 0, opengl.screen_size.x, opengl.screen_size.y);
 
         constexpr float v[] = {
                 -1.f, -1.f,  1.f, -1.f,
                 -1.f, 1.f, 1.f, 1.f
         };
         const float t[] = {
-                0, 0,   top.gl.render_buffer->texture_w, 0,
-                0, top.gl.render_buffer->texture_h, top.gl.render_buffer->texture_w, top.gl.render_buffer->texture_h
+                0, 0,   opengl.render_buffer->texture_w, 0,
+                0, opengl.render_buffer->texture_h, opengl.render_buffer->texture_w, opengl.render_buffer->texture_h
         };
 
         gl::ActiveTexture(gl::TEXTURE0);
-        gl::BindTexture(gl::TEXTURE_2D, top.gl.render_buffer->texture);
-        gl::VertexAttribPointer(top.gl.render_position_handle, 2, gl::FLOAT, gl::FALSE_, 0, v);
-        gl::VertexAttribPointer(top.gl.render_texture_position_handle, 2, gl::FLOAT, gl::FALSE_, 0, t); //full_rect_texture
+        gl::BindTexture(gl::TEXTURE_2D, opengl.render_buffer->texture);
+        gl::VertexAttribPointer(opengl.render_position_handle, 2, gl::FLOAT, gl::FALSE_, 0, v);
+        gl::VertexAttribPointer(opengl.render_texture_position_handle, 2, gl::FLOAT, gl::FALSE_, 0, t); //full_rect_texture
         gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
 
         window.buffer_swap();
@@ -202,7 +200,7 @@ void draw_one_onto_the_other(const graphics::core& gl, const graphics::render_bu
     gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
 }
 
-void draw_exit_splash(const graphics::core& gl, const float exit_splash_animation, const graphics::render_buffer_t& rb, const graphics::render_buffer_t& brb)
+void draw_pause_menu(const graphics::core& gl, const float pause_menu_alpha, const graphics::render_buffer_t& rb, const graphics::render_buffer_t& brb)
 {
     gl.pnormal.use();
     gl.pnormal.set_identity();
@@ -227,31 +225,31 @@ void draw_exit_splash(const graphics::core& gl, const float exit_splash_animatio
     };
 
     gl::ActiveTexture(gl::TEXTURE0);
-    if (exit_splash_animation < .966f)
+    if (pause_menu_alpha < .966f)
     {
-        gl.pnormal.set_color({1, 1, 1, 1 - exit_splash_animation});
+        gl.pnormal.set_color({1, 1, 1, 1 - pause_menu_alpha});
         gl::BindTexture(gl::TEXTURE_2D, rb.texture);
         gl.pnormal.position_vertex(v);
         gl.pnormal.texture_vertex(t);
         gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
     }
 
-    gl.pnormal.set_color({1, 1 - exit_splash_animation * .2f, 1 - exit_splash_animation * .1f, exit_splash_animation * .668f});
+    gl.pnormal.set_color({1, 1 - pause_menu_alpha * .2f, 1 - pause_menu_alpha * .1f, pause_menu_alpha * .668f});
     gl::BindTexture(gl::TEXTURE_2D, brb.texture);
     gl.pnormal.position_vertex(v);
     gl.pnormal.texture_vertex(tb);
     gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
 
-    const float yshift = (1 - exit_splash_animation) * 20;
+    const float yshift = (1 - pause_menu_alpha) * 20;
     const auto rect = idle::rect_t(gl.draw_size.x / 2 - 220.f, gl.draw_size.y / 2 - 60.f, gl.draw_size.x / 2 + 220.f, gl.draw_size.y / 2 + 60.f);
     gl.ptext.use();
-    gl.ptext.set_color(1, .133f, .196f, exit_splash_animation);
+    gl.ptext.set_color(1, .133f, .196f, pause_menu_alpha);
 
     idle::draw_text<idle::TextAlign::Center>(gl, "paused",
                         idle::point_t(gl.draw_size.x / 2.f, rect.top + 10.f + yshift), 55);
 
     idle::draw_text<idle::TextAlign::Center, idle::TextAlign::Center>(gl, "resume",
-                        idle::point_t(gl.draw_size.x / 2.f, rect.bottom - 35.f + yshift), 14 * exit_splash_animation + 16);
+                        idle::point_t(gl.draw_size.x / 2.f, rect.bottom - 35.f + yshift), 14 * pause_menu_alpha + 16);
 }
 
 void wait_one_frame_with_skipping(std::chrono::steady_clock::time_point& new_time)
@@ -280,21 +278,21 @@ void application::draw()
     {
         if (!pause->buffer || !pause->buffer_blur)
         {
-            pause->buffer.emplace(top.gl, 1);
-            pause->buffer_blur.emplace(top.gl, 4);
-            const auto def = setup_buffer_frame(*pause->buffer, top.gl.internal_size, platform::background);
-            room_ctrl.draw_frame(top.gl);
-            setup_buffer_frame(*pause->buffer_blur, top.gl.internal_size / 4, platform::background);
-            draw_one_onto_the_other(top.gl, *pause->buffer);
+            pause->buffer.emplace(opengl, 1);
+            pause->buffer_blur.emplace(opengl, 4);
+            const auto def = setup_buffer_frame(*pause->buffer, opengl.internal_size, platform::background);
+            room_ctrl.draw_frame(opengl);
+            setup_buffer_frame(*pause->buffer_blur, opengl.internal_size / 4, platform::background);
+            draw_one_onto_the_other(opengl, *pause->buffer);
             gl::BindFramebuffer(gl::FRAMEBUFFER, def);
         }
         render_frame _frame_buffer_{window};
-        draw_exit_splash(top.gl, pause->animation, *pause->buffer, *pause->buffer_blur);
+        draw_pause_menu(opengl, pause->animation, *pause->buffer, *pause->buffer_blur);
     }
     else
     {
         render_frame _frame_buffer_{window};
-        room_ctrl.draw_frame(top.gl);
+        room_ctrl.draw_frame(opengl);
     }
 }
 
@@ -306,23 +304,23 @@ int application::real_main()
     LOGD("### GCC %d.%d", __GNUC__, __GNUC_MINOR__);
 #endif
 
-    LOGD("Command queue size: %zu", window.commands.queue.size());
+    LOGD("Command queue size: %zu", window.commands.raw_queue.size());
 
     auto app_time = std::chrono::steady_clock::now();
 
-    while (execute_commands() && room_ctrl.execute_pending_room_change(top))
+    while (execute_commands() && room_ctrl.execute_pending_room_change(opengl))
     {
         if (pause)
         {
             if (window.cursor.single_press)
             {
-                const auto p = top.get_pointer().pos;
-                if (fabsf(p.x - top.gl.draw_size.x / 2) < 150.f
-                        && fabsf(p.y - (top.gl.draw_size.y / 2 + 30.f)) < 60.f)
+                const auto p = opengl.pointer.load(std::memory_order_relaxed).pos;
+                if (fabsf(p.x - opengl.draw_size.x / 2) < 150.f
+                        && fabsf(p.y - (opengl.draw_size.y / 2 + 30.f)) < 60.f)
                 {
                     pause.reset();
                     pointer.clear(window.cursor);
-                    room_ctrl.wake(top, app_time);
+                    room_ctrl.wake(opengl, app_time);
                     continue;
                 }
             }
@@ -340,7 +338,10 @@ int application::real_main()
         }
 
         pointer.update(window.cursor);
-        top.set_pointer(window.cursor);
+
+        auto cursor = window.cursor;
+        cursor.pos *= opengl.translate_vector;
+        opengl.pointer.store(cursor, std::memory_order_relaxed);
 
         wait_one_frame_with_skipping(app_time);
     }
@@ -372,7 +373,7 @@ bool application::load()
     std::thread loader_thread {
             [this] (std::promise<bool> promise)
             {
-                promise.set_value(top.db.load_everything(window, top));
+                promise.set_value(idle::load_everything(window, opengl));
             },
             std::move(loader_callback)
         };
@@ -394,7 +395,7 @@ bool application::load()
             {
                 lt += std::chrono::duration_cast<std::chrono::steady_clock::time_point::duration>(minimum_elapsed);
                 render_frame _frame_buffer_{window};
-                la.draw(top.gl);
+                la.draw(opengl);
             }
         }
     }
@@ -404,7 +405,7 @@ bool application::load()
 
     loader_thread.join();
 
-    // room_ctrl.default_room_if_none_set();
+    room_ctrl.default_room_if_none_set();
 
     return true;
 }

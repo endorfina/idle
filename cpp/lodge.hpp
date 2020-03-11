@@ -29,7 +29,7 @@ class lodge
 #endif
     idle::image_t picture, background;
     float alpha = 0;
-    bool loaded = false;
+    // bool loaded = false;
 
   public:
     template<typename Im1, typename Im2>

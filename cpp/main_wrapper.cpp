@@ -21,35 +21,18 @@
 #include <log.hpp>
 #include "application.hpp"
 
-
 #ifdef __ANDROID__
-#define MAIN_RETURN(x) ((void)0)
+#define IDLE_ANDROID_STATE android_internal_state
 
-void android_main(android_app * state)
+void android_main(android_app * IDLE_ANDROID_STATE)
 {
 #else
-#define MAIN_RETURN(x) return (x)
+#define IDLE_ANDROID_STATE
 
 int main(void)
 {
     return
 #endif
-        //  if (state->savedState != nullptr) {
-        //      //idle::parent.r = *reinterpret_cast<overlay::saved_state*>(state->savedState);
-        //  }
-
-    ::isolation::application{
-#ifdef __ANDROID__
-        state
-#endif
-    }.real_main();
-
-    // catch(const idle::haiku& haiku)
-    // {
-    //     constexpr const char haiku_leaf[]{ u8"🍁" };
-    //     LOGE("%s Fatal exception:\n%s %s", haiku_leaf, haiku.tell(), haiku_leaf);
-    //     MAIN_RETURN(0x1);
-    // }
-    LOGD("Hit EOM");
+    ::isolation::application{ IDLE_ANDROID_STATE }.real_main();
 }
 

@@ -18,7 +18,7 @@
 */
 
 #include "room_red.hpp"
-#include "top.hpp"
+#include "gl.hpp"
 #include "draw_text.hpp"
 #include "objects.hpp"
 #include "form_gui.hpp"

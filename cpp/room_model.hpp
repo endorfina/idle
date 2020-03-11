@@ -20,14 +20,10 @@
 #include <memory>
 #include <shared_mutex>
 
-#include "top.hpp"
+#include "gl.hpp"
 #include "objects.hpp"
 
-#ifndef NDEBUG
-// #define COMPILE_M_ROOM
-#endif
-
-#ifdef COMPILE_M_ROOM
+#ifdef IDLE_COMPILE_GALLERY
 #include "gui.hpp"
 #include "draw_text.hpp"
 
@@ -199,9 +195,9 @@ using model_interface_t = std::variant<
 
 struct model_room
 {
-    model_room(::overlay&);
+    model_room(graphics::core&);
 
-    bool step(::overlay&);
+    bool step(graphics::core&);
 
     void draw(const graphics::core& gl);
 
@@ -219,7 +215,6 @@ struct model_room
         float initial_value, animation;
     } drag;
 
-    void save_all(const Database&);
     void start_drag(point_t& ptr, float point_3d_t::* const sel);
 };
 
@@ -281,5 +276,5 @@ void button_remove<X, Y>::trigger(model_room& r) const
 }
 
 }
-#endif  // COMPILE_M_ROOM
+#endif  // IDLE_COMPILE_GALLERY
 

@@ -29,9 +29,9 @@ namespace idle
 {
 using room = std::variant<
     std::monostate,
-#ifdef COMPILE_M_ROOM
+#ifdef IDLE_COMPILE_GALLERY
     model_room,
-#endif  // COMPILE_M_ROOM
+#endif  // IDLE_COMPILE_GALLERY
     landing_room
     // red_room
 >;

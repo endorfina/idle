@@ -19,22 +19,22 @@
 #pragma once
 
 #include <string_view>
-#include <memory>
+#include <optional>
 #include "fonts.hpp"
 
 namespace fonts
 {
 
-struct FreeType
+struct freetype_glue
 {
-    std::unique_ptr<font_t> load(const std::string_view &memory, int resolution) const;
-    std::unique_ptr<font_t> load(const std::string_view &memory, int resolution, int glyphMargin) const;
+    std::optional<font_t> load(const std::string_view &memory, int resolution) const;
+    std::optional<font_t> load(const std::string_view &memory, int resolution, int glyphMargin) const;
 
-    FreeType();
-    ~FreeType();
+    freetype_glue();
+    ~freetype_glue();
 
-    FreeType(const FreeType &) = delete;
-    FreeType(FreeType &&) = delete;
+    freetype_glue(const freetype_glue &) = delete;
+    freetype_glue(freetype_glue &&) = delete;
 };
 
 }

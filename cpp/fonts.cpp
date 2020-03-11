@@ -17,50 +17,43 @@
     along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <algorithm>
+
 #include <utf8.hpp>
 #include <log.hpp>
 
 #include "fonts.hpp"
 
 
-font_t::font_t (GLuint atlasTex, font_t::map_t _glyphMap, float _glyphSize)
-  : tex{atlasTex}, character_map(std::move(_glyphMap)), cell_size(_glyphSize)
+font_t::font_t(const GLuint atlas_tex, font_t::map_t glyph_map, const float glyph_size)
+  : texture{atlas_tex},
+    character_map{std::move(glyph_map)},
+    cell_size{glyph_size},
+    topmost_margin{
+        std::min_element(
+            character_map.begin(),
+            character_map.end(),
+            [](const auto& lhs, const auto& rhs)
+            {
+                return lhs.second.offset.y < rhs.second.offset.y;
+            }
+        )->second.offset.y * .966f}
 {
-    for (auto &gi : character_map)
-        if (gi.second.offset.y < topmost_margin)
-            topmost_margin = gi.second.offset.y;
-    topmost_margin *= .966f;
 }
 
-font_t::font_t(font_t&& other)
-:
-    tex(std::move(other.tex)),
-    character_map(std::move(other.character_map)),
-    cell_size(other.cell_size)
+void font_t::glyph_t::draw(const graphics::text_program_t& rcp, const float size, idle::point_t pos) const
 {
-    other.tex.reset();
-}
-
-font_t::~font_t()
-{
-    if (tex)
+    const float tex_coords[8]
     {
-        LOGD("Destroying font texture #%u", *tex);
-        gl::DeleteTextures(1, &*tex);
-    }
-}
-
-void font_t::glyph_t::draw(const graphics::text_program_t& rcp, float size, idle::point_t pos) const
-{
-    const float texCoords[8] = {
         texture_position.x, texture_position.y,
         texture_position.x + size, texture_position.y,
         texture_position.x, texture_position.y + size,
         texture_position.x + size, texture_position.y + size
     };
+
     pos += offset;
     rcp.set_text_offset(pos.x, pos.y);
-    rcp.texture_vertex(texCoords);
+    rcp.texture_vertex(tex_coords);
     gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
 }
 
@@ -68,36 +61,38 @@ void font_t::glyph_t::draw(const graphics::text_program_t& rcp, float size, idle
 
 void font_t::draw(const graphics::text_program_t& rcp, const std::string_view &str, unsigned int limit) const
 {
-    if (limit == 0)
-        return;
+    if (limit == 0) return;
+
     gl::ActiveTexture(gl::TEXTURE0);
-    gl::BindTexture(gl::TEXTURE_2D, *tex);
+    gl::BindTexture(gl::TEXTURE_2D, texture.value);
     rcp.position_vertex(idle::square_coordinates);
 
     idle::point_t pos{-LEFT_MARGIN, -topmost_margin};
 
     for (const auto u8c : utf8x::translator<char>{str})
     {
-        if (u8c == '\n') {
+        if (u8c == '\n')
+        {
             pos.x = -LEFT_MARGIN;
             pos.y += 1;
         }
         else if (u8c > 0xd)
         {
-            if (auto gi = character_map.find(u8c); gi != character_map.end()) {
+            if (auto gi = character_map.find(u8c); gi != character_map.end())
+            {
                 gi->second.draw(rcp, cell_size, pos);
                 pos.x += gi->second.width;
             }
         }
-        if (--limit < 1)
-            break;
+
+        if (!--limit) break;
     }
 }
 
 void font_t::draw_custom_animation(const graphics::text_program_t& rcp, const std::string_view &str, const ::math::color<float> &col, const idle::text_animation_data* anim, const unsigned start, const unsigned end) const
 {
     gl::ActiveTexture(gl::TEXTURE0);
-    gl::BindTexture(gl::TEXTURE_2D, *tex);
+    gl::BindTexture(gl::TEXTURE_2D, texture.value);
     rcp.position_vertex(idle::square_coordinates);
 
     idle::point_t pos{-LEFT_MARGIN, -topmost_margin};
@@ -108,26 +103,32 @@ void font_t::draw_custom_animation(const graphics::text_program_t& rcp, const st
 
     for (const auto u8c : utf8x::translator<char>{str})
     {
-        if (u8c == '\n') {
+        if (u8c == '\n')
+        {
             pos.x = -LEFT_MARGIN;
             pos.y += 1;
         }
         else if (u8c > 0xd)
         {
-            if (auto gi = character_map.find(u8c); gi != character_map.end()) {
-                if (i >= start) {
+            if (auto gi = character_map.find(u8c); gi != character_map.end())
+            {
+                if (i >= start)
+                {
                     if (anim[1].scale < F_TAU_4)
                         rcp.set_color(col, col.a * (1 - ::math::sqr(cosf(anim->scale))));
+
                     rcp.set_transform(idle::mat4x4_t::scale(1 - cosf(anim->scale) / 2) * idle::mat4x4_t::rotate(anim->rotation));
                     gi->second.draw(rcp, cell_size, pos);
                     ++anim;
                 }
-                else gi->second.draw(rcp, cell_size, pos);
+                else
+                    gi->second.draw(rcp, cell_size, pos);
+
                 pos.x += gi->second.width;
             }
         }
-        if (++i > end)
-            break;
+
+        if (++i > end) break;
     }
     rcp.set_identity();
 }
@@ -143,10 +144,12 @@ void font_t::draw_custom_animation(const graphics::text_program_t& rcp, const st
 
     for (const auto u8c : utf8x::translator<char>{str})
     {
-        if (u8c == '\n') {
+        if (u8c == '\n')
+        {
             ++line_amount;
             if (current_line_width > max_line_width)
                 max_line_width = current_line_width;
+
             current_line_width = 0;
         }
         else if (u8c > 0xd)
@@ -154,8 +157,8 @@ void font_t::draw_custom_animation(const graphics::text_program_t& rcp, const st
             if (auto gi = character_map.find(u8c); gi != character_map.end())
                 current_line_width += gi->second.width * size;
         }
-        if (--limit < 1)
-            break;
+
+        if (!--limit) break;
     }
     if (current_line_width > max_line_width)
         max_line_width = current_line_width;
@@ -172,7 +175,8 @@ std::string font_t::prepare_string(const std::string_view &str, const float size
 
     for (utf8x::translator<char> ut(str); !ut.is_at_end(); ++ut)
     {
-        if (const auto u8c = *ut; u8c == '\n') {
+        if (const auto u8c = *ut; u8c == '\n')
+        {
             current_line_width = 0;
             if (write_pos++ == out.size())
                 out += '\n';
@@ -180,26 +184,35 @@ std::string font_t::prepare_string(const std::string_view &str, const float size
         else if (u8c > 0xd)
             if (auto gi = character_map.find(u8c); gi != character_map.end())
             {
-                if(u8c == 0x20) {
+                if(u8c == 0x20)
+                {
                     const auto current_space = write_pos;
+
                     if (write_pos++ == out.size())
                         out += char(0x20);
-                    if (width < current_line_width + gi->second.width * size) {
-                        if (out[last_space] == 0x20) {
+
+                    if (width < current_line_width + gi->second.width * size)
+                    {
+                        if (out[last_space] == 0x20)
+                        {
                             out[last_space] = '\n';
                             write_pos = last_space + 1;
                             ut = str.substr(write_pos);
                             last_space = current_space;
                             current_line_width = 0;
                         }
-                        else last_space = current_space;
+                        else
+                            last_space = current_space;
                         continue;
                     }
                     last_space = current_space;
                 }
-                else {
+                else
+                {
                     const unsigned clen = utf8x::code_length(u8c);
-                    if (write_pos == out.size()) {
+
+                    if (write_pos == out.size())
+                    {
                         out.resize(write_pos + clen);
                         utf8x::put_switch(&out[write_pos], clen, u8c);
                     }
@@ -208,7 +221,9 @@ std::string font_t::prepare_string(const std::string_view &str, const float size
                 current_line_width += gi->second.width * size;
             }
     }
-    if (width < current_line_width) {
+
+    if (width < current_line_width)
+    {
         if (out[last_space] == 0x20)
             out[last_space] = '\n';
     }

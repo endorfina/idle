@@ -17,18 +17,15 @@
     along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
 #pragma once
-#include "top.hpp"
+#include "gl.hpp"
 #include "objects.hpp"
 
 namespace idle
 {
-class landing_room
+struct landing_room
 {
-    friend class ::overlay;
-
-public:
-    landing_room(::overlay&);
-    bool step(::overlay&);
+    landing_room(graphics::core&);
+    bool step(graphics::core&);
 };
 
 }

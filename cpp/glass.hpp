@@ -147,14 +147,15 @@ struct humanoid
 }  // namespace spine
 
 template <unsigned Steps>
-struct blob()
+struct blob
 {
     std::array<float, Steps> data;
 
     constexpt blob(const float radius)
         : data{}
     {
-        data.fill(radius);
+        for (auto& it : data)
+            it = radius;
     }
 };
 

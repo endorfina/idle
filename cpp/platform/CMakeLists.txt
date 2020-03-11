@@ -1,6 +1,6 @@
 find_package(ZLIB REQUIRED)
 
-add_library(${PROJECT_NAME}-ft STATIC "../FreeType.cpp")
+add_library(${PROJECT_NAME}-ft STATIC "../freetype_glue.cpp")
 
 if(ANDROID)
     set(PLATFORM_LIBRARIES "android" "log" "EGL" "GLESv2")
@@ -80,7 +80,7 @@ else()
 
     # mostly so I can run tests in isolation at work
     if(NOT MACOSX)
-        option(X11_USE_CLIENTMESSAGE "Makes x11 handle closing in a cleaner manner by intercepting close calls from your WM" OFF)
+        option(X11_USE_CLIENTMESSAGE "Makes x11 handle closing in a cleaner manner by intercepting close calls from your WM" ON)
 
         find_package(X11 REQUIRED)
         cmake_policy(SET CMP0072 NEW)

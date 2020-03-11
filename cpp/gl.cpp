@@ -23,30 +23,50 @@
 #include "gl.hpp"
 #include <embedded_shaders.hpp>
 
-void printGLString(const char *name, GLenum s) {
-    LOGI("GL %s = %s\n", name, reinterpret_cast<const char *>(gl::GetString(s)));
-}
+// void printGLString(const char *name, GLenum s)
+// {
+//     LOGI("GL %s = %s\n", name, reinterpret_cast<const char *>(gl::GetString(s)));
+// }
 
 namespace graphics
 {
 namespace
 {
 
-GLuint load_shader(const GLenum shaderType, const char* const pSource) {
+#ifndef NDEBUG
+void detailed_report_opengl_errors(const char* op, const char *const file, const int line)
+{
+    if (assert_opengl_errors())
+    {
+        LOGE("Reported \'%s\' at %s:%i", op, file, line);
+    }
+}
+
+#define report_opengl_errors(what) detailed_report_opengl_errors((what), __FILE__, __LINE__)
+#else
+#define report_opengl_errors(x) ((void)0)
+#endif
+
+GLuint load_shader(const GLenum shaderType, const char* const pSource)
+{
     GLuint shader = gl::CreateShader(shaderType);
-    if (shader) {
+    if (shader)
+    {
         gl::ShaderSource(shader, 1, &pSource, nullptr);
         gl::CompileShader(shader);
         GLint compiled = 0;
         gl::GetShaderiv(shader, gl::COMPILE_STATUS, &compiled);
-        if (!compiled) {
+
+        if (!compiled)
+        {
             GLint infoLen = 0;
             gl::GetShaderiv(shader, gl::INFO_LOG_LENGTH, &infoLen);
-            if (infoLen) {
+
+            if (infoLen)
+            {
                 char buf[infoLen];
                 gl::GetShaderInfoLog(shader, infoLen, nullptr, buf);
-                LOGE("Could not compile shader %d:\n%s",
-                         shaderType, buf);
+                LOGE("Could not compile shader %d:\n%s", shaderType, buf);
                 gl::DeleteShader(shader);
                 shader = 0;
             }
@@ -55,28 +75,30 @@ GLuint load_shader(const GLenum shaderType, const char* const pSource) {
     return shader;
 }
 
-std::optional<GLuint> create_program(const char* const pVertexSource, const char* const pFragmentSource) {
+std::optional<GLuint> create_program(const char* const pVertexSource, const char* const pFragmentSource)
+{
     GLuint vertexShader = load_shader(gl::VERTEX_SHADER, pVertexSource);
-    if (!vertexShader) {
+    if (!vertexShader)
         return {};
-    }
 
     GLuint pixelShader = load_shader(gl::FRAGMENT_SHADER, pFragmentSource);
-    if (!pixelShader) {
+    if (!pixelShader)
         return {};
-    }
 
-    GLuint program = gl::CreateProgram();
-    if (program) {
+    if (GLuint program = gl::CreateProgram())
+    {
         gl::AttachShader(program, vertexShader);
         gl::AttachShader(program, pixelShader);
         gl::LinkProgram(program);
         GLint linkStatus = gl::FALSE_;
         gl::GetProgramiv(program, gl::LINK_STATUS, &linkStatus);
-        if (linkStatus != gl::TRUE_) {
+
+        if (linkStatus != gl::TRUE_)
+        {
             GLint bufLength = 0;
             gl::GetProgramiv(program, gl::INFO_LOG_LENGTH, &bufLength);
-            if (bufLength) {
+            if (bufLength)
+            {
                 char buf[bufLength];
                 gl::GetProgramInfoLog(program, bufLength, nullptr, buf);
                 LOGE("Could not link program:\n%s", buf);
@@ -84,9 +106,9 @@ std::optional<GLuint> create_program(const char* const pVertexSource, const char
             gl::DeleteProgram(program);
             return {};
         }
+        return { program };
     }
-    else return {};
-    return { program };
+    return {};
 }
 
 struct shader_compiler
@@ -96,7 +118,8 @@ struct shader_compiler
     shader_compiler(std::string_view view, const size_t size_check)
         : buffer(idle::zlib<buffer_t>(view, false, true))
     {
-        if (!buffer || buffer->size() != size_check) {
+        if (!buffer || buffer->size() != size_check)
+        {
             buffer.reset();
         }
     }
@@ -113,9 +136,13 @@ public:
         if (!has_failed())
         {
             if (const auto r = create_program(data(v), data(f)))
+            {
                 return *r;
+            }
             else
+            {
                 buffer.reset();
+            }
         }
         return 0;
     }
@@ -337,7 +364,7 @@ void program_t::collect_variables()
     model_handle = gl::GetUniformLocation(pid, "uMM");
     view_handle = gl::GetUniformLocation(pid, "uVM");
     color_handle = gl::GetUniformLocation(pid, "uCol");
-    checkGlError("GetUniformLocation fail");
+    report_opengl_errors("program_t::collect_variables()");
 }
 
 void textured_program_t::collect_variables()
@@ -350,16 +377,15 @@ void text_program_t::collect_variables()
 {
     textured_program_t::collect_variables();
     font_offset_handle = gl::GetUniformLocation(pid, "uOf");
-    checkGlError("GetUniformLocation fail");
+    report_opengl_errors("text_program_t::collect_variables()");
 }
 
 void double_vertex_program_t::collect_variables()
 {
     textured_program_t::collect_variables();
     destination_handle = static_cast<GLuint>(gl::GetAttribLocation(pid,"vDest"));
-    checkGlError("GerAttribLocation fail");
     interpolation_handle = gl::GetUniformLocation(pid, "uIv");
-    checkGlError("GetUniformLocation fail");
+    report_opengl_errors("double_vertex_program_t::collect_variables()");
 }
 
 void fullbg_program_t::collect_variables()
@@ -367,7 +393,7 @@ void fullbg_program_t::collect_variables()
     program_t::collect_variables();
     offset_handle = gl::GetUniformLocation(pid, "uI");
     resolution_handle = gl::GetUniformLocation(pid, "uR");
-    checkGlError("GetUniformLocation fail");
+    report_opengl_errors("fullbg_program_t::collect_variables()");
 }
 
 
@@ -377,14 +403,14 @@ void program_t::prepare() const
     set_identity();
     set_view_identity();
     gl::EnableVertexAttribArray(position_handle);
-    checkGlError("EnableVertexAttribArray fail");
+    report_opengl_errors("program_t::prepare()");
 }
 
 void textured_program_t::prepare() const
 {
     program_t::prepare();
     gl::EnableVertexAttribArray(texture_position_handle);
-    checkGlError("EnableVertexAttribArray fail");
+    report_opengl_errors("textured_program_t::prepare()");
 }
 
 void double_vertex_program_t::prepare() const
@@ -392,7 +418,7 @@ void double_vertex_program_t::prepare() const
     textured_program_t::prepare();
     LOGD("Destination handle %u", destination_handle);
     gl::EnableVertexAttribArray(destination_handle);
-    checkGlError("EnableVertexAttribArray fail");
+    report_opengl_errors("double_vertex_program_t::prepare()");
 }
 
 
@@ -433,7 +459,7 @@ render_buffer_t::render_buffer_t(const core& context, const int divider)
     gl::GenTextures(1, &texture);
     gl::GenRenderbuffers(1, &buffer_depth);
 
-    checkGlError("GenRenderbuffers fail");
+    report_opengl_errors("render_buffer_t::render_buffer_t");
 
     LOGD("Creating render buffer [fr:%i/tex:%i/dep:%i]", buffer_frame, texture, buffer_depth);
 
@@ -455,7 +481,7 @@ render_buffer_t::render_buffer_t(const core& context, const int divider)
     gl::FramebufferTexture2D(gl::FRAMEBUFFER, gl::COLOR_ATTACHMENT0, gl::TEXTURE_2D, texture, 0);
     gl::FramebufferRenderbuffer(gl::FRAMEBUFFER, gl::DEPTH_ATTACHMENT, gl::RENDERBUFFER, buffer_depth);
 
-    checkGlError("FramebufferRenderbuffer fail");
+    report_opengl_errors("render_buffer_t::render_buffer_t");
 
     gl::BindTexture(gl::TEXTURE_2D, 0);
     gl::BindRenderbuffer(gl::RENDERBUFFER, 0);
@@ -468,9 +494,32 @@ void core::clean()
     render_buffer.reset();
 }
 
-} // namespace graphics
+unique_texture::unique_texture(const GLuint val) : value{val}
+{
+}
 
-bool assertGlErrors()
+unique_texture::unique_texture(unique_texture&& other) : value{other.value}
+{
+    other.value = GLuint(-1);
+}
+
+unique_texture& unique_texture::operator=(unique_texture&& other)
+{
+    value = other.value;
+    other.value = GLuint(-1);
+    return *this;
+}
+
+unique_texture::~unique_texture()
+{
+    if (value != GLuint(-1))
+    {
+        LOGD("Destroying unique texture #%u", value);
+        gl::DeleteTextures(1, &value);
+    }
+}
+
+bool assert_opengl_errors()
 {
     if (auto error = gl::GetError(); error != gl::NO_ERROR_) {
         do {
@@ -482,10 +531,4 @@ bool assertGlErrors()
     return false;
 }
 
-#ifndef NDEBUG
-void _checkGlError_(const char* op, const char *const _file, const int _line) {
-    if (assertGlErrors()) {
-        LOGE("cg error \'%s\' at %s:%i", op, _file, _line);
-    }
-}
-#endif
+} // namespace graphics

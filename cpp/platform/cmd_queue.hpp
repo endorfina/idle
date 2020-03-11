@@ -36,7 +36,7 @@ enum class command : uint_fast8_t
 struct command_queue_t
 {
     unsigned count = 0;
-    std::array<command, (sizeof(void*) * 2) / sizeof(command)> queue;
+    std::array<command, (sizeof(void*) * 2) / sizeof(command)> raw_queue;
 
     bool is_full() const;
 

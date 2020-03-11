@@ -18,9 +18,12 @@
 */
 #pragma once
 
+#include <atomic>
 #include <optional>
 #include <math.hpp>
 #include <log.hpp>
+
+#include "platform/pointer.hpp"
 #include "platform/opengl_core_adaptive.hpp"
 #include "gl_programs.hpp"
 #include "fonts.hpp"
@@ -46,20 +49,10 @@
     > : public std::true_type {}
 
 
-void printGLString(const char *name, GLenum s);
-
-bool assertGlErrors();
-
-#ifndef NDEBUG
-void _checkGlError_(const char* op, const char *const _file, const int _line);
-
-#define checkGlError(what) _checkGlError_((what), __FILE__, __LINE__)
-#else
-#define checkGlError(x) ((void)0)
-#endif
-
 namespace graphics
 {
+bool assert_opengl_errors();
+
 struct core;
 
 struct render_buffer_t
@@ -90,6 +83,8 @@ struct core
     math::point2<int> draw_size{0, 0}, screen_size{0, 0}, internal_size{0, 0};
     math::point2<float> translate_vector;
 
+    bool shutdown_was_requested = false;
+    std::atomic<platform::pointer> pointer;
 
     bool all_programs_are_functional() const;
 

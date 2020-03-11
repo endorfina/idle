@@ -17,20 +17,26 @@
     along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <memory>
+
 #include <ft2build.h>
 #include <freetype/freetype.h>
 #include <freetype/ftglyph.h>
 #include <freetype/ftoutln.h>
 #include <freetype/fttrigon.h>
 
-#include "FreeType.hpp"
+#include "freetype_glue.hpp"
 #include <log.hpp>
 #include "drawable.hpp"
 
+namespace fonts
+{
+
 namespace
 {
-template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
-T next_power_of_2(T a) {
+
+template <typename T>
+std::enable_if_t<std::is_integral_v<T>, T> next_power_of_2(T a) {
     T rval = 1;
     while (rval < a)
         rval *= 2;
@@ -43,9 +49,7 @@ void set_pixel(unsigned char *texture, int offset, int size, int x, int y, unsig
 
 using font_face_t = std::unique_ptr<std::remove_pointer_t<FT_Face>, decltype(&FT_Done_Face)>;
 
-}
-
-static std::unique_ptr<font_t> create_font(font_face_t freetype_font_face, const int resolution, const int cell_margin)
+std::optional<font_t> create_font(font_face_t freetype_font_face, const int resolution, const int cell_margin)
 {
     FT_Set_Pixel_Sizes(freetype_font_face.get(), resolution, resolution);
 
@@ -114,7 +118,7 @@ static std::unique_ptr<font_t> create_font(font_face_t freetype_font_face, const
         }
     }
 
-    return std::make_unique<font_t>(idle::image_t::load_from_memory(
+    return font_t{ idle::image_t::load_from_memory(
                 actual_texture_size, actual_texture_size,
 #ifdef __ANDROID__
                 gl::LUMINANCE, gl::LUMINANCE,
@@ -122,12 +126,13 @@ static std::unique_ptr<font_t> create_font(font_face_t freetype_font_face, const
                 gl::R8, gl::RED,
 #endif
                 gl::LINEAR, gl::CLAMP_TO_EDGE, std::move(texture_data)).release(),
-            std::move(glyphs), cell_size / (float)actual_texture_size);
+            std::move(glyphs), cell_size / (float)actual_texture_size };
 }
 
+}  // namespace
 
 
-std::unique_ptr<font_t> fonts::FreeType::load(const std::string_view &memory, int resolution) const
+std::optional<font_t> freetype_glue::load(const std::string_view &memory, int resolution) const
 {
     const int margin = static_cast<int>(ceilf(resolution / 10.f));
     return load(memory, resolution, margin);
@@ -136,33 +141,37 @@ std::unique_ptr<font_t> fonts::FreeType::load(const std::string_view &memory, in
 
 static FT_Library library;
 
-std::unique_ptr<font_t> fonts::FreeType::load(const std::string_view &memory, int resolution, int cell_margin) const
+std::optional<font_t> freetype_glue::load(const std::string_view &memory, int resolution, int cell_margin) const
 {
-    FT_Face ff = nullptr;
-    if (!FT_New_Memory_Face(library, reinterpret_cast<const FT_Byte *>(memory.data()), static_cast<FT_Long>(memory.size()), 0, &ff))
+    if (FT_Face ff = nullptr;
+            !FT_New_Memory_Face(
+                library,
+                reinterpret_cast<const FT_Byte *>(memory.data()),
+                static_cast<FT_Long>(memory.size()), 0, &ff))
     {
         return create_font({ ff, FT_Done_Face }, resolution, cell_margin);
     }
-    else {
-        LOGE("Error loading font face");
-        return nullptr;
-    }
+
+    LOGE("Error loading font face");
+    return {};
 }
 
 static unsigned library_ref_count = 0;
 
-fonts::FreeType::FreeType()
+freetype_glue::freetype_glue()
 {
-    if (++library_ref_count == 1)
-        if (FT_Init_FreeType(&library)) {
-            LOGE("Failed to initialize freetype library");
-        }
-}
-
-fonts::FreeType::~FreeType()
-{
-    if (library_ref_count) {
-        if (--library_ref_count == 0)
-            FT_Done_FreeType(library);
+    if (++library_ref_count == 1 && FT_Init_FreeType(&library))
+    {
+        LOGE("Failed to initialize freetype library");
     }
 }
+
+freetype_glue::~freetype_glue()
+{
+    if (library_ref_count && !--library_ref_count)
+    {
+        FT_Done_FreeType(library);
+    }
+}
+
+}  // namespace fonts

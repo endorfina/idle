@@ -23,6 +23,7 @@
 #include <optional>
 #include <atomic>
 #include <thread>
+#include <variant>
 
 #include "gl.hpp"
 #include "room_variant.hpp"
@@ -30,9 +31,32 @@
 namespace idle
 {
 
+template<typename O>
+struct door
+{
+    using opened_type = O;
+
+    template<typename Variant, typename...Args>
+    void open(Variant& var, Args&&...args) const
+    {
+        var.template emplace<opened_type>(std::forward<Args>(args)...);
+    }
+};
+
+template<typename T>
+struct hotel
+{
+};
+
+template<typename Skip, typename...Rooms>
+struct hotel<std::variant<Skip, Rooms...>>
+{
+    std::optional<std::variant<door<Rooms>...>> rooms;
+};
+
 class controller
 {
-    idle::room_id_enum room_current_id = idle::room_id_enum::room_uninitialized, room_next_id = idle::room_id_enum::room_uninitialized;
+    hotel<room> next_variant;
     room current_variant;
     std::atomic_bool worker_active_flag{false};
     std::optional<std::thread> worker_thread;
@@ -42,7 +66,7 @@ class controller
 public:
     ~controller();
 
-    void wake(::overlay& top, const std::chrono::steady_clock::time_point& step_time);
+    void wake(graphics::core& gl, const std::chrono::steady_clock::time_point& step_time);
 
     void slumber();
 
@@ -54,9 +78,14 @@ public:
 
     void draw_frame(const graphics::core& gl);
 
-    bool execute_pending_room_change(::overlay& top);
+    bool execute_pending_room_change(graphics::core&);
 
-    void change_room(room_id_enum id);
+    template<typename Room>
+    void change_room()
+    {
+        slumber();
+        next_variant.rooms.emplace(door<Room>{});
+    }
 
     void default_room_if_none_set();
 
@@ -64,7 +93,7 @@ public:
 
     bool get_crashed() const;
 
-    void do_step(::overlay& top);
+    void do_step(graphics::core&);
 };
 
 }  // namespace idle

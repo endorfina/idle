@@ -18,95 +18,11 @@
 */
 
 #pragma once
-#include <random>
-#include <array>
 #include "gl.hpp"
-#include "top.hpp"
 
-namespace
+namespace idle
 {
-constexpr unsigned char blurx(unsigned char * const p, const unsigned int x, const unsigned int y, const unsigned offset)
-{
-    unsigned int amt = 0;
-    amt += p[(((y + 255) % 256) * 256 + x) * 3 + offset];
-    amt += p[(y * 256 + ((x + 255) % 256)) * 3 + offset];
-    amt += p[(y * 256 + x) * 3 + offset];
-    amt += p[(y * 256 + ((x + 257) % 256)) * 3 + offset];
-    amt += p[(((y + 257) % 256) * 256 + x) * 3 + offset];
-    return static_cast<unsigned char>(amt / 5);
-}
 
-void blur (unsigned char * pixels, unsigned char * const pixels2)
-{
-    memcpy(pixels2, pixels, 256 * 256 * 3);
-    for (unsigned y = 0; y < 256; ++y)
-    for (unsigned x = 0; x < 256; ++x) {
-        const auto d = pixels + (y * 256 + x) * 3;
-        if (d[1] < 200) {
-            d[0] = blurx(pixels2, x, y, 0);
-            d[1] = blurx(pixels2, x, y, 1);
-            d[2] = blurx(pixels2, x, y, 2);
-        }
-    }
-    //pixels.swap()
-}
+GLuint create_fade_texture();
 
-GLuint create_noise_texture()
-{
-    std::array<unsigned char, 256 * 256 * 3> pixels2;
-    auto pixels = std::make_unique<unsigned char[]>(pixels2.size());
-    std::minstd_rand dev(0x5ad0);
-    std::uniform_int_distribution<unsigned int> uid{50, 200}, chance{0, 300};
-
-    for (unsigned y = 0; y < 256; ++y)
-    for (unsigned x = 0; x < 256; ++x) {
-        const auto d = pixels.get() + (y * 256 + x) * 3;
-        if (chance(dev) == 0) {
-            d[0] = 255;
-            d[1] = 255;
-            d[2] = 255;
-        } else {
-            d[0] = uid(dev) / 5;
-            d[1] = 0;
-            d[2] = uid(dev) / 3;
-        }
-    }
-    blur(pixels.get(), pixels2.data());
-    blur(pixels.get(), pixels2.data());
-    blur(pixels.get(), pixels2.data());
-    blur(pixels.get(), pixels2.data());
-
-    return ::idle::load_picture_from_assets(
-            256, 256,
-            gl::RGB, gl::RGB,
-            gl::NEAREST, gl::REPEAT,
-            std::move(pixels));
-}
-
-GLuint create_fade_texture()
-{
-#ifndef __BANDROID__
-    constexpr unsigned size = 256 * 4;
-    auto pixels = std::make_unique<unsigned char[]>(size);
-    memset(pixels.get(), 0xff, size);
-    for (unsigned i = 3, j = 0; i < size; i += 4, ++j)
-    {
-        pixels[i] = j;
-    }
-#else
-    auto pixels = std::make_unique<unsigned char[]>(256);
-    std::iota(pixels.get(), pixels.get() + 256, 0);
-#endif
-
-    return ::idle::load_picture_from_assets(
-            1, 256,
-#ifndef __BANDROID__
-            gl::RGBA, gl::RGBA,
-#else
-            gl::ALPHA, gl::ALPHA,
-#endif
-            gl::LINEAR, gl::MIRRORED_REPEAT,
-            std::move(pixels));
-}
-
-}
+}  // namespace idle

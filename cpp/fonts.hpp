@@ -41,25 +41,18 @@ struct font_t
 
     void draw(const graphics::text_program_t& rcp, const std::string_view &str, unsigned int limit = (-1)) const;
 
-    void draw_custom_animation(const graphics::text_program_t& rcp, const std::string_view &str, const math::color<float> &col, const idle::text_animation_data* anim, const unsigned start, const unsigned end) const;
+    void draw_custom_animation(const graphics::text_program_t& rcp, const std::string_view &str, const math::color<float> &col, const idle::text_animation_data* anim, unsigned start, unsigned end) const;
 
 
     //Return the width/height of the rendered text at given size
     idle::point_t get_extent(const std::string_view &str, float size, unsigned int limit = (-1)) const;
 
-    std::string prepare_string(const std::string_view &str, const float size, const float max_width) const;
-
+    std::string prepare_string(const std::string_view &str, float size, float max_width) const;
 
     font_t(GLuint texture, map_t character_map, float cell_size);
 
-    ~font_t();
-
-    font_t(const font_t&) = delete;
-
-    font_t(font_t&&);
-
 private:
-    std::optional<GLuint> tex;
+    graphics::unique_texture texture;
     std::unordered_map<unsigned long, glyph_t> character_map;
-    float cell_size, topmost_margin = 0.f;
+    float cell_size, topmost_margin;
 };

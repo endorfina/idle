@@ -19,19 +19,18 @@
 
 #include "room_model.hpp"
 
-#ifdef COMPILE_M_ROOM
-#include <unistd.h>
-#include <sys/stat.h>
-#include <fcntl.h>
+#ifdef IDLE_COMPILE_GALLERY
+// #include <unistd.h>
+// #include <sys/stat.h>
+// #include <fcntl.h>
 #include <memory>
 #include "platform/asset_access.hpp"
-#include "top.hpp"
+#include "gl.hpp"
 #include "draw_text.hpp"
 #include "these_bones.hpp"
 #include "objects.hpp"
 #include "hsv.hpp"
-#include "io.hpp"
-#include "blue/script.hpp"
+// #include "io.hpp"
 
 namespace idle
 {
@@ -62,88 +61,88 @@ point_t floor_grid0(point_t p)
     return {x, y};
 }
 
-blue::dictionary skeleton_to_blue_dict(const models::skeleton& skele)
-{
-    blue::dictionary out;
-    const auto& bag = skele.bag();
+// blue::dictionary skeleton_to_blue_dict(const models::skeleton& skele)
+// {
+//     blue::dictionary out;
+//     const auto& bag = skele.bag();
+//
+//     if (skele.center.x != 0.f || skele.center.y != 0.f || skele.center.z != 0.f)
+//     {
+//         blue::list point;
+//         point.push_back(skele.center.x);
+//         point.push_back(skele.center.y);
+//         point.push_back(skele.center.z);
+//         out.push("center", std::move(point));
+//     }
+//
+//     blue::list pile;
+//     for (const auto& bone : bag)
+//     {
+//         blue::dictionary dict;
+//         blue::list point;
+//         point.push_back(bone.angle.x);
+//         point.push_back(bone.angle.y);
+//         point.push_back(bone.angle.z);
+//         dict.push("len", bone.length);
+//         dict.push("angle", std::move(point));
+//
+//         if (bone.parent_id < bag.size())
+//         {
+//             dict.push("parent", static_cast<long>(bone.parent_id));
+//         }
+//         pile.push_back(std::move(dict));
+//     }
+//     out.push("pile", std::move(pile));
+//     return out;
+// }
 
-    if (skele.center.x != 0.f || skele.center.y != 0.f || skele.center.z != 0.f)
-    {
-        blue::list point;
-        point.push_back(skele.center.x);
-        point.push_back(skele.center.y);
-        point.push_back(skele.center.z);
-        out.push("center", std::move(point));
-    }
-
-    blue::list pile;
-    for (const auto& bone : bag)
-    {
-        blue::dictionary dict;
-        blue::list point;
-        point.push_back(bone.angle.x);
-        point.push_back(bone.angle.y);
-        point.push_back(bone.angle.z);
-        dict.push("len", bone.length);
-        dict.push("angle", std::move(point));
-
-        if (bone.parent_id < bag.size())
-        {
-            dict.push("parent", static_cast<long>(bone.parent_id));
-        }
-        pile.push_back(std::move(dict));
-    }
-    out.push("pile", std::move(pile));
-    return out;
-}
-
-void _write_to_fid_(void * param, std::string_view view)
-{
-    ::write(*reinterpret_cast<int*>(param), view.data(), view.size());
-}
+// void _write_to_fid_(void * param, std::string_view view)
+// {
+//     ::write(*reinterpret_cast<int*>(param), view.data(), view.size());
+// }
 
 
 } // namespace
 
 void model_room::start_drag(point_t& ptr, float point_3d_t::* const sel)
 {
-    drag.start = ptr;
-    drag.ptr = &ptr;
-    drag.ptr_val = nullptr;
-    drag.animation = 0.f;
+    // drag.start = ptr;
+    // drag.ptr = &ptr;
+    // drag.ptr_val = nullptr;
+    // drag.animation = 0.f;
 
-    switch (targeted)
-    {
-        case Targeted::Angle:
-            drag.ptr_val = &(model_.get_current_bone()->angle.*sel);
-            break;
+    // switch (targeted)
+    // {
+    //     case Targeted::Angle:
+    //         drag.ptr_val = &(model_.get_current_bone()->angle.*sel);
+    //         break;
 
-        case Targeted::LowerBound:
-            drag.ptr_val = &(model_.get_current_bone()->lower_bound.*sel);
-            break;
+    //     case Targeted::LowerBound:
+    //         drag.ptr_val = &(model_.get_current_bone()->lower_bound.*sel);
+    //         break;
 
-        case Targeted::UpperBound:
-            drag.ptr_val = &(model_.get_current_bone()->upper_bound.*sel);
-            break;
+    //     case Targeted::UpperBound:
+    //         drag.ptr_val = &(model_.get_current_bone()->upper_bound.*sel);
+    //         break;
 
-        case Targeted::Center:
-            drag.ptr_val = &(model_.skele.center.*sel);
-            break;
+    //     case Targeted::Center:
+    //         drag.ptr_val = &(model_.skele.center.*sel);
+    //         break;
 
-        case Targeted::Length:
-            drag.ptr_val = &model_.get_current_bone()->length;
-            break;
+    //     case Targeted::Length:
+    //         drag.ptr_val = &model_.get_current_bone()->length;
+    //         break;
 
-        case Targeted::Stiffness:
-            drag.ptr_val = &model_.get_current_bone()->stiffness;
-            break;
+    //     case Targeted::Stiffness:
+    //         drag.ptr_val = &model_.get_current_bone()->stiffness;
+    //         break;
 
-        default:
-            LOGE("Unknown enum");
-            std::abort();
-    }
+    //     default:
+    //         LOGE("Unknown enum");
+    //         std::abort();
+    // }
 
-    drag.initial_value = *drag.ptr_val;
+    // drag.initial_value = *drag.ptr_val;
 }
 
 void option_save(model_room& r)
@@ -201,6 +200,7 @@ void option_save(model_room& r)
 //     }
 // }
 
+#ifdef DISABLE_THIS
 
 models::bone* working_model::get_current_bone()
 {
@@ -356,6 +356,7 @@ void working_model::draw(const graphics::core& gl) const
     }
 }
 
+#endif
 
 
 void model_room::on_resize(point_t size)
@@ -364,7 +365,7 @@ void model_room::on_resize(point_t size)
     std::visit([size](auto& f) { f.resize(size); }, face);
 }
 
-model_room::model_room(::overlay& parent)
+model_room::model_room(graphics::core& gl)
 {
     // if (const auto modelfile = platform::asset::hold(parent.db.file_models.c_str()))
     // {
@@ -376,12 +377,12 @@ model_room::model_room(::overlay& parent)
     //     //     refresh_matrix_cache();
     //     // }
     // }
-    std::visit([&parent](auto& f) { f.resize({float(parent.gl.draw_size.x), float(parent.gl.draw_size.y)}); }, face);
+    std::visit([&gl](auto& f) { f.resize({float(gl.draw_size.x), float(gl.draw_size.y)}); }, face);
 }
 
-bool model_room::step(::overlay& parent)
+bool model_room::step(graphics::core& gl)
 {
-    const auto pointer = parent.get_pointer();
+    const auto pointer = gl.pointer.load(std::memory_order_relaxed);
     std::unique_lock lock(mutex);
     if (drag.ptr_val)
     {
@@ -417,47 +418,17 @@ bool model_room::step(::overlay& parent)
             drag.ptr_val = nullptr;
         }
         drag.animation += (.6f - drag.animation) / 12;
-        model_.clear_from_matrix_cache(model_.bid);
-        model_.refresh_matrix_cache();
-        //recalibrate_center();
+        // model_.clear_from_matrix_cache(model_.bid);
+        // model_.refresh_matrix_cache();
     }
     else if (pointer.single_press)
     {
         std::visit([this, &pointer](auto& f) { f.click(*this, pointer.pos); }, face);
     }
 
-    //         case gui_elem::trigger_t::SelectBone:
-    //             bid = gui.data.i[0];
-    //             break;
-    //         case gui_elem::trigger_t::SelectSkele:
-    //             edited_skele = &skeleton_map.at(gui.text);
-    //             skele = *edited_skele;
-    //             menu_id = menu_t::model_edit;
-    //             menu(parent.collection, parent.gl.draw_size);
-    //             refresh_matrix_cache();
-    //             break;
-    //         case gui_elem::trigger_t::AddSkele:
-    //             {
-    //                 std::string str("new");
-    //                 str.resize(16);
-    //                 math::generate_random_string(str.data() + 3, str.size() - 3);
-    //                 edited_skele = &skeleton_map.try_emplace(std::move(str)).first->second;
-    //             }
-    //             skele = *edited_skele;
-    //             menu_id = menu_t::model_edit;
-    //             menu(parent.collection, parent.gl.draw_size);
-    //             refresh_matrix_cache();
-    //             break;
-    //         case gui_elem::trigger_t::Save:
-    //             save_all(parent.db);
-    //             break;
-    //         default:
-    //             break;
-    //     }
-    // }
-    model_.center_rotation += .0003f;
-    if (model_.center_rotation > F_TAU)
-        model_.center_rotation -= F_TAU;
+    // model_.center_rotation += .0003f;
+    // if (model_.center_rotation > F_TAU)
+    //     model_.center_rotation -= F_TAU;
 
     return true;
 }
@@ -465,7 +436,7 @@ bool model_room::step(::overlay& parent)
 void model_room::draw(const graphics::core& gl)
 {
     std::shared_lock lock(mutex);
-    model_.draw(gl);
+    /// model_.draw(gl);
 
     if (drag.ptr)
     {
@@ -513,23 +484,23 @@ void model_room::draw(const graphics::core& gl)
     std::visit([&gl](const auto& f) { f.draw(gl); }, face);
 }
 
-void model_room::save_all(const Database& db)
-{
-    blue::dictionary dict;
-    *model_.edited_skele = model_.skele;
-
-    for (const auto& [name, sk] : model_.skeleton_map)
-        dict.push(name, skeleton_to_blue_dict(sk));
-
-    auto fn = "assets/" + db.file_models;
-    io::file wf{ ::open(fn.c_str(), O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH) };
-    constexpr std::string_view prefix = u8"🍦💀";
-    ::write(wf, prefix.data(), prefix.size());
-    blue::print(std::move(dict), _write_to_fid_, &wf.fd);
-}
+// void model_room::save_all(const Database& db)
+// {
+//     blue::dictionary dict;
+//     *model_.edited_skele = model_.skele;
+//
+//     for (const auto& [name, sk] : model_.skeleton_map)
+//         dict.push(name, skeleton_to_blue_dict(sk));
+//
+//     auto fn = "assets/" + db.file_models;
+//     io::file wf{ ::open(fn.c_str(), O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH) };
+//     constexpr std::string_view prefix = u8"🍦💀";
+//     ::write(wf, prefix.data(), prefix.size());
+//     blue::print(std::move(dict), _write_to_fid_, &wf.fd);
+// }
 
 
 }  // namespace idle
 
-#endif  // COMPILE_M_ROOM
+#endif  // IDLE_COMPILE_GALLERY
 
