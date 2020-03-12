@@ -41,75 +41,76 @@ graphics::core opengl;
 namespace isolation
 {
 
-bool application::execute_commands()
+bool application::execute_commands(const bool is_nested)
 {
     window.event_loop_back(!update_display);
 
-    if (!window.commands.size())
-        return true;
-
     bool perform_load = false;
 
-    constexpr auto log_prefix = "command::%s";
-
-    for (const auto cmd : window.commands)
-        switch (cmd)
-        {
-        case ::platform::command::InitWindow:
-            LOGI(log_prefix, "InitWindow");
-            perform_load = true;
-            break;
-        case ::platform::command::SaveState:
-            LOGI(log_prefix, "SaveState");
-            break;
-
-        case ::platform::command::GainedFocus:
-            LOGI(log_prefix, "GainedFocus");
-            update_display = true;
-            break;
-
-        case ::platform::command::LostFocus:
-            LOGI(log_prefix, "LostFocus");
-            if (update_display)
-                draw();
-            update_display = false;
-            break;
-
-        case ::platform::command::GLCleanUp:
-            LOGI(log_prefix, "GLCleanUp");
-            update_display = false;
-            if (pause)
-            {
-                pause->buffer.reset();
-                pause->buffer_blur.reset();
-            }
-            opengl.clean();
-            window.terminate_display();
-            break;
-
-        case ::platform::command::CloseWindow:
-            LOGI(log_prefix, "CloseWindow");
-            opengl.clean();
-            window.terminate_display();
-            opengl.shutdown_was_requested = true;
-            return false;
-
-        case ::platform::command::PausePressed:
-            LOGI(log_prefix, "PausePressed");
-            room_ctrl.slumber();
-            if (!pause)
-                pause.emplace();
-            break;
-        }
-
-    window.commands.clear();
-
-    if (perform_load && !opengl.setup_graphics())
+    if (!!window.commands.size())
     {
-        return false;
+        constexpr auto log_prefix = "command::%s";
+
+        for (const auto cmd : window.commands)
+            switch (cmd)
+            {
+            case ::platform::command::InitWindow:
+                LOGI(log_prefix, "InitWindow");
+
+                if (!is_nested) perform_load = true;
+                break;
+
+            case ::platform::command::SaveState:
+                LOGI(log_prefix, "SaveState");
+                break;
+
+            case ::platform::command::GainedFocus:
+                LOGI(log_prefix, "GainedFocus");
+                update_display = true;
+                break;
+
+            case ::platform::command::LostFocus:
+                LOGI(log_prefix, "LostFocus");
+                if (update_display)
+                {
+                    draw();
+                    update_display = false;
+                }
+                break;
+
+            case ::platform::command::GLCleanUp:
+                LOGI(log_prefix, "GLCleanUp");
+                update_display = false;
+                if (pause)
+                {
+                    pause->buffer.reset();
+                    pause->buffer_blur.reset();
+                }
+                opengl.clean();
+                window.terminate_display();
+                break;
+
+            case ::platform::command::CloseWindow:
+                LOGI(log_prefix, "CloseWindow");
+                opengl.clean();
+                window.terminate_display();
+                opengl.shutdown_was_requested = true;
+                return false;
+
+            case ::platform::command::PausePressed:
+                LOGI(log_prefix, "PausePressed");
+                room_ctrl.slumber();
+                if (!pause)
+                    pause.emplace();
+                break;
+            }
+
+        window.commands.clear();
+
+        if (perform_load && !opengl.setup_graphics()) return false;
     }
 
-    if (window.resize_request && std::chrono::system_clock::now() >= window.resize_request->tp)
+    if (window.resize_request)
     {
         resize_internal();
     }
@@ -120,15 +121,21 @@ bool application::execute_commands()
 
 void application::resize_internal()
 {
-    const auto& rq = *window.resize_request;
-    opengl.resize(rq.w, rq.h, rq.q, rq.r);
+    const auto now = std::chrono::system_clock::now();
+    if (now > last_resize + std::chrono::seconds(1))
+    {
+        const auto& rq = *window.resize_request;
+        opengl.resize(rq.w, rq.h, rq.q, rq.r);
 
-    window.resize_request.reset();
+        window.resize_request.reset();
 
-    room_ctrl.resize({
-        static_cast<float>(opengl.draw_size.x),
-        static_cast<float>(opengl.draw_size.y)
-    });
+        room_ctrl.resize({
+            static_cast<float>(opengl.draw_size.x),
+            static_cast<float>(opengl.draw_size.y)
+        });
+
+        last_resize = now;
+    }
 }
 
 namespace
@@ -304,11 +311,23 @@ int application::real_main()
     LOGD("### GCC %d.%d", __GNUC__, __GNUC_MINOR__);
 #endif
 
-    LOGD("Command queue size: %zu", window.commands.raw_queue.size());
+    LOGD("platform::window size: %zu", sizeof(platform::window));
+    LOGD("window.commands queue size: %zu", window.commands.raw_queue.size());
+    LOGD("idle::controller size: %zu", sizeof(idle::controller));
+    LOGD("graphics::core size: %zu", sizeof(graphics::core));
+    LOGD("graphics::program_t size: %zu", sizeof(graphics::program_t));
+    LOGD("graphics::textured_program_t size: %zu", sizeof(graphics::textured_program_t));
+    LOGD("idle::mat4x4_t size: %zu", sizeof(idle::mat4x4_t));
+    LOGD("font_t size: %zu", sizeof(font_t));
+    LOGD("std::optional<font_t> size: %zu", sizeof(std::optional<font_t>));
+    LOGD("graphics::render_buffer_t size: %zu", sizeof(graphics::render_buffer_t));
+    LOGD("std::optional<graphics::render_buffer_t> size: %zu", sizeof(std::optional<graphics::render_buffer_t>));
+    LOGD("platform::pointer size: %zu", sizeof(platform::pointer));
+    LOGD("std::atomic<platform::pointer> size: %zu", sizeof(std::atomic<platform::pointer>));
 
     auto app_time = std::chrono::steady_clock::now();
 
-    while (execute_commands() && room_ctrl.execute_pending_room_change(opengl))
+    while (execute_commands(false) && room_ctrl.execute_pending_room_change(opengl))
     {
         if (pause)
         {
@@ -364,7 +383,7 @@ bool application::load()
     };
 
     room_ctrl.slumber();
-    room_ctrl.kill_during_sleep();
+    room_ctrl.join_worker();
 
     std::chrono::time_point<std::chrono::steady_clock> lt = std::chrono::steady_clock::now();
     std::promise<bool> loader_callback;
@@ -380,7 +399,7 @@ bool application::load()
 
     while (loader_result.wait_for(std::chrono::milliseconds(5)) != std::future_status::ready)
     {
-        if (!execute_commands())
+        if (!execute_commands(true))
         {
             LOGE("Loader called shut down.");
             loader_thread.join();
@@ -400,14 +419,11 @@ bool application::load()
         }
     }
 
-    if (!loader_result.get())
-        return false;
-
     loader_thread.join();
 
     room_ctrl.default_room_if_none_set();
 
-    return true;
+    return loader_result.get();
 }
 
 }  // namespace isolation

@@ -18,6 +18,7 @@
 */
 
 #include <array>
+#include <random>
 
 #include "drawable.hpp"
 #include "additional_textures.hpp"
@@ -80,11 +81,11 @@ namespace idle
 //     blur(pixels.get(), pixels2.data());
 //     blur(pixels.get(), pixels2.data());
 //
-//     return ::idle::load_picture_from_assets(
+//     return image_t::load_from_memory(
 //             256, 256,
 //             gl::RGB, gl::RGB,
 //             gl::NEAREST, gl::REPEAT,
-//             std::move(pixels));
+//             std::move(pixels)).release();
 // }
 
 GLuint create_fade_texture()

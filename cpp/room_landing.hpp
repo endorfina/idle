@@ -17,6 +17,7 @@
     along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
 #pragma once
+#include <array>
 #include "gl.hpp"
 #include "objects.hpp"
 
@@ -24,8 +25,16 @@ namespace idle
 {
 struct landing_room
 {
+    float alpha = 0, rotation = 0;
+    unsigned counter = 1;
+
+    std::array<float, 128> ray_array, ray_array_mirror;
+
     landing_room(graphics::core&);
+
     bool step(graphics::core&);
+
+    void draw(const graphics::core&) const;
 };
 
 }

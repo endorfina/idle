@@ -148,7 +148,7 @@ std::optional<resize_request_t> create_window(egl_display& egl)
     else if (const auto amt = glTest.GetNumMissing(); amt > 0)
         LOGE("Number of functions that failed to load: %i.", amt);
 
-    return {{ w, h, -1, -1, std::chrono::system_clock::now() }};
+    return {{ w, h, -1, -1 }};
 }
 
 int32_t android_handle_input(android_app * app, AInputEvent* event)

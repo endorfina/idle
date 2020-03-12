@@ -18,7 +18,6 @@
 */
 #pragma once
 
-#include <vector>
 #include <memory>
 #include <math.hpp>
 #include "gl_programs.hpp"
@@ -31,8 +30,6 @@ class image_t
     point_t tex;
     GLuint i;
     size_t width, height;
-
-    friend struct sprite_t;
 
 protected:
     image_t();
@@ -75,21 +72,6 @@ public:
     math::point2<Ret> get_size() const {
         return { static_cast<Ret>(width), static_cast<Ret>(height) };
     }
-};
-
-struct sprite_t {
-    const GLuint image;
-    rect_t rect;
-    point_t center, size, pixel;
-
-    sprite_t(GLuint i, const rect_t &r, point_t p, point_t s, point_t tx)
-            : image(i), rect(r), center(p), size(s), pixel(tx) {}
-
-    void draw(const graphics::textured_program_t& prog) const;
-
-    void draw(const graphics::textured_program_t& prog, point_t p) const;
-
-    static void add_subsprite(std::vector<sprite_t> &out, const image_t& image, unsigned x, unsigned y, unsigned w, unsigned h, point_t c, point_t o);
 };
 
 void fill_rectangle(const graphics::program_t& prog, const rect_t &rect);

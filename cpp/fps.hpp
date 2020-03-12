@@ -1,4 +1,4 @@
-﻿/*
+/*
     Copyright © 2020 endorfina <dev.endorfina@outlook.com>
 
     This file is part of Idle.
@@ -17,42 +17,13 @@
     along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
 #pragma once
-#include <chrono>
-#include <optional>
-#include "gl.hpp"
-#include "pointer.hpp"
-#include "platform/display.hpp"
-#include "pause.hpp"
 
-namespace isolation
+namespace idle
 {
-class application
-{
-    idle::pointer pointer;
-    bool update_display = false;
-    std::chrono::system_clock::time_point last_resize;
+constexpr unsigned application_fps = 40;
 
-public:
-    std::optional<idle::pause_menu> pause;
+static_assert(application_fps <= 60, "have mercy, please");
 
-    ::platform::window window;
+constexpr float application_fps_mult = 30 / float(application_fps);
 
-private:
-    void resize_internal();
-
-    bool execute_commands(bool nested);
-
-public:
-    template<typename...Vars>
-    application(Vars&&...vars)
-        : window(std::forward<Vars>(vars)...)
-    {}
-
-    int real_main();
-
-    bool load();
-
-    void draw();
-};
-
-}  //namespace isolation
+}

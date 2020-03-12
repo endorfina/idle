@@ -224,7 +224,7 @@ window::window()
 
     x.display = display.release();
 
-    resize_request.emplace(resize_request_t{ initial_width, initial_height, -1, -1, std::chrono::system_clock::now() });
+    resize_request.emplace(resize_request_t{ initial_width, initial_height, -1, -1 });
     commands.insert(command::InitWindow);
     commands.insert(command::GainedFocus); // TODO: Make X handle focus as to reduce resource usage when idle
 }
@@ -267,7 +267,7 @@ void window::event_loop_back(bool)
 
             case ConfigureNotify:
                 glXMakeCurrent(x.display, x.window, x.context);
-                resize_request.emplace(resize_request_t{xev.xconfigure.width, xev.xconfigure.height, -1, -1, std::chrono::system_clock::now() + std::chrono::seconds(1)});
+                resize_request.emplace(resize_request_t{xev.xconfigure.width, xev.xconfigure.height, -1, -1 });
                 break;
 
             case KeyPress:
@@ -280,7 +280,7 @@ void window::event_loop_back(bool)
 #ifdef X11_USE_CLIENTMESSAGE
             case ClientMessage:
                 commands.insert(command::CloseWindow);
-                break;
+                return;
 #endif
 
             default:

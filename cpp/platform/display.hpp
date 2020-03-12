@@ -19,7 +19,6 @@
 #pragma once
 #include <array>
 #include <optional>
-#include <chrono>
 
 #include <log.hpp>
 #include "pointer.hpp"
@@ -38,7 +37,6 @@ void recreate_matrices();
 struct resize_request_t
 {
     int w, h, r, q;
-    std::chrono::system_clock::time_point tp;
 };
 
 

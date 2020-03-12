@@ -64,7 +64,7 @@ struct image_data
     std::unique_ptr<unsigned char[]> image;
     unsigned width, height, real_width, real_height, size;
 
-    std::vector<unsigned char> png(const unsigned char * const src, const size_t datalen)
+    std::vector<unsigned char> decode_png_buffer(const unsigned char * const src, const size_t datalen)
     {
         std::vector<unsigned char> out;
         lodepng::State st;
@@ -73,7 +73,9 @@ struct image_data
 
         if (const auto er = lodepng::decode(out, width, height, st, src, datalen); !!er)
         {
-#ifdef DEBUG
+#ifdef LODEPNG_NO_COMPILE_ERROR_TEXT
+            LOGE("Lodepng error no. %u", er);
+#else
             LOGE("Lodepng error no. %u: %s", er, lodepng_error_text(er));
 #endif
             out.clear();
@@ -84,12 +86,11 @@ struct image_data
 
     image_data() = default;
 
-    image_data(const std::string_view source)
+    image_data(const std::string_view source) : real_width(1), real_height(1)
     {
         constexpr unsigned source_size = 4;
-        if (const auto temp = png(reinterpret_cast<const unsigned char*>(source.data()), source.size()); !!temp.size())
+        if (const auto temp = decode_png_buffer(reinterpret_cast<const unsigned char*>(source.data()), source.size()); !!temp.size())
         {
-            real_width = 1, real_height = 1;
             while (real_width < width) real_width *= 2;
             while (real_height < height) real_height *= 2;
 
@@ -127,19 +128,15 @@ bool verify_file_extension(const char * const fn)
     return !(strcmp(chk, ".png") != 0);
 }
 
-image_data make_pic(const char * fn)
+image_data make_image_data(const char * fn)
 {
-    if (!verify_file_extension(fn))
+    if (verify_file_extension(fn))
     {
-        return {};
+        if (const auto b = platform::asset::hold(fn))
+        {
+            return { b.view() };
+        }
     }
-
-    if (const auto b = platform::asset::hold(fn))
-    {
-        image_data idt { b.view() };
-        return idt;
-    }
-
     return {};
 }
 
@@ -167,9 +164,6 @@ struct image_meta_data_t
         pixels(std::forward<Pixels>(pix)),
         promise(std::forward<Promise>(prom))
     {}
-
-    image_meta_data_t(const image_meta_data_t&) = delete;
-    image_meta_data_t(image_meta_data_t&&) = default;
 };
 
 std::vector<image_meta_data_t> load_queue;
@@ -216,7 +210,7 @@ GLuint image_t::release()
 
 image_t image_t::load_from_assets_immediate(const char * fn, GLint quality)
 {
-    const auto picture = make_pic(fn);
+    const auto picture = make_image_data(fn);
     GLuint texID = 0;
 
     if (!picture.image)
@@ -245,7 +239,7 @@ image_t image_t::load_from_assets_immediate(const char * fn, GLint quality)
 
 image_t image_t::load_from_assets(const char * fn, GLint quality)
 {
-    auto picture = make_pic(fn);
+    auto picture = make_image_data(fn);
 
     if (!picture.image)
     {
@@ -323,19 +317,6 @@ void image_t::load_topmost_queued_picture()
 }
 
 
-
-void sprite_t::add_subsprite(std::vector<sprite_t> &out, const image_t& image, unsigned x, unsigned y, unsigned w, unsigned h, point_t c, point_t o) {
-    const point_t size(static_cast<float>(w), static_cast<float>(h));
-    const float m_x = image.tex.x / static_cast<float>(image.width),
-            m_y = image.tex.y / static_cast<float>(image.height);
-    for (unsigned iy = 0, ix; iy < y; ++iy)
-        for (ix = 0; ix < x; ++ix)
-            out.emplace_back(image.i, rect_t((o.x + ix * w) * m_x,
-                                   (o.y + iy * h) * m_y,
-                                   (o.x + (ix + 1) * w) * m_x,
-                                   (o.y + (iy + 1) * h) * m_y),
-                             c, size, point_t(m_x, m_y));
-}
 
 void fill_circle(const graphics::program_t& prog, point_t center, const float radius, const unsigned int steps)
 {
@@ -511,39 +492,4 @@ void image_t::draw(const graphics::textured_program_t& prog, const rect_t &rect)
     gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
 }
 
-void sprite_t::draw(const graphics::textured_program_t& prog) const
-{
-    const float v[] = {
-            -center.x, -center.y,  size.x - center.x, -center.y,
-            -center.x, size.y - center.y, size.x - center.x, size.y - center.y
-    };
-    const float t[] = {
-            rect.left, rect.top,  rect.right, rect.top,
-            rect.left, rect.bottom, rect.right, rect.bottom
-    };
-    gl::ActiveTexture(gl::TEXTURE0);
-    gl::BindTexture(gl::TEXTURE_2D, image);
-    prog.position_vertex(v);
-    prog.texture_vertex(t);
-    gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
-}
-
-void sprite_t::draw(const graphics::textured_program_t& prog, point_t p) const
-{
-    p.x -= center.x;
-    p.y -= center.y;
-    const float v[] = {
-            p.x, p.y,  p.x + size.x, p.y,
-            p.x, p.y + size.y, p.x + size.x, p.y + size.y
-    };
-    const float t[] = {
-            rect.left, rect.top,  rect.right, rect.top,
-            rect.left, rect.bottom, rect.right, rect.bottom
-    };
-    gl::ActiveTexture(gl::TEXTURE0);
-    gl::BindTexture(gl::TEXTURE_2D, image);
-    prog.position_vertex(v);
-    prog.texture_vertex(t);
-    gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
-}
-}
+}  // namespace idle

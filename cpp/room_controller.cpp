@@ -69,7 +69,7 @@ controller::~controller()
 {
     LOGD("controller::~controller");
     slumber();
-    kill_during_sleep();
+    join_worker();
 }
 
 void controller::signal_crash(std::string str)
@@ -90,7 +90,7 @@ void controller::wake(graphics::core& gl, const std::chrono::steady_clock::time_
                         std::chrono::steady_clock::time_point::duration>(2.0s / APPLICATION_FPS);
 
     slumber();
-    kill_during_sleep();
+    join_worker();
     worker_active_flag.store(true, std::memory_order_relaxed);
     worker_thread.emplace(dance, std::ref(*this), std::ref(gl), step_time + skip_two_beats);
 }
@@ -100,7 +100,7 @@ void controller::slumber()
     worker_active_flag.store(false, std::memory_order_relaxed);
 }
 
-void controller::kill_during_sleep()
+void controller::join_worker()
 {
     if (worker_thread)
     {
@@ -172,7 +172,7 @@ bool controller::execute_pending_room_change(graphics::core& gl)
 {
     if (next_variant.rooms)
     {
-        kill_during_sleep();
+        join_worker();
 
         std::visit(
             [&gl, this] (const auto& gate)
@@ -183,6 +183,9 @@ bool controller::execute_pending_room_change(graphics::core& gl)
             *next_variant.rooms);
 
         next_variant.rooms.reset();
+
+        worker_active_flag.store(true, std::memory_order_relaxed);
+        worker_thread.emplace(dance, std::ref(*this), std::ref(gl), std::chrono::steady_clock::now());
     }
     return true;
 }

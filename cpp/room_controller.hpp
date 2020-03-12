@@ -72,7 +72,7 @@ public:
 
     bool should_stay_awake() const;
 
-    void kill_during_sleep();
+    void join_worker();
 
     void resize(point_t size);
 
