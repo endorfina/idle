@@ -260,14 +260,12 @@ void core::resize(const int window_width, const int window_height, const int qua
     translate_vector.x = static_cast<float>(draw_size.x) / static_cast<float>(window_width);
     translate_vector.y = static_cast<float>(draw_size.y) / static_cast<float>(window_height);
 
-    projectionMatrix = idle::mat4x4_t::orthof_static<-1, 1>(0, draw_size.x, 0, draw_size.y);
+    if (!all_programs_are_functional()) return;
 
-    if (!all_programs_are_functional())
-        return;
+    copy_projection_matrix(idle::mat4x4_t::orthof_static<-1, 1>(0, draw_size.x, 0, draw_size.y));
 
     pfullbg.use();
     pfullbg.set_resolution(static_cast<float>(window_width), static_cast<float>(window_height));
-    copy_projection_matrix();
     render_buffer.emplace(*this, 1);
 }
 
@@ -434,7 +432,7 @@ static void set_projection_matrix(const program_t& prog, const idle::mat4x4_t& m
     gl::UniformMatrix4fv(gl::GetUniformLocation(prog.pid, "uPM"), 1, gl::FALSE_, static_cast<const GLfloat*>(mat));
 }
 
-void core::copy_projection_matrix() const
+void core::copy_projection_matrix(const idle::mat4x4_t& projectionMatrix) const
 {
     set_projection_matrix(pnormal, projectionMatrix);
     set_projection_matrix(pdouble, projectionMatrix);

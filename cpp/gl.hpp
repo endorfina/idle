@@ -73,8 +73,6 @@ struct core
     text_program_t ptext;
     fullbg_program_t pfullbg;
 
-    idle::mat4x4_t projectionMatrix;
-
     GLuint image_id_fade = 0, image_id_noise = 0;
     GLuint render_texture_position_handle = 0, render_program = 0, render_position_handle = 0;
     GLint render_quality = gl::LINEAR;
@@ -88,7 +86,7 @@ struct core
 
     bool all_programs_are_functional() const;
 
-    void copy_projection_matrix() const;
+    void copy_projection_matrix(const idle::mat4x4_t&) const;
 
     bool setup_graphics();
 
