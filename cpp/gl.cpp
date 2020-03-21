@@ -170,11 +170,11 @@ bool core::setup_graphics()
         shader_compiler sc{ shaders::get_data(), shaders::source_size_uncompressed };
 
         render_program = sc.compile(shaders::source_pos_renderv, shaders::source_pos_renderf);
-        pnormal.pid = sc.compile(shaders::source_pos_normv, shaders::source_pos_normf);
-        pdouble.pid = sc.compile(shaders::source_pos_doublev, shaders::source_pos_normf);
-        pfill.pid = sc.compile(shaders::source_pos_solidv, shaders::source_pos_solidf);
-        ptext.pid = sc.compile(shaders::source_pos_textv, shaders::source_pos_textf);
-        pfullbg.pid = sc.compile(shaders::source_pos_solidv, shaders::source_pos_fullbgf);
+        prog.normal.program_id = sc.compile(shaders::source_pos_normv, shaders::source_pos_normf);
+        prog.shift.program_id = sc.compile(shaders::source_pos_doublev, shaders::source_pos_normf);
+        prog.fill.program_id = sc.compile(shaders::source_pos_solidv, shaders::source_pos_solidf);
+        prog.text.program_id = sc.compile(shaders::source_pos_textv, shaders::source_pos_textf);
+        prog.fullbg.program_id = sc.compile(shaders::source_pos_solidv, shaders::source_pos_fullbgf);
 
 
         if (sc.has_failed())
@@ -187,28 +187,28 @@ bool core::setup_graphics()
     render_position_handle = static_cast<GLuint>(gl::GetAttribLocation(render_program, "vPos"));
     render_texture_position_handle = static_cast<GLuint>(gl::GetAttribLocation(render_program, "aUV"));
 
-    pnormal.collect_variables();
-    pfill.collect_variables();
-    ptext.collect_variables();
-    pdouble.collect_variables();
-    pfullbg.collect_variables();
+    prog.normal.collect_variables();
+    prog.fill.collect_variables();
+    prog.text.collect_variables();
+    prog.shift.collect_variables();
+    prog.fullbg.collect_variables();
 
-    pfullbg.use();
-    pfullbg.set_offset(0);
+    prog.fullbg.use();
+    prog.fullbg.set_offset(0);
 
-    pdouble.use();
-    pdouble.set_interpolation(0);
+    prog.shift.use();
+    prog.shift.set_interpolation(0);
 
     gl::UseProgram(render_program);
     gl::EnableVertexAttribArray(render_position_handle);
     gl::EnableVertexAttribArray(render_texture_position_handle);
 
-    pnormal.prepare();
-    pfill.prepare();
-    ptext.prepare();
-    pdouble.prepare();
-    pfullbg.prepare();
-    pnormal.use();
+    prog.normal.prepare();
+    prog.fill.prepare();
+    prog.text.prepare();
+    prog.shift.prepare();
+    prog.fullbg.prepare();
+    prog.normal.use();
 
 #ifdef DEBUG
     // Check openGL on the system
@@ -223,6 +223,12 @@ bool core::setup_graphics()
     }
 #endif
     return true;
+}
+
+template<typename...Progs>
+static bool programs_are_functional(const Progs& ... progs)
+{
+    return (true && ... && !!progs.program_id);
 }
 
 void core::resize(const int window_width, const int window_height, const int quality, int resolution)
@@ -260,12 +266,18 @@ void core::resize(const int window_width, const int window_height, const int qua
     translate_vector.x = static_cast<float>(draw_size.x) / static_cast<float>(window_width);
     translate_vector.y = static_cast<float>(draw_size.y) / static_cast<float>(window_height);
 
-    if (!all_programs_are_functional()) return;
+    if (!programs_are_functional(
+                prog.normal,
+                prog.shift,
+                prog.fill,
+                prog.text,
+                prog.fullbg
+            )) return;
 
     copy_projection_matrix(idle::mat4x4_t::orthof_static<-1, 1>(0, draw_size.x, 0, draw_size.y));
 
-    pfullbg.use();
-    pfullbg.set_resolution(static_cast<float>(window_width), static_cast<float>(window_height));
+    prog.fullbg.use();
+    prog.fullbg.set_resolution(static_cast<float>(window_width), static_cast<float>(window_height));
     render_buffer.emplace(*this, 1);
 }
 
@@ -302,7 +314,7 @@ void program_t::set_view_identity(void) const
 
 void program_t::use() const
 {
-    gl::UseProgram(pid);
+    gl::UseProgram(program_id);
 }
 
 void program_t::set_color(const idle::color_t& c) const
@@ -358,39 +370,39 @@ void fullbg_program_t::set_resolution(const GLfloat w, const GLfloat h) const
 
 void program_t::collect_variables()
 {
-    position_handle = static_cast<GLuint>(gl::GetAttribLocation(pid, "vPos"));
-    model_handle = gl::GetUniformLocation(pid, "uMM");
-    view_handle = gl::GetUniformLocation(pid, "uVM");
-    color_handle = gl::GetUniformLocation(pid, "uCol");
+    position_handle = static_cast<GLuint>(gl::GetAttribLocation(program_id, "vPos"));
+    model_handle = gl::GetUniformLocation(program_id, "uMM");
+    view_handle = gl::GetUniformLocation(program_id, "uVM");
+    color_handle = gl::GetUniformLocation(program_id, "uCol");
     report_opengl_errors("program_t::collect_variables()");
 }
 
 void textured_program_t::collect_variables()
 {
     program_t::collect_variables();
-    texture_position_handle = static_cast<GLuint>(gl::GetAttribLocation(pid,"aUV"));
+    texture_position_handle = static_cast<GLuint>(gl::GetAttribLocation(program_id,"aUV"));
 }
 
 void text_program_t::collect_variables()
 {
     textured_program_t::collect_variables();
-    font_offset_handle = gl::GetUniformLocation(pid, "uOf");
+    font_offset_handle = gl::GetUniformLocation(program_id, "uOf");
     report_opengl_errors("text_program_t::collect_variables()");
 }
 
 void double_vertex_program_t::collect_variables()
 {
     textured_program_t::collect_variables();
-    destination_handle = static_cast<GLuint>(gl::GetAttribLocation(pid,"vDest"));
-    interpolation_handle = gl::GetUniformLocation(pid, "uIv");
+    destination_handle = static_cast<GLuint>(gl::GetAttribLocation(program_id,"vDest"));
+    interpolation_handle = gl::GetUniformLocation(program_id, "uIv");
     report_opengl_errors("double_vertex_program_t::collect_variables()");
 }
 
 void fullbg_program_t::collect_variables()
 {
     program_t::collect_variables();
-    offset_handle = gl::GetUniformLocation(pid, "uI");
-    resolution_handle = gl::GetUniformLocation(pid, "uR");
+    offset_handle = gl::GetUniformLocation(program_id, "uI");
+    resolution_handle = gl::GetUniformLocation(program_id, "uR");
     report_opengl_errors("fullbg_program_t::collect_variables()");
 }
 
@@ -421,24 +433,20 @@ void double_vertex_program_t::prepare() const
 
 
 
-bool core::all_programs_are_functional() const
-{
-    return pnormal.pid && pdouble.pid && pfill.pid && ptext.pid && pfullbg.pid;
-}
 
 static void set_projection_matrix(const program_t& prog, const idle::mat4x4_t& mat)
 {
     prog.use();
-    gl::UniformMatrix4fv(gl::GetUniformLocation(prog.pid, "uPM"), 1, gl::FALSE_, static_cast<const GLfloat*>(mat));
+    gl::UniformMatrix4fv(gl::GetUniformLocation(prog.program_id, "uPM"), 1, gl::FALSE_, static_cast<const GLfloat*>(mat));
 }
 
 void core::copy_projection_matrix(const idle::mat4x4_t& projectionMatrix) const
 {
-    set_projection_matrix(pnormal, projectionMatrix);
-    set_projection_matrix(pdouble, projectionMatrix);
-    set_projection_matrix(pfill, projectionMatrix);
-    set_projection_matrix(ptext, projectionMatrix);
-    set_projection_matrix(pfullbg, projectionMatrix);
+    set_projection_matrix(prog.normal, projectionMatrix);
+    set_projection_matrix(prog.shift, projectionMatrix);
+    set_projection_matrix(prog.fill, projectionMatrix);
+    set_projection_matrix(prog.text, projectionMatrix);
+    set_projection_matrix(prog.fullbg, projectionMatrix);
 }
 
 render_buffer_t::~render_buffer_t()

@@ -66,7 +66,7 @@ struct unique_texture
 
 struct program_t
 {
-    GLuint pid = 0;
+    GLuint program_id = 0;
     GLuint position_handle = 0;
     GLint model_handle = 0, view_handle = 0, color_handle = 0;
 

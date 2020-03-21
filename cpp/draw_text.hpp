@@ -51,14 +51,14 @@ point_t _get_text_transform_(const font_t& font, std::string_view str, point_t p
 template <TextAlign H = TextAlign::Near, TextAlign V = TextAlign::Near>
 void draw_text(const graphics::core& gl, const std::string_view& str, point_t p, float size, const unsigned int limit = static_cast<unsigned int>(-1))
 {
-    gl.ptext.set_view_transform(mat4x4_t::scale(size) * mat4x4_t::translate(_get_text_transform_<H, V>(*gl.font, str, p, size, limit)));
-    gl.font->draw(gl.ptext, str, limit);
+    gl.prog.text.set_view_transform(mat4x4_t::scale(size) * mat4x4_t::translate(_get_text_transform_<H, V>(*gl.font, str, p, size, limit)));
+    gl.font->draw(gl.prog.text, str, limit);
 }
 
 // void draw_text_animation1(const graphics::core& gl, const std::string_view& msg, float x, float y, float size, const color_t &col, const idle::text_animation_data* anim, const unsigned start, const unsigned end)
 // {
-//     gl.ptext.set_view_transform(mat4x4_t::scale(size) * mat4x4_t::translate(x, y));
-//     gl.font->draw_custom_animation(gl.ptext, msg, col, anim, start, end);
+//     gl.prog.text.set_view_transform(mat4x4_t::scale(size) * mat4x4_t::translate(x, y));
+//     gl.font->draw_custom_animation(gl.prog.text, msg, col, anim, start, end);
 // }
 
 }  // namespace idle

@@ -65,13 +65,22 @@ struct render_buffer_t
     ~render_buffer_t();
 };
 
+struct render_program_t
+{
+    GLuint texture_position_handle = 0, program = 0, position_handle = 0;
+};
+
 struct core
 {
-    textured_program_t pnormal;
-    double_vertex_program_t pdouble;
-    program_t pfill;
-    text_program_t ptext;
-    fullbg_program_t pfullbg;
+    struct
+    {
+        textured_program_t normal;
+        double_vertex_program_t shift;
+        program_t fill;
+        text_program_t text;
+        fullbg_program_t fullbg;
+
+    } prog;
 
     GLuint image_id_fade = 0, image_id_noise = 0;
     GLuint render_texture_position_handle = 0, render_program = 0, render_position_handle = 0;
@@ -83,8 +92,6 @@ struct core
 
     bool shutdown_was_requested = false;
     std::atomic<platform::pointer> pointer;
-
-    bool all_programs_are_functional() const;
 
     void copy_projection_matrix(const idle::mat4x4_t&) const;
 

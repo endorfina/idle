@@ -60,7 +60,7 @@ struct target_change : gui::shapes::rectangle<X, Y, 60, 14>
 {
     void draw(const graphics::core& gl) const
     {
-        gl.ptext.use();
+        gl.prog.text.use();
         draw_text<TextAlign::Center, TextAlign::Center>(gl, get_enum_name(T),
                 {this->pos.x + 30, this->pos.y + 7}, 14);
     }
@@ -84,7 +84,7 @@ struct target_dragable_position : gui::shapes::ellipse<X, Y, 24, 24>
                 return "Z";
         }();
 
-        gl.ptext.use();
+        gl.prog.text.use();
         draw_text<TextAlign::Center, TextAlign::Center>(gl, text, this->pos, 14);
     }
 
@@ -104,7 +104,7 @@ struct target_dragable_target : gui::shapes::ellipse<X, Y, 24, 24>
                 return "Sc";
         }();
 
-        gl.ptext.use();
+        gl.prog.text.use();
         draw_text<TextAlign::Center, TextAlign::Center>(gl, text, this->pos, 14);
     }
 
@@ -116,7 +116,7 @@ struct button_add : gui::shapes::ellipse<X, Y, 24, 24>
 {
     void draw(const graphics::core& gl) const
     {
-        gl.ptext.use();
+        gl.prog.text.use();
         draw_text<TextAlign::Center, TextAlign::Center>(gl, "+", this->pos, 20);
     }
 
@@ -128,7 +128,7 @@ struct button_remove : gui::shapes::ellipse<X, Y, 24, 24>
 {
     void draw(const graphics::core& gl) const
     {
-        gl.ptext.use();
+        gl.prog.text.use();
         draw_text<TextAlign::Center, TextAlign::Center>(gl, "-", this->pos, 20);
     }
 

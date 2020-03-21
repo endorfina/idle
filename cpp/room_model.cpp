@@ -291,36 +291,36 @@ void working_model::clear_from_matrix_cache(const unsigned key)
 void working_model::draw(const graphics::core& gl) const
 {
     constexpr point_t crosshair[4]{{-50, 0}, {50, 0}, {0, -50}, {0, 50}};
-    gl.pfill.use();
-    gl.pfill.set_view_transform(mat4x4_t::translate(gl.draw_size.x / 2.f, gl.draw_size.y / 2.f));
-    gl.pfill.set_transform(mat4x4_t::rotate(center_rotation) * mat4x4_t::scale(100));
-    gl.pfill.set_color(1, .1f, .2f, .5f);
+    gl.prog.fill.use();
+    gl.prog.fill.set_view_transform(mat4x4_t::translate(gl.draw_size.x / 2.f, gl.draw_size.y / 2.f));
+    gl.prog.fill.set_transform(mat4x4_t::rotate(center_rotation) * mat4x4_t::scale(100));
+    gl.prog.fill.set_color(1, .1f, .2f, .5f);
     gl::LineWidth(3.f);
-    gl.pfill.position_vertex(reinterpret_cast<const GLfloat*>(crosshair));
+    gl.prog.fill.position_vertex(reinterpret_cast<const GLfloat*>(crosshair));
     gl::DrawArrays(gl::LINES, 0, 4);
 
     constexpr point_t bone_line[2]{{0, 0}, {1, 0}};
     const mat4x4_noopt_t view_mat = mat4x4_noopt_t::rotate_x(F_TAU_4) * mat4x4_noopt_t::rotate_y(z_rotation)
             * mat4x4_noopt_t::scale(model_scale, model_scale, 0) * mat4x4_noopt_t::translate(center_translation + point_t{gl.draw_size.x / 2.f, gl.draw_size.y / 2.f});
-    gl.pfill.set_view_transform(view_mat);
-    gl.pfill.position_vertex(reinterpret_cast<const GLfloat*>(bone_line));
+    gl.prog.fill.set_view_transform(view_mat);
+    gl.prog.fill.position_vertex(reinterpret_cast<const GLfloat*>(bone_line));
 
     gl::LineWidth(2.f);
-    gl.pfill.set_color(1, .2f, 1, .6f);
-    gl.pfill.set_transform(mat4x4_noopt_t::scale(10, 1, 1) * mat4x4_noopt_t::translate(skele.center));
+    gl.prog.fill.set_color(1, .2f, 1, .6f);
+    gl.prog.fill.set_transform(mat4x4_noopt_t::scale(10, 1, 1) * mat4x4_noopt_t::translate(skele.center));
     gl::DrawArrays(gl::LINES, 0, 2);
 
-    gl.pfill.set_color(1, 1, 1, .8f);
+    gl.prog.fill.set_color(1, 1, 1, .8f);
 
     for (unsigned i = 0; i < skele.size(); ++i)
     {
-        gl.pfill.set_transform(matrix_cache.at(i));
+        gl.prog.fill.set_transform(matrix_cache.at(i));
         gl::DrawArrays(gl::LINES, 0, 2);
     }
 
     if (const auto f = matrix_cache.find(bid); f != matrix_cache.end())
     {
-        gl.pfill.set_transform(mat4x4_t::rotate(F_TAU_8));
+        gl.prog.fill.set_transform(mat4x4_t::rotate(F_TAU_8));
         const auto mat = f->second * view_mat;
         const std::pair<point_t, color_t> array[2] {
             {mat * bone_line[0], {.6f, 1, .1f, .6f}},
@@ -328,9 +328,9 @@ void working_model::draw(const graphics::core& gl) const
         };
         for (const auto& [cs, col] : array)
         {
-            gl.pfill.set_view_transform(mat4x4_t::translate(cs));
-            gl.pfill.set_color(col);
-            fill_rectangle(gl.pfill, {-3, -3, 3, 3});
+            gl.prog.fill.set_view_transform(mat4x4_t::translate(cs));
+            gl.prog.fill.set_color(col);
+            fill_rectangle(gl.prog.fill, {-3, -3, 3, 3});
         }
     }
 
@@ -340,8 +340,8 @@ void working_model::draw(const graphics::core& gl) const
     {
         const models::bone& bone = skele[bid];
         char str[350];
-        gl.ptext.use();
-        gl.ptext.set_color(1,1,1,1);
+        gl.prog.text.use();
+        gl.prog.text.set_color(1,1,1,1);
         draw_text<idle::TextAlign::Near, idle::TextAlign::Far>(gl, {str, static_cast<size_t>(snprintf(str, sizeof(str),
                 "Rot: %.2f pi, Sc: %.2f\ncenter [%.2f, %.2f, %.2f]\nBID[%u] {\nLength: %.2f\nAngle [%.2f, %.2f, %.2f]\nLower [%.2f, %.2f, %.2f]\nUpper [%.2f, %.2f, %.2f]\nStiffness: %.2f\n}",
                 z_rotation / F_PI, model_scale,
@@ -352,7 +352,7 @@ void working_model::draw(const graphics::core& gl) const
                 bone.upper_bound.x, bone.upper_bound.y, bone.upper_bound.z,
                 bone.stiffness))},
             {5, static_cast<float>(gl.draw_size.y)}, 12);
-        gl.pfill.use();
+        gl.prog.fill.use();
     }
 }
 
@@ -462,24 +462,24 @@ void model_room::draw(const graphics::core& gl)
             {-3, -5}, {-3, 6},
             {-4, -5}, {-4, 6}
         };
-        gl.pfill.set_view_transform(mat4x4_t::scale(drag_grid_width * (.4f + drag.animation)) * mat4x4_t::translate(drag.start - point_t{drag_grid_width / 2, drag_grid_width / 2}));
-        gl.pfill.set_identity();
-        gl.pfill.set_color(.9f, .9f, .2f, drag.animation);
-        gl.pfill.position_vertex(reinterpret_cast<const GLfloat*>(dgrid));
+        gl.prog.fill.set_view_transform(mat4x4_t::scale(drag_grid_width * (.4f + drag.animation)) * mat4x4_t::translate(drag.start - point_t{drag_grid_width / 2, drag_grid_width / 2}));
+        gl.prog.fill.set_identity();
+        gl.prog.fill.set_color(.9f, .9f, .2f, drag.animation);
+        gl.prog.fill.position_vertex(reinterpret_cast<const GLfloat*>(dgrid));
         gl::DrawArrays(gl::LINES, 0, sizeof(dgrid) / sizeof(point_t));
 
         const auto diff = floor_grid0(*drag.ptr);
-        gl.pfill.position_vertex(square_coordinates);
-        gl.pfill.set_transform(mat4x4_t::translate(diff));
+        gl.prog.fill.position_vertex(square_coordinates);
+        gl.prog.fill.set_transform(mat4x4_t::translate(diff));
         gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
     }
 
-    gl.pfill.set_view_identity();
+    gl.prog.fill.set_view_identity();
     gl::LineWidth(1.f);
 
-    gl.pfill.set_color(color_t::greyscale(.15f, .75f));
-    gl.ptext.use();
-    gl.ptext.set_color(1, 1, 1);
+    gl.prog.fill.set_color(color_t::greyscale(.15f, .75f));
+    gl.prog.text.use();
+    gl.prog.text.set_color(1, 1, 1);
 
     std::visit([&gl](const auto& f) { f.draw(gl); }, face);
 }

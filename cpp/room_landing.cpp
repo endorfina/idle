@@ -34,9 +34,9 @@ namespace idle
 //             pos.x + elem.bound.x, pos.y,
 //             pos.x, pos.y + elem.bound.y
 //     };
-//     gl.pfill.use();
-//     gl.pfill.set_color(elem.bg, elem.hover ? elem.bg.a : elem.bg.a / 2);
-//     gl.pfill.position_vertex(v);
+//     gl.prog.fill.use();
+//     gl.prog.fill.set_color(elem.bg, elem.hover ? elem.bg.a : elem.bg.a / 2);
+//     gl.prog.fill.position_vertex(v);
 //     gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 3);
 //     gl.ptext.use();
 //     gl.ptext.set_color(elem.fg);
@@ -65,7 +65,7 @@ bool landing_room::step(graphics::core&)
 {
     if (alpha < .998f)
     {
-        alpha += .001f;
+        alpha += .0008f;
     }
     else
     {
@@ -115,16 +115,16 @@ void landing_room::draw(const graphics::core& gl) const
 {
     const auto alpha_sine = std::sin(alpha * F_TAU_4);
     const auto alpha_sine_sqr = alpha_sine * alpha_sine;
-    gl.pfill.use();
-    gl.pfill.set_color(1.f - .64f * alpha_sine, 1.f - .9f * alpha_sine, 1.f - .8f * alpha_sine, alpha_sine);
-    gl.pfill.set_identity();
-    gl.pfill.set_view_identity();
+    gl.prog.fill.use();
+    gl.prog.fill.set_color(1.f - .64f * alpha_sine, 1.f - .9f * alpha_sine, 1.f - .8f * alpha_sine, alpha_sine);
+    gl.prog.fill.set_identity();
+    gl.prog.fill.set_view_identity();
 
-    fill_rectangle(gl.pfill, { float(gl.draw_size.x), float(gl.draw_size.y) });
+    fill_rectangle(gl.prog.fill, { float(gl.draw_size.x), float(gl.draw_size.y) });
 
-    gl.pnormal.use();
-    gl.pnormal.set_color(.021f, 0.f, .089f, alpha_sine);
-    gl.pnormal.set_view_transform(mat4x4_t::translate(gl.draw_size.x / 2, gl.draw_size.y / 2));
+    gl.prog.normal.use();
+    gl.prog.normal.set_color(.021f, 0.f, .089f, alpha_sine);
+    gl.prog.normal.set_view_transform(mat4x4_t::translate(gl.draw_size.x / 2, gl.draw_size.y / 2));
 
     constexpr auto div = F_TAU / static_cast<float>(std::tuple_size<TYPE_REMOVE_CVR(ray_array)>::value);
     constexpr auto array_len = std::tuple_size<TYPE_REMOVE_CVR(ray_array)>::value + 2;
@@ -137,6 +137,7 @@ void landing_room::draw(const graphics::core& gl) const
                 fi += div;
                 return { std::cos(fi) * f, -std::sin(fi) * f };
             });
+
     points[array_len - 1] = points[1];
 
     constexpr std::array<point_t, array_len> tex_map = []()
@@ -147,12 +148,12 @@ void landing_room::draw(const graphics::core& gl) const
         return out;
     }();
 
-    gl.pnormal.set_transform(mat4x4_t::rotate(rotation) * mat4x4_t::scale(gl.draw_size.y * (1.2f - alpha_sine / 2)));
+    gl.prog.normal.set_transform(mat4x4_t::rotate(rotation) * mat4x4_t::scale(gl.draw_size.y * (1.1f - alpha_sine / 2)));
 
     gl::ActiveTexture(gl::TEXTURE0);
     gl::BindTexture(gl::TEXTURE_2D, gl.image_id_fade);
-    gl.pnormal.position_vertex(reinterpret_cast<const float *>(&points[0]));
-    gl.pnormal.texture_vertex(reinterpret_cast<const float *>(tex_map.data()));
+    gl.prog.normal.position_vertex(reinterpret_cast<const float *>(&points[0]));
+    gl.prog.normal.texture_vertex(reinterpret_cast<const float *>(tex_map.data()));
     gl::DrawArrays(gl::TRIANGLE_FAN, 0, array_len);
 
     constexpr std::array<point_t, array_len> tex_map2 = []()
@@ -162,9 +163,9 @@ void landing_room::draw(const graphics::core& gl) const
         return out;
     }();
 
-    gl.pnormal.set_color(.9f, .1f, .2f, alpha_sine);
-    gl.pnormal.set_transform(mat4x4_t::rotate(rotation) * mat4x4_t::scale(gl.draw_size.y * (.3f + .55f * alpha_sine)));
-    gl.pnormal.texture_vertex(reinterpret_cast<const float *>(tex_map2.data()));
+    gl.prog.normal.set_color(.9f, .1f, .2f, alpha_sine);
+    gl.prog.normal.set_transform(mat4x4_t::rotate(rotation) * mat4x4_t::scale(gl.draw_size.y * (.3f + .55f * alpha_sine)));
+    gl.prog.normal.texture_vertex(reinterpret_cast<const float *>(tex_map2.data()));
     gl::DrawArrays(gl::TRIANGLE_FAN, 0, array_len);
 }
 

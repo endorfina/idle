@@ -135,15 +135,15 @@ void controller::draw_frame(const graphics::core& gl)
 {
     if (crashed && crash_haiku)
     {
-        gl.ptext.use();
-        gl.ptext.set_color(1, 1, 1, .9f);
+        gl.prog.text.use();
+        gl.prog.text.set_color(1, 1, 1, .9f);
 
         draw_text<idle::TextAlign::Center, idle::TextAlign::Center>(gl, *crash_haiku,
                 {gl.draw_size.x / 2.f, gl.draw_size.y / 2.f}, 32);
     }
     else
     {
-        gl.pnormal.use();
+        gl.prog.normal.use();
         std::visit([&gl](auto& room){
             if constexpr (has_draw_method<TYPE_REMOVE_CVR(room)>::value)
             {

@@ -189,16 +189,20 @@ public:
 
 void draw_one_onto_the_other(const graphics::core& gl, const graphics::render_buffer_t& src)
 {
-    constexpr float v[] = {
+    constexpr float v[]
+    {
             -1.f, -1.f,  1.f, -1.f,
             -1.f, 1.f, 1.f, 1.f
     };
-    const float t[] = {
+
+    const float t[]
+    {
         0, 0,
         src.texture_w, 0,
         0, src.texture_h,
         src.texture_w, src.texture_h
     };
+
     gl::UseProgram(gl.render_program);
     gl::ActiveTexture(gl::TEXTURE0);
     gl::BindTexture(gl::TEXTURE_2D, src.texture);
@@ -209,22 +213,28 @@ void draw_one_onto_the_other(const graphics::core& gl, const graphics::render_bu
 
 void draw_pause_menu(const graphics::core& gl, const float pause_menu_alpha, const graphics::render_buffer_t& rb, const graphics::render_buffer_t& brb)
 {
-    gl.pnormal.use();
-    gl.pnormal.set_identity();
-    gl.pnormal.set_view_identity();
-    const float v[] = {
+    gl.prog.normal.use();
+    gl.prog.normal.set_identity();
+    gl.prog.normal.set_view_identity();
+
+    const float v[]
+    {
         0, 0,
         static_cast<float>(gl.draw_size.x), 0,
         0, static_cast<float>(gl.draw_size.y),
         static_cast<float>(gl.draw_size.x), static_cast<float>(gl.draw_size.y)
     };
-    const float t[] = {
+
+    const float t[]
+    {
         0, rb.texture_h,
         rb.texture_w, rb.texture_h,
         0, 0,
         rb.texture_w, 0
     };
-    const float tb[] = {
+
+    const float tb[]
+    {
         0, brb.texture_h,
         brb.texture_w, brb.texture_h,
         0, 0,
@@ -234,23 +244,23 @@ void draw_pause_menu(const graphics::core& gl, const float pause_menu_alpha, con
     gl::ActiveTexture(gl::TEXTURE0);
     if (pause_menu_alpha < .966f)
     {
-        gl.pnormal.set_color({1, 1, 1, 1 - pause_menu_alpha});
+        gl.prog.normal.set_color({1, 1, 1, 1 - pause_menu_alpha});
         gl::BindTexture(gl::TEXTURE_2D, rb.texture);
-        gl.pnormal.position_vertex(v);
-        gl.pnormal.texture_vertex(t);
+        gl.prog.normal.position_vertex(v);
+        gl.prog.normal.texture_vertex(t);
         gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
     }
 
-    gl.pnormal.set_color({1, 1 - pause_menu_alpha * .2f, 1 - pause_menu_alpha * .1f, pause_menu_alpha * .668f});
+    gl.prog.normal.set_color({1, 1 - pause_menu_alpha * .2f, 1 - pause_menu_alpha * .1f, pause_menu_alpha * .668f});
     gl::BindTexture(gl::TEXTURE_2D, brb.texture);
-    gl.pnormal.position_vertex(v);
-    gl.pnormal.texture_vertex(tb);
+    gl.prog.normal.position_vertex(v);
+    gl.prog.normal.texture_vertex(tb);
     gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
 
     const float yshift = (1 - pause_menu_alpha) * 20;
     const auto rect = idle::rect_t(gl.draw_size.x / 2 - 220.f, gl.draw_size.y / 2 - 60.f, gl.draw_size.x / 2 + 220.f, gl.draw_size.y / 2 + 60.f);
-    gl.ptext.use();
-    gl.ptext.set_color(1, .133f, .196f, pause_menu_alpha);
+    gl.prog.text.use();
+    gl.prog.text.set_color(1, .133f, .196f, pause_menu_alpha);
 
     idle::draw_text<idle::TextAlign::Center>(gl, "paused",
                         idle::point_t(gl.draw_size.x / 2.f, rect.top + 10.f + yshift), 55);

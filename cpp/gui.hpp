@@ -114,9 +114,9 @@ struct rectangle
 
     void draw_bg(const graphics::core& gl) const
     {
-        gl.pfill.use();
-        gl.pfill.set_transform(mat4x4_t::scale(W, H) * mat4x4_t::translate(pos + point_t{W, H} / 2.f));
-        fill_rectangle(gl.pfill, {-.5f,-.5f,.5f,.5f});
+        gl.prog.fill.use();
+        gl.prog.fill.set_transform(mat4x4_t::scale(W, H) * mat4x4_t::translate(pos + point_t{W, H} / 2.f));
+        fill_rectangle(gl.prog.fill, {-.5f,-.5f,.5f,.5f});
     }
 };
 
@@ -145,9 +145,9 @@ struct ellipse
 
     void draw_bg(const graphics::core& gl) const
     {
-        gl.pfill.use();
-        gl.pfill.set_transform(mat4x4_t::scale(W, H) * mat4x4_t::translate(pos));
-        fill_circle(gl.pfill, {0, 0}, .5f, 16);
+        gl.prog.fill.use();
+        gl.prog.fill.set_transform(mat4x4_t::scale(W, H) * mat4x4_t::translate(pos));
+        fill_circle(gl.prog.fill, {0, 0}, .5f, 16);
     }
 };
 
