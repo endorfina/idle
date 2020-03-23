@@ -112,30 +112,24 @@ bool application::execute_commands(const bool is_nested)
 
     if (window.resize_request)
     {
-        resize_internal();
+        const auto now = std::chrono::system_clock::now();
+        if (now > last_resize + std::chrono::seconds(1))
+        {
+            const auto& rq = *window.resize_request;
+            opengl.resize(rq.w, rq.h, rq.q, rq.r);
+
+            window.resize_request.reset();
+
+            room_ctrl.resize({
+                static_cast<float>(opengl.draw_size.x),
+                static_cast<float>(opengl.draw_size.y)
+            });
+
+            last_resize = now;
+        }
     }
 
     return !(perform_load && !load()) && !opengl.shutdown_was_requested;
-}
-
-
-void application::resize_internal()
-{
-    const auto now = std::chrono::system_clock::now();
-    if (now > last_resize + std::chrono::seconds(1))
-    {
-        const auto& rq = *window.resize_request;
-        opengl.resize(rq.w, rq.h, rq.q, rq.r);
-
-        window.resize_request.reset();
-
-        room_ctrl.resize({
-            static_cast<float>(opengl.draw_size.x),
-            static_cast<float>(opengl.draw_size.y)
-        });
-
-        last_resize = now;
-    }
 }
 
 namespace
@@ -151,65 +145,25 @@ GLint setup_buffer_frame(const graphics::render_buffer_t& rb, const math::point2
     return default_frame_buffer;
 }
 
-class render_frame
+class render_guard
 {
     GLint default_frame_buffer = 0;
     ::platform::window& window;
 
 public:
-    render_frame(::platform::window& win)
+    render_guard(::platform::window& win)
         : default_frame_buffer(setup_buffer_frame(*opengl.render_buffer, opengl.internal_size, ::platform::background))
         , window(win)
     {}
 
-    ~render_frame()
+    ~render_guard()
     {
         gl::BindFramebuffer(gl::FRAMEBUFFER, default_frame_buffer);
-        gl::UseProgram(opengl.render_program);
         gl::Viewport(0, 0, opengl.screen_size.x, opengl.screen_size.y);
-
-        constexpr float v[] = {
-                -1.f, -1.f,  1.f, -1.f,
-                -1.f, 1.f, 1.f, 1.f
-        };
-        const float t[] = {
-                0, 0,   opengl.render_buffer->texture_w, 0,
-                0, opengl.render_buffer->texture_h, opengl.render_buffer->texture_w, opengl.render_buffer->texture_h
-        };
-
-        gl::ActiveTexture(gl::TEXTURE0);
-        gl::BindTexture(gl::TEXTURE_2D, opengl.render_buffer->texture);
-        gl::VertexAttribPointer(opengl.render_position_handle, 2, gl::FLOAT, gl::FALSE_, 0, v);
-        gl::VertexAttribPointer(opengl.render_texture_position_handle, 2, gl::FLOAT, gl::FALSE_, 0, t); //full_rect_texture
-        gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
-
+        opengl.prog.render_final.draw_buffer(*opengl.render_buffer);
         window.buffer_swap();
     }
 };
-
-void draw_one_onto_the_other(const graphics::core& gl, const graphics::render_buffer_t& src)
-{
-    constexpr float v[]
-    {
-            -1.f, -1.f,  1.f, -1.f,
-            -1.f, 1.f, 1.f, 1.f
-    };
-
-    const float t[]
-    {
-        0, 0,
-        src.texture_w, 0,
-        0, src.texture_h,
-        src.texture_w, src.texture_h
-    };
-
-    gl::UseProgram(gl.render_program);
-    gl::ActiveTexture(gl::TEXTURE0);
-    gl::BindTexture(gl::TEXTURE_2D, src.texture);
-    gl::VertexAttribPointer(gl.render_position_handle, 2, gl::FLOAT, gl::FALSE_, 0, v);
-    gl::VertexAttribPointer(gl.render_texture_position_handle, 2, gl::FLOAT, gl::FALSE_, 0, t); //full_rect_texture
-    gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
-}
 
 void draw_pause_menu(const graphics::core& gl, const float pause_menu_alpha, const graphics::render_buffer_t& rb, const graphics::render_buffer_t& brb)
 {
@@ -300,15 +254,16 @@ void application::draw()
             const auto def = setup_buffer_frame(*pause->buffer, opengl.internal_size, platform::background);
             room_ctrl.draw_frame(opengl);
             setup_buffer_frame(*pause->buffer_blur, opengl.internal_size / 4, platform::background);
-            draw_one_onto_the_other(opengl, *pause->buffer);
+            opengl.prog.render_final.draw_buffer(*pause->buffer);
             gl::BindFramebuffer(gl::FRAMEBUFFER, def);
         }
-        render_frame _frame_buffer_{window};
+
+        render_guard _{window};
         draw_pause_menu(opengl, pause->animation, *pause->buffer, *pause->buffer_blur);
     }
     else
     {
-        render_frame _frame_buffer_{window};
+        render_guard _{window};
         room_ctrl.draw_frame(opengl);
     }
 }
@@ -423,7 +378,7 @@ bool application::load()
             if (update_display && std::chrono::steady_clock::now() - lt > minimum_elapsed)
             {
                 lt += std::chrono::duration_cast<std::chrono::steady_clock::time_point::duration>(minimum_elapsed);
-                render_frame _frame_buffer_{window};
+                render_guard _{window};
                 la.draw(opengl);
             }
         }

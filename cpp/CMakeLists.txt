@@ -43,14 +43,14 @@ set(${PROJECT_NAME}-files
         fonts.cpp
         gl.cpp
         spinlock.cpp
-        main_wrapper.cpp
         room_controller.cpp
         room_landing.cpp
         room_model.cpp
         scoped_thread.cpp
         additional_textures.cpp
         lodge.cpp
-        application.cpp)
+        application.cpp
+        main_wrapper.cpp)
 
 function(jumbo library filelist)
     set(UNITY_FILE "${CMAKE_BINARY_DIR}/${library}.jumbo.cpp")

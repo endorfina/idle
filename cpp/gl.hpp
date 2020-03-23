@@ -68,12 +68,26 @@ struct render_buffer_t
 struct render_program_t
 {
     GLuint texture_position_handle = 0, program = 0, position_handle = 0;
+
+    void draw_buffer(const render_buffer_t& source) const;
+
+    void use() const;
+
+    void prepare();
+};
+
+struct blur_render_program_t : render_program_t
+{
+    // void draw_buffer(const render_buffer_t& source) const;
 };
 
 struct core
 {
-    struct
+    struct program_container_t
     {
+        render_program_t render_final;
+        blur_render_program_t render_blur;
+
         textured_program_t normal;
         double_vertex_program_t shift;
         program_t fill;
@@ -83,7 +97,6 @@ struct core
     } prog;
 
     GLuint image_id_fade = 0, image_id_noise = 0;
-    GLuint render_texture_position_handle = 0, render_program = 0, render_position_handle = 0;
     GLint render_quality = gl::LINEAR;
     std::optional<font_t> font;
     std::optional<render_buffer_t> render_buffer;

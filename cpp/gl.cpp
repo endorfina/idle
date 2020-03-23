@@ -157,6 +157,19 @@ public:
     }
 };
 
+template<typename Call>
+void apply_to_all(core::program_container_t& con, const Call& call)
+{
+    call(con.render_final);
+    call(con.render_blur);
+
+    call(con.normal);
+    call(con.shift);
+    call(con.fill);
+    call(con.text);
+    call(con.fullbg);
+}
+
 }  // namespace
 
 bool core::setup_graphics()
@@ -169,7 +182,9 @@ bool core::setup_graphics()
     {
         shader_compiler sc{ shaders::get_data(), shaders::source_size_uncompressed };
 
-        render_program = sc.compile(shaders::source_pos_renderv, shaders::source_pos_renderf);
+        prog.render_final.program = sc.compile(shaders::source_pos_renderv, shaders::source_pos_renderf);
+        prog.render_blur.program = sc.compile(shaders::source_pos_renderv, shaders::source_pos_renderf);
+
         prog.normal.program_id = sc.compile(shaders::source_pos_normv, shaders::source_pos_normf);
         prog.shift.program_id = sc.compile(shaders::source_pos_doublev, shaders::source_pos_normf);
         prog.fill.program_id = sc.compile(shaders::source_pos_solidv, shaders::source_pos_solidf);
@@ -184,30 +199,8 @@ bool core::setup_graphics()
         }
     }
 
-    render_position_handle = static_cast<GLuint>(gl::GetAttribLocation(render_program, "vPos"));
-    render_texture_position_handle = static_cast<GLuint>(gl::GetAttribLocation(render_program, "aUV"));
+    apply_to_all(prog, [] (auto& program) { program.prepare(); });
 
-    prog.normal.collect_variables();
-    prog.fill.collect_variables();
-    prog.text.collect_variables();
-    prog.shift.collect_variables();
-    prog.fullbg.collect_variables();
-
-    prog.fullbg.use();
-    prog.fullbg.set_offset(0);
-
-    prog.shift.use();
-    prog.shift.set_interpolation(0);
-
-    gl::UseProgram(render_program);
-    gl::EnableVertexAttribArray(render_position_handle);
-    gl::EnableVertexAttribArray(render_texture_position_handle);
-
-    prog.normal.prepare();
-    prog.fill.prepare();
-    prog.text.prepare();
-    prog.shift.prepare();
-    prog.fullbg.prepare();
     prog.normal.use();
 
 #ifdef DEBUG
@@ -312,6 +305,11 @@ void program_t::set_view_identity(void) const
     gl::UniformMatrix4fv(view_handle, 1, gl::FALSE_, static_cast<const GLfloat*>(idle::mat4x4_t::identity()));
 }
 
+void render_program_t::use() const
+{
+    gl::UseProgram(program);
+}
+
 void program_t::use() const
 {
     gl::UseProgram(program_id);
@@ -368,47 +366,25 @@ void fullbg_program_t::set_resolution(const GLfloat w, const GLfloat h) const
 }
 
 
-void program_t::collect_variables()
+void render_program_t::prepare()
+{
+    position_handle = static_cast<GLuint>(gl::GetAttribLocation(program, "vPos"));
+    texture_position_handle = static_cast<GLuint>(gl::GetAttribLocation(program, "aUV"));
+
+    use();
+
+    gl::EnableVertexAttribArray(position_handle);
+    gl::EnableVertexAttribArray(texture_position_handle);
+    report_opengl_errors("render_program_t::prepare()");
+}
+
+void program_t::prepare()
 {
     position_handle = static_cast<GLuint>(gl::GetAttribLocation(program_id, "vPos"));
     model_handle = gl::GetUniformLocation(program_id, "uMM");
     view_handle = gl::GetUniformLocation(program_id, "uVM");
     color_handle = gl::GetUniformLocation(program_id, "uCol");
-    report_opengl_errors("program_t::collect_variables()");
-}
 
-void textured_program_t::collect_variables()
-{
-    program_t::collect_variables();
-    texture_position_handle = static_cast<GLuint>(gl::GetAttribLocation(program_id,"aUV"));
-}
-
-void text_program_t::collect_variables()
-{
-    textured_program_t::collect_variables();
-    font_offset_handle = gl::GetUniformLocation(program_id, "uOf");
-    report_opengl_errors("text_program_t::collect_variables()");
-}
-
-void double_vertex_program_t::collect_variables()
-{
-    textured_program_t::collect_variables();
-    destination_handle = static_cast<GLuint>(gl::GetAttribLocation(program_id,"vDest"));
-    interpolation_handle = gl::GetUniformLocation(program_id, "uIv");
-    report_opengl_errors("double_vertex_program_t::collect_variables()");
-}
-
-void fullbg_program_t::collect_variables()
-{
-    program_t::collect_variables();
-    offset_handle = gl::GetUniformLocation(program_id, "uI");
-    resolution_handle = gl::GetUniformLocation(program_id, "uR");
-    report_opengl_errors("fullbg_program_t::collect_variables()");
-}
-
-
-void program_t::prepare() const
-{
     use();
     set_identity();
     set_view_identity();
@@ -416,21 +392,67 @@ void program_t::prepare() const
     report_opengl_errors("program_t::prepare()");
 }
 
-void textured_program_t::prepare() const
+void textured_program_t::prepare()
 {
     program_t::prepare();
+    texture_position_handle = static_cast<GLuint>(gl::GetAttribLocation(program_id,"aUV"));
+
     gl::EnableVertexAttribArray(texture_position_handle);
     report_opengl_errors("textured_program_t::prepare()");
 }
 
-void double_vertex_program_t::prepare() const
+void text_program_t::prepare()
 {
     textured_program_t::prepare();
-    LOGD("Destination handle %u", destination_handle);
+    font_offset_handle = gl::GetUniformLocation(program_id, "uOf");
+    report_opengl_errors("text_program_t::prepare()");
+}
+
+void fullbg_program_t::prepare()
+{
+    program_t::prepare();
+    offset_handle = gl::GetUniformLocation(program_id, "uI");
+    resolution_handle = gl::GetUniformLocation(program_id, "uR");
+
+    set_offset(0);
+    report_opengl_errors("fullbg_program_t::prepare()");
+}
+
+void double_vertex_program_t::prepare()
+{
+    textured_program_t::prepare();
+    destination_handle = static_cast<GLuint>(gl::GetAttribLocation(program_id,"vDest"));
+    interpolation_handle = gl::GetUniformLocation(program_id, "uIv");
+
+    set_interpolation(0);
     gl::EnableVertexAttribArray(destination_handle);
     report_opengl_errors("double_vertex_program_t::prepare()");
 }
 
+void render_program_t::draw_buffer(const render_buffer_t& src) const
+{
+    constexpr float v[]
+    {
+            -1.f, -1.f,  1.f, -1.f,
+            -1.f, 1.f, 1.f, 1.f
+    };
+
+    const float t[]
+    {
+        0, 0,
+        src.texture_w, 0,
+        0, src.texture_h,
+        src.texture_w, src.texture_h
+    };
+
+    use();
+
+    gl::ActiveTexture(gl::TEXTURE0);
+    gl::BindTexture(gl::TEXTURE_2D, src.texture);
+    gl::VertexAttribPointer(position_handle, 2, gl::FLOAT, gl::FALSE_, 0, v);
+    gl::VertexAttribPointer(texture_position_handle, 2, gl::FLOAT, gl::FALSE_, 0, t);
+    gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
+}
 
 
 

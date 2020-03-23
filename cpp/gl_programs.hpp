@@ -92,9 +92,7 @@ struct program_t
 
     void use() const;
 
-    void collect_variables();
-
-    void prepare() const;
+    void prepare();
 };
 
 struct textured_program_t : program_t
@@ -103,9 +101,7 @@ struct textured_program_t : program_t
 
     void texture_vertex(const GLfloat *f) const;
 
-    void collect_variables();
-
-    void prepare() const;
+    void prepare();
 };
 
 struct double_vertex_program_t : textured_program_t
@@ -117,9 +113,7 @@ struct double_vertex_program_t : textured_program_t
 
     void set_interpolation(const GLfloat x) const;
 
-    void collect_variables();
-
-    void prepare() const;
+    void prepare();
 };
 
 struct text_program_t : textured_program_t
@@ -128,7 +122,7 @@ struct text_program_t : textured_program_t
 
     void set_text_offset(const GLfloat x, const GLfloat y) const;
 
-    void collect_variables();
+    void prepare();
 };
 
 struct fullbg_program_t : program_t
@@ -139,7 +133,7 @@ struct fullbg_program_t : program_t
 
     void set_resolution(const GLfloat w, const GLfloat h) const;
 
-    void collect_variables();
+    void prepare();
 };
 
 }

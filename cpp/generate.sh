@@ -6,8 +6,8 @@
 SOURCE=$(sed -E -e 's~//.*$~~' \
     -e 's~^[[:space:]]+~~' \
     -e 's~[[:space:]]+$~~' \
-    -e 's~([^_ a-zA-Z0-9])[[:space:]]+~\1~g' \
-    -e 's~[[:space:]]+([^_ a-zA-Z0-9])~\1~g' \
+    -e 's~[[:space:]]+([^_ [:alnum:]])~\1~g' \
+    -e 's~([^_ [:alnum:]])[[:space:]]+~\1~g' \
     -e '/^$/d')
 
 indent()

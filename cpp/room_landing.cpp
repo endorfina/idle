@@ -55,7 +55,7 @@ landing_room::landing_room(graphics::core&)
 
     for (unsigned i = 0; i < ray_array.size(); ++i)
     {
-        ray_array[i] += !!(i & 1) ? -.1f : .1f;
+        ray_array[i] += i % 2 == 0 ? -.1f : .1f;
     }
 
     ray_array_mirror.fill(1.f);

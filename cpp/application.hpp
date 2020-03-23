@@ -38,8 +38,6 @@ public:
     ::platform::window window;
 
 private:
-    void resize_internal();
-
     bool execute_commands(bool nested);
 
 public:
