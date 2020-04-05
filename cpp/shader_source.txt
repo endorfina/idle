@@ -21,6 +21,40 @@ void main() {
   gl_FragColor = texture2D(uT, vUV);
 }
 
+@@ simpleblurf
+
+#ifdef GL_ES
+precision mediump float;
+#endif
+uniform sampler2D uT;
+varying vec2 vUV;
+uniform vec2 uDir;
+uniform float uRad, uRes;
+
+void main() {
+  vec4 sum = vec4(0.0);
+  vec2 tc = vUV;
+
+  float blur = uRad * uRes;
+
+  float hstep = uDir.x * blur;
+  float vstep = uDir.y * blur;
+
+  sum += texture2D(uT, vec2(tc.x - 4.0 * hstep, tc.y - 4.0 * vstep)) * 0.0162162162;
+  sum += texture2D(uT, vec2(tc.x - 3.0 * hstep, tc.y - 3.0 * vstep)) * 0.0540540541;
+  sum += texture2D(uT, vec2(tc.x - 2.0 * hstep, tc.y - 2.0 * vstep)) * 0.1216216216;
+  sum += texture2D(uT, vec2(tc.x - hstep, tc.y - vstep)) * 0.1945945946;
+
+  sum += texture2D(uT, vec2(tc.x, tc.y)) * 0.2270270270;
+
+  sum += texture2D(uT, vec2(tc.x + hstep, tc.y + vstep)) * 0.1945945946;
+  sum += texture2D(uT, vec2(tc.x + 2.0 * hstep, tc.y + 2.0 * vstep)) * 0.1216216216;
+  sum += texture2D(uT, vec2(tc.x + 3.0 * hstep, tc.y + 3.0 * vstep)) * 0.0540540541;
+  sum += texture2D(uT, vec2(tc.x + 4.0 * hstep, tc.y + 4.0 * vstep)) * 0.0162162162;
+
+  gl_FragColor = sum;
+}
+
 @@ normv
 
 attribute vec2 vPos;

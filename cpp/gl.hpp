@@ -60,7 +60,7 @@ struct render_buffer_t
     GLuint buffer_frame = 0, buffer_depth = 0, texture = 0;
     GLfloat texture_w, texture_h;
 
-    render_buffer_t(const core&, int divider);
+    render_buffer_t(math::point2<int> size, GLint quality);
 
     ~render_buffer_t();
 };
@@ -78,7 +78,15 @@ struct render_program_t
 
 struct blur_render_program_t : render_program_t
 {
-    // void draw_buffer(const render_buffer_t& source) const;
+    GLint direction_handle = 0, resolution_handle = 0, radius_handle = 0;
+
+    void prepare();
+
+    void set_radius(const GLfloat x) const;
+
+    void set_resolution(const GLfloat x) const;
+
+    void set_direction(const GLfloat x, const GLfloat y) const;
 };
 
 struct core
@@ -112,7 +120,7 @@ struct core
 
     void resize(int window_width, int window_height, int quality, int resolution);
 
-    render_buffer_t new_render_buffer(int divider) const;
+    void new_render_buffer(std::optional<render_buffer_t>& opt, int divider = 1) const;
 
     void clean();
 

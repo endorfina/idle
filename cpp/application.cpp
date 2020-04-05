@@ -17,6 +17,7 @@
     along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <cstdio>
 #include <future>
 #include "platform/display.hpp"
 #include "gl.hpp"
@@ -132,8 +133,10 @@ bool application::execute_commands(const bool is_nested)
     return !(perform_load && !load()) && !opengl.shutdown_was_requested;
 }
 
+
 namespace
 {
+
 GLint setup_buffer_frame(const graphics::render_buffer_t& rb, const math::point2<int> internal_size, const idle::color_t& bg)
 {
     GLint default_frame_buffer = 0;
@@ -249,12 +252,19 @@ void application::draw()
     {
         if (!pause->buffer || !pause->buffer_blur)
         {
-            pause->buffer.emplace(opengl, 1);
-            pause->buffer_blur.emplace(opengl, 4);
+            opengl.new_render_buffer(pause->buffer);
+            opengl.new_render_buffer(pause->buffer_blur, 4);
+
+            opengl.prog.render_blur.use();
+            opengl.prog.render_blur.set_radius(3.f);
+            opengl.prog.render_blur.set_direction(0.f, 1.f);
+
             const auto def = setup_buffer_frame(*pause->buffer, opengl.internal_size, platform::background);
+
             room_ctrl.draw_frame(opengl);
-            setup_buffer_frame(*pause->buffer_blur, opengl.internal_size / 4, platform::background);
-            opengl.prog.render_final.draw_buffer(*pause->buffer);
+
+            setup_buffer_frame(*pause->buffer_blur, opengl.internal_size / 2, platform::background);
+            opengl.prog.render_blur.draw_buffer(*pause->buffer);
             gl::BindFramebuffer(gl::FRAMEBUFFER, def);
         }
 
@@ -268,6 +278,8 @@ void application::draw()
     }
 }
 
+#define PRINT_SIZE(obj) LOGD("# sizeof " #obj " = %zu", sizeof(obj))
+
 int application::real_main()
 {
 #ifdef __clang__
@@ -276,19 +288,19 @@ int application::real_main()
     LOGD("### GCC %d.%d", __GNUC__, __GNUC_MINOR__);
 #endif
 
-    LOGD("platform::window size: %zu", sizeof(platform::window));
-    LOGD("window.commands queue size: %zu", window.commands.raw_queue.size());
-    LOGD("idle::controller size: %zu", sizeof(idle::controller));
-    LOGD("graphics::core size: %zu", sizeof(graphics::core));
-    LOGD("graphics::program_t size: %zu", sizeof(graphics::program_t));
-    LOGD("graphics::textured_program_t size: %zu", sizeof(graphics::textured_program_t));
-    LOGD("idle::mat4x4_t size: %zu", sizeof(idle::mat4x4_t));
-    LOGD("font_t size: %zu", sizeof(font_t));
-    LOGD("std::optional<font_t> size: %zu", sizeof(std::optional<font_t>));
-    LOGD("graphics::render_buffer_t size: %zu", sizeof(graphics::render_buffer_t));
-    LOGD("std::optional<graphics::render_buffer_t> size: %zu", sizeof(std::optional<graphics::render_buffer_t>));
-    LOGD("platform::pointer size: %zu", sizeof(platform::pointer));
-    LOGD("std::atomic<platform::pointer> size: %zu", sizeof(std::atomic<platform::pointer>));
+    PRINT_SIZE(platform::window);
+    PRINT_SIZE(window.commands);
+    PRINT_SIZE(idle::controller);
+    PRINT_SIZE(graphics::core);
+    PRINT_SIZE(graphics::program_t);
+    PRINT_SIZE(graphics::textured_program_t);
+    PRINT_SIZE(idle::mat4x4_t);
+    PRINT_SIZE(font_t);
+    PRINT_SIZE(std::optional<font_t>);
+    PRINT_SIZE(graphics::render_buffer_t);
+    PRINT_SIZE(std::optional<graphics::render_buffer_t>);
+    PRINT_SIZE(platform::pointer);
+    PRINT_SIZE(std::atomic<platform::pointer>);
 
     auto app_time = std::chrono::steady_clock::now();
 

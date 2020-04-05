@@ -170,6 +170,34 @@ void apply_to_all(core::program_container_t& con, const Call& call)
     call(con.fullbg);
 }
 
+bool compile_shaders(core::program_container_t& prog)
+{
+    shader_compiler sc{ shaders::get_data(), shaders::source_size_uncompressed };
+
+    prog.render_final.program = sc.compile(shaders::source_pos_renderv, shaders::source_pos_renderf);
+    prog.render_blur.program = sc.compile(shaders::source_pos_renderv, shaders::source_pos_simpleblurf);
+
+    prog.normal.program_id = sc.compile(shaders::source_pos_normv, shaders::source_pos_normf);
+    prog.shift.program_id = sc.compile(shaders::source_pos_doublev, shaders::source_pos_normf);
+    prog.fill.program_id = sc.compile(shaders::source_pos_solidv, shaders::source_pos_solidf);
+    prog.text.program_id = sc.compile(shaders::source_pos_textv, shaders::source_pos_textf);
+    prog.fullbg.program_id = sc.compile(shaders::source_pos_solidv, shaders::source_pos_fullbgf);
+
+
+    if (sc.has_failed())
+    {
+        LOGE("Shader compilation failed.\n" "How unfortunate.");
+        return false;
+    }
+    return true;
+}
+
+template<typename...Progs>
+bool programs_are_functional(const Progs& ... progs)
+{
+    return (true && ... && !!progs.program_id);
+}
+
 }  // namespace
 
 bool core::setup_graphics()
@@ -179,29 +207,8 @@ bool core::setup_graphics()
     gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
     gl::Enable(gl::BLEND);
 
-    {
-        shader_compiler sc{ shaders::get_data(), shaders::source_size_uncompressed };
-
-        prog.render_final.program = sc.compile(shaders::source_pos_renderv, shaders::source_pos_renderf);
-        prog.render_blur.program = sc.compile(shaders::source_pos_renderv, shaders::source_pos_renderf);
-
-        prog.normal.program_id = sc.compile(shaders::source_pos_normv, shaders::source_pos_normf);
-        prog.shift.program_id = sc.compile(shaders::source_pos_doublev, shaders::source_pos_normf);
-        prog.fill.program_id = sc.compile(shaders::source_pos_solidv, shaders::source_pos_solidf);
-        prog.text.program_id = sc.compile(shaders::source_pos_textv, shaders::source_pos_textf);
-        prog.fullbg.program_id = sc.compile(shaders::source_pos_solidv, shaders::source_pos_fullbgf);
-
-
-        if (sc.has_failed())
-        {
-            LOGE("Shader compilation failed.\n" "How unfortunate.");
-            return false;
-        }
-    }
-
+    compile_shaders(prog);
     apply_to_all(prog, [] (auto& program) { program.prepare(); });
-
-    prog.normal.use();
 
 #ifdef DEBUG
     // Check openGL on the system
@@ -211,17 +218,12 @@ bool core::setup_graphics()
         { gl::VERSION, "Version" }
         //, gl::EXTENSIONS
     };
+
     for (const auto [name, label] : opengl_info) {
         LOGI("OpenGL %s: %s", label, gl::GetString(name));
     }
 #endif
     return true;
-}
-
-template<typename...Progs>
-static bool programs_are_functional(const Progs& ... progs)
-{
-    return (true && ... && !!progs.program_id);
 }
 
 void core::resize(const int window_width, const int window_height, const int quality, int resolution)
@@ -271,7 +273,12 @@ void core::resize(const int window_width, const int window_height, const int qua
 
     prog.fullbg.use();
     prog.fullbg.set_resolution(static_cast<float>(window_width), static_cast<float>(window_height));
-    render_buffer.emplace(*this, 1);
+
+    render_buffer.emplace(internal_size, render_quality);
+
+    prog.render_blur.use();
+    prog.render_blur.set_radius(1.f);
+    prog.render_blur.set_resolution(render_buffer->texture_h / static_cast<float>(draw_size.y));
 }
 
 
@@ -365,6 +372,21 @@ void fullbg_program_t::set_resolution(const GLfloat w, const GLfloat h) const
     gl::Uniform2f(resolution_handle, w, h);
 }
 
+void blur_render_program_t::set_direction(const GLfloat x, const GLfloat y) const
+{
+    gl::Uniform2f(direction_handle, x, y);
+}
+
+void blur_render_program_t::set_radius(const GLfloat rad) const
+{
+    gl::Uniform1f(radius_handle, rad);
+}
+
+void blur_render_program_t::set_resolution(const GLfloat res) const
+{
+    gl::Uniform1f(resolution_handle, res);
+}
+
 
 void render_program_t::prepare()
 {
@@ -429,12 +451,24 @@ void double_vertex_program_t::prepare()
     report_opengl_errors("double_vertex_program_t::prepare()");
 }
 
+void blur_render_program_t::prepare()
+{
+    render_program_t::prepare();
+    direction_handle = gl::GetUniformLocation(program, "uDir");
+    resolution_handle = gl::GetUniformLocation(program, "uRes");
+    radius_handle = gl::GetUniformLocation(program, "uRad");
+
+    set_direction(1, 0);
+    set_radius(1.f);
+    set_resolution(1000.f);
+}
+
 void render_program_t::draw_buffer(const render_buffer_t& src) const
 {
     constexpr float v[]
     {
-            -1.f, -1.f,  1.f, -1.f,
-            -1.f, 1.f, 1.f, 1.f
+        -1.f, -1.f,  1.f, -1.f,
+        -1.f, 1.f, 1.f, 1.f
     };
 
     const float t[]
@@ -471,36 +505,41 @@ void core::copy_projection_matrix(const idle::mat4x4_t& projectionMatrix) const
     set_projection_matrix(prog.fullbg, projectionMatrix);
 }
 
+void core::new_render_buffer(std::optional<render_buffer_t>& opt, const int div) const
+{
+    opt.emplace(internal_size / div, render_quality);
+}
+
 render_buffer_t::~render_buffer_t()
 {
-    LOGD("Destroying render buffer [fr:%i/tex:%i/dep:%i]", buffer_frame, texture, buffer_depth);
+    LOGD("Destroying fr%i/t%i/d%i", buffer_frame, texture, buffer_depth);
     gl::DeleteFramebuffers(1, &buffer_frame);
     gl::DeleteTextures(1, &texture);
     gl::DeleteRenderbuffers(1, &buffer_depth);
 }
 
-render_buffer_t::render_buffer_t(const core& context, const int divider)
+render_buffer_t::render_buffer_t(const math::point2<int> tex_size, const GLint quality)
 {
-    const auto tex_size = context.internal_size / divider;
-
     gl::GenFramebuffers(1, &buffer_frame);
     gl::GenTextures(1, &texture);
     gl::GenRenderbuffers(1, &buffer_depth);
 
     report_opengl_errors("render_buffer_t::render_buffer_t");
 
-    LOGD("Creating render buffer [fr:%i/tex:%i/dep:%i]", buffer_frame, texture, buffer_depth);
-
     gl::BindTexture(gl::TEXTURE_2D, texture);
-    gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, context.render_quality);
-    gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, context.render_quality);
+    gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, quality);
+    gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, quality);
     gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE);
     gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE);
-    int u = 256, v = 256;
+
+    int u = 64, v = 64;
     while (u < tex_size.x) u *= 2;
     while (v < tex_size.y) v *= 2;
     texture_w = static_cast<GLfloat>(tex_size.x) / static_cast<GLfloat>(u);
     texture_h = static_cast<GLfloat>(tex_size.y) / static_cast<GLfloat>(v);
+
+    LOGD("Creating fr%i/t%i/d%i, input{%d, %d}, tex{%.3f, %.3f}, real{%d, %d}",
+            buffer_frame, texture, buffer_depth, tex_size.x, tex_size.y, texture_w, texture_h, u, v);
 
     gl::TexImage2D(gl::TEXTURE_2D, 0, gl::RGBA, u, v, 0, gl::RGBA, gl::UNSIGNED_BYTE, nullptr);
     gl::BindRenderbuffer(gl::RENDERBUFFER, buffer_depth);
@@ -549,7 +588,8 @@ unique_texture::~unique_texture()
 
 bool assert_opengl_errors()
 {
-    if (auto error = gl::GetError(); error != gl::NO_ERROR_) {
+    if (auto error = gl::GetError(); error != gl::NO_ERROR_)
+    {
         do {
             LOGE("GL Error \t0x%04x", error);
             error = gl::GetError();

@@ -8,7 +8,13 @@ SOURCE=$(sed -E -e 's~//.*$~~' \
     -e 's~[[:space:]]+$~~' \
     -e 's~[[:space:]]+([^_ [:alnum:]])~\1~g' \
     -e 's~([^_ [:alnum:]])[[:space:]]+~\1~g' \
-    -e '/^$/d')
+    -e '/^$/d' \
+    | tr '\n' '$' \
+    | sed -E 's~([^[:alnum:]])\$([^#@])~\1\2~g' \
+    | tr '$' '\n')
+
+NAMESPACE=namespace
+[[ $# -gt 0 ]] && NAMESPACE+=" $*"
 
 indent()
 {
@@ -28,11 +34,11 @@ cat << _EOF
 
 namespace shaders
 {
-namespace ${*}
+$NAMESPACE
 {
 _EOF
 
-while [[ $SOURCE =~ [[:space:]]*@@[[:space:]]*([_[:alnum:]]+)[^_#[:alnum:]]*([^@]+\})(.*)$ ]]
+while [[ $SOURCE =~ @@[[:space:]]*([_[:alnum:]]+)[^_#[:alnum:]]*([^@]+\})(.*)$ ]]
 do
     echo "constexpr unsigned int source_pos_${BASH_REMATCH[1]} = $(wc -c < "$OUTPUT");"
 
@@ -46,7 +52,7 @@ cat << _EOF
 
 constexpr unsigned int source_size_uncompressed = $(wc -c < "$OUTPUT");
 
-constexpr char _raw_data []
+constexpr char raw_data []
 {
 _EOF
 indent
@@ -79,10 +85,10 @@ cat << _EOF
 
 constexpr std::string_view get_data()
 {
-    return { _raw_data, sizeof(_raw_data) };
+    return { raw_data, sizeof(raw_data) };
 }
 
-}  // namespace ${*}
+}  // $NAMESPACE
 }  // namespace shaders
 
 #undef Ss
