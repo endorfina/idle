@@ -26,39 +26,27 @@
 
 namespace idle
 {
-// #ifdef COMPILE_M_ROOM
-// static void _draw_maker_room_button_(const graphics::core& gl, point_t pos, const gui_elem& elem)
-// {
-//     const float v[] = {
-//             pos.x, pos.y,
-//             pos.x + elem.bound.x, pos.y,
-//             pos.x, pos.y + elem.bound.y
-//     };
-//     gl.prog.fill.use();
-//     gl.prog.fill.set_color(elem.bg, elem.hover ? elem.bg.a : elem.bg.a / 2);
-//     gl.prog.fill.position_vertex(v);
-//     gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 3);
-//     gl.ptext.use();
-//     gl.ptext.set_color(elem.fg);
-//     gl.draw_text("Make", pos + elem.bound / 3.6f, 24, TextAlign::Center, TextAlign::Center);
-// }
-// #endif
-
-
-landing_room::landing_room(graphics::core&)
+namespace
 {
-// #ifdef COMPILE_M_ROOM
-//     create_gui_elem(parent.collection, {0, 0}, {100, 50}, gui_elem::trigger_t::MakerRoom, _draw_maker_room_button_, false, {1.f, 0.f, .1f});
-// #endif
 
-    ray_array.fill(1.f);
+template<unsigned Size>
+constexpr std::array<float, Size> array_of_ones()
+{
+    std::array<float, Size> out{};
 
-    for (unsigned i = 0; i < ray_array.size(); ++i)
-    {
-        ray_array[i] += i % 2 == 0 ? -.1f : .1f;
-    }
+    for (auto& it : out)  // fill() isn't constexpr in C++17 for some reason
+        it = 1.f;
 
-    ray_array_mirror.fill(1.f);
+    return out;
+}
+
+}  // namespace
+
+
+landing_room::landing_room(graphics::core&) :
+        ray_array(array_of_ones<std::tuple_size<TYPE_REMOVE_CVR(ray_array)>::value>()),
+        ray_array_mirror(array_of_ones<std::tuple_size<TYPE_REMOVE_CVR(ray_array_mirror)>::value>())
+{
 }
 
 bool landing_room::step(graphics::core&)
@@ -84,10 +72,10 @@ bool landing_room::step(graphics::core&)
         for (unsigned i = 0; i < ray_array.size() * 4; ++i)
         {
             const auto j = i % ray_array.size();
-            ray_array[j] = (ray_array[!i ? ray_array.size() - 1 : (i-1) % ray_array.size()] + ray_array[i % ray_array.size()] + ray_array[(i+1) % ray_array.size()] + dist_float(gen)) / 3;
+            ray_array[j] = (ray_array[!i ? ray_array.size() - 1 : (i-1) % ray_array.size()] + ray_array[j] + ray_array[(i+1) % ray_array.size()] + dist_float(gen)) / 3;
 
             if (std::abs(1.f - ray_array[j]) > .3f)
-                ray_array[j] = 0.f;
+                ray_array[j] = 1.f;
         }
 
         std::uniform_int_distribution<int> dist_int{APPLICATION_FPS * 4, APPLICATION_FPS * 6};
@@ -98,23 +86,12 @@ bool landing_room::step(graphics::core&)
     {
         ray_array_mirror[i] += (ray_array[i] - ray_array_mirror[i]) * .4f / APPLICATION_FPS;
     }
-
-    // if (auto clicked_obj = check_hover_and_get_clicked(parent))
-    //     switch (std::get<gui_elem>(clicked_obj->data).trigger)
-    //     {
-    //         case gui_elem::trigger_t::MakerRoom:
-    //             parent.room_next_id = room_id_enum::room_models;
-    //             break;
-    //         default:
-    //             break;
-    //     }
     return true;
 }
 
 void landing_room::draw(const graphics::core& gl) const
 {
     const auto alpha_sine = std::sin(alpha * F_TAU_4);
-    const auto alpha_sine_sqr = alpha_sine * alpha_sine;
     gl.prog.fill.use();
     gl.prog.fill.set_color(1.f - .64f * alpha_sine, 1.f - .9f * alpha_sine, 1.f - .8f * alpha_sine, alpha_sine);
     gl.prog.fill.set_identity();

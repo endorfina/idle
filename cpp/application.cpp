@@ -84,8 +84,8 @@ bool application::execute_commands(const bool is_nested)
                 update_display = false;
                 if (pause)
                 {
-                    pause->buffer.reset();
-                    pause->buffer_blur.reset();
+                    for (auto& it : pause->buffers)
+                        it.reset();
                 }
                 opengl.clean();
                 window.terminate_display();
@@ -250,26 +250,37 @@ void application::draw()
 {
     if (pause)
     {
-        if (!pause->buffer || !pause->buffer_blur)
+        if (!pause->buffers[1])
         {
-            opengl.new_render_buffer(pause->buffer);
-            opengl.new_render_buffer(pause->buffer_blur, 4);
+            constexpr unsigned downscale = 4;
+            std::optional<graphics::render_buffer_t> intermediate_buffer;
+
+            opengl.new_render_buffer(pause->buffers[0]);
+            opengl.new_render_buffer(pause->buffers[1], downscale);
+            opengl.new_render_buffer(intermediate_buffer, downscale);
 
             opengl.prog.render_blur.use();
             opengl.prog.render_blur.set_radius(3.f);
             opengl.prog.render_blur.set_direction(0.f, 1.f);
 
-            const auto def = setup_buffer_frame(*pause->buffer, opengl.internal_size, platform::background);
+            const auto def = setup_buffer_frame(*pause->buffers[0], opengl.internal_size, platform::background);
 
             room_ctrl.draw_frame(opengl);
 
-            setup_buffer_frame(*pause->buffer_blur, opengl.internal_size / 2, platform::background);
-            opengl.prog.render_blur.draw_buffer(*pause->buffer);
+            setup_buffer_frame(*intermediate_buffer, opengl.internal_size / downscale, platform::background);
+            opengl.prog.render_blur.draw_buffer(*pause->buffers[0]);
+
+            opengl.prog.render_blur.use();
+            opengl.prog.render_blur.set_direction(1.f, 0.f);
+
+            setup_buffer_frame(*pause->buffers[1], opengl.internal_size / downscale, platform::background);
+            opengl.prog.render_blur.draw_buffer(*intermediate_buffer);
+
             gl::BindFramebuffer(gl::FRAMEBUFFER, def);
         }
 
         render_guard _{window};
-        draw_pause_menu(opengl, pause->animation, *pause->buffer, *pause->buffer_blur);
+        draw_pause_menu(opengl, pause->animation, *pause->buffers[0], *pause->buffers[1]);
     }
     else
     {

@@ -26,7 +26,7 @@ namespace idle
 struct pause_menu
 {
     float animation = 0;
-    std::optional<graphics::render_buffer_t> buffer, buffer_blur;
+    std::optional<graphics::render_buffer_t> buffers[2];
 };
 
 }  // namespace idle

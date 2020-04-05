@@ -460,7 +460,6 @@ void blur_render_program_t::prepare()
 
     set_direction(1, 0);
     set_radius(1.f);
-    set_resolution(1000.f);
 }
 
 void render_program_t::draw_buffer(const render_buffer_t& src) const
