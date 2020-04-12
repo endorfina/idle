@@ -51,5 +51,12 @@ struct command_queue_t
     unsigned size() const;
 };
 
+struct resize_request_t
+{
+    int w, h;
+
+    resize_request_t(int, int);
+};
+
 }  // namespace platform
 

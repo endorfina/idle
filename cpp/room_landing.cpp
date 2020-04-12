@@ -93,14 +93,14 @@ void landing_room::draw(const graphics::core& gl) const
 {
     const auto alpha_sine = std::sin(alpha * F_TAU_4);
     gl.prog.fill.use();
-    gl.prog.fill.set_color(1.f - .64f * alpha_sine, 1.f - .9f * alpha_sine, 1.f - .8f * alpha_sine, alpha_sine);
+    gl.prog.fill.set_color({1.f - .64f * alpha_sine, 1.f - .9f * alpha_sine, 1.f - .8f * alpha_sine, alpha_sine});
     gl.prog.fill.set_identity();
     gl.prog.fill.set_view_identity();
 
     fill_rectangle(gl.prog.fill, { float(gl.draw_size.x), float(gl.draw_size.y) });
 
     gl.prog.normal.use();
-    gl.prog.normal.set_color(.021f, 0.f, .089f, alpha_sine);
+    gl.prog.normal.set_color({.021f, 0.f, .089f, alpha_sine});
     gl.prog.normal.set_view_transform(mat4x4_t::translate(gl.draw_size.x / 2, gl.draw_size.y / 2));
 
     constexpr auto div = F_TAU / static_cast<float>(std::tuple_size<TYPE_REMOVE_CVR(ray_array)>::value);
@@ -140,7 +140,7 @@ void landing_room::draw(const graphics::core& gl) const
         return out;
     }();
 
-    gl.prog.normal.set_color(.9f, .1f, .2f, alpha_sine);
+    gl.prog.normal.set_color({.9f, .1f, .2f, alpha_sine});
     gl.prog.normal.set_transform(mat4x4_t::rotate(rotation) * mat4x4_t::scale(gl.draw_size.y * (.3f + .55f * alpha_sine)));
     gl.prog.normal.texture_vertex(reinterpret_cast<const float *>(tex_map2.data()));
     gl::DrawArrays(gl::TRIANGLE_FAN, 0, array_len);

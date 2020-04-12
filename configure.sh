@@ -22,7 +22,7 @@ fi
 
 die()
 {
-  echo >&2 '💀' "${color_red}${PROGNAME} !!${color_norm}" "$@"
+  echo >&2 '💀' "${color_red}${PROGNAME} !!${color_norm} $*"
   exit 1
 }
 

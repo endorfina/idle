@@ -21,6 +21,21 @@ void main() {
   gl_FragColor = texture2D(uT, vUV);
 }
 
+@@ maskedf
+
+#ifdef GL_ES
+precision mediump float;
+#endif
+uniform sampler2D uT;
+varying vec2 vUV;
+uniform vec2 uO; // the uniform offsets
+
+void main() {
+  vec4 raw = texture2D(uT, vec2(vUV.x, vUV.y * (1 - uO.x)));
+  vec4 mask = texture2D(uT, vec2(vUV.x * uO.x, vUV.y * uO.x + uO.y));
+  gl_FragColor = raw * mask;
+}
+
 @@ simpleblurf
 
 #ifdef GL_ES
@@ -145,6 +160,8 @@ uniform vec4 uCol;
 void main() {
     gl_FragColor = uCol;
 }
+
+// TODO: noise fragment shader, linked to solidv
 
 @@ textv
 

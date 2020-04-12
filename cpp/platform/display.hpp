@@ -30,15 +30,6 @@ namespace platform
 
 constexpr math::color<float> background{.35f, .3f, .35f};
 
-/* To be implemented: */
-
-void recreate_matrices();
-
-struct resize_request_t
-{
-    int w, h, r, q;
-};
-
 
 struct window
 {

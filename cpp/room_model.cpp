@@ -464,7 +464,7 @@ void model_room::draw(const graphics::core& gl)
         };
         gl.prog.fill.set_view_transform(mat4x4_t::scale(drag_grid_width * (.4f + drag.animation)) * mat4x4_t::translate(drag.start - point_t{drag_grid_width / 2, drag_grid_width / 2}));
         gl.prog.fill.set_identity();
-        gl.prog.fill.set_color(.9f, .9f, .2f, drag.animation);
+        gl.prog.fill.set_color({.9f, .9f, .2f, drag.animation});
         gl.prog.fill.position_vertex(reinterpret_cast<const GLfloat*>(dgrid));
         gl::DrawArrays(gl::LINES, 0, sizeof(dgrid) / sizeof(point_t));
 
@@ -479,7 +479,7 @@ void model_room::draw(const graphics::core& gl)
 
     gl.prog.fill.set_color(color_t::greyscale(.15f, .75f));
     gl.prog.text.use();
-    gl.prog.text.set_color(1, 1, 1);
+    gl.prog.text.set_color({1, 1, 1});
 
     std::visit([&gl](const auto& f) { f.draw(gl); }, face);
 }

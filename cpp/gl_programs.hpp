@@ -51,8 +51,10 @@ namespace graphics
 
 struct unique_texture
 {
+private:
     GLuint value;
 
+public:
     unique_texture(GLuint);
 
     unique_texture(const unique_texture&) = delete;
@@ -62,14 +64,19 @@ struct unique_texture
     unique_texture& operator=(unique_texture&&);
 
     ~unique_texture();
+
+    GLuint get() const;
 };
 
 struct program_t
 {
     GLuint program_id = 0;
+
+private:
     GLuint position_handle = 0;
     GLint model_handle = 0, view_handle = 0, color_handle = 0;
 
+public:
     void set_transform(const idle::mat4x4_t& f) const;
 
     void set_transform(const idle::mat4x4_noopt_t& f) const;
@@ -84,8 +91,6 @@ struct program_t
 
     void set_color(const idle::color_t& c) const;
 
-    void set_color(GLfloat r, GLfloat g, GLfloat b, GLfloat a = 1.f) const;
-
     void set_color(const idle::color_t& c, float custom_alpha) const;
 
     void position_vertex(const GLfloat *f) const;
@@ -97,8 +102,10 @@ struct program_t
 
 struct textured_program_t : program_t
 {
+private:
     GLuint texture_position_handle = 0;
 
+public:
     void texture_vertex(const GLfloat *f) const;
 
     void prepare();
@@ -106,9 +113,11 @@ struct textured_program_t : program_t
 
 struct double_vertex_program_t : textured_program_t
 {
+private:
     GLuint destination_handle = 0;
     GLint interpolation_handle = 0;
 
+public:
     void destination_vertex(const GLfloat *f) const;
 
     void set_interpolation(const GLfloat x) const;
@@ -118,8 +127,10 @@ struct double_vertex_program_t : textured_program_t
 
 struct text_program_t : textured_program_t
 {
+private:
     GLint font_offset_handle = 0;
 
+public:
     void set_text_offset(const GLfloat x, const GLfloat y) const;
 
     void prepare();
@@ -127,8 +138,10 @@ struct text_program_t : textured_program_t
 
 struct fullbg_program_t : program_t
 {
+private:
     GLuint offset_handle = 0, resolution_handle = 0;
 
+public:
     void set_offset(const GLfloat x) const;
 
     void set_resolution(const GLfloat w, const GLfloat h) const;

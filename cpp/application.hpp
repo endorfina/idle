@@ -30,7 +30,7 @@ class application
 {
     idle::pointer pointer;
     bool update_display = false;
-    std::chrono::system_clock::time_point last_resize;
+    std::chrono::system_clock::time_point earliest_available_resize;
 
 public:
     std::optional<idle::pause_menu> pause;

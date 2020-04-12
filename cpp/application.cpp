@@ -114,10 +114,10 @@ bool application::execute_commands(const bool is_nested)
     if (window.resize_request)
     {
         const auto now = std::chrono::system_clock::now();
-        if (now > last_resize + std::chrono::seconds(1))
+        if (now > earliest_available_resize)
         {
             const auto& rq = *window.resize_request;
-            opengl.resize(rq.w, rq.h, rq.q, rq.r);
+            opengl.resize(rq.w, rq.h);
 
             window.resize_request.reset();
 
@@ -126,7 +126,7 @@ bool application::execute_commands(const bool is_nested)
                 static_cast<float>(opengl.draw_size.y)
             });
 
-            last_resize = now;
+            earliest_available_resize = now + std::chrono::seconds(1);
         }
     }
 
@@ -139,12 +139,30 @@ namespace
 
 GLint setup_buffer_frame(const graphics::render_buffer_t& rb, const math::point2<int> internal_size, const idle::color_t& bg)
 {
-    GLint default_frame_buffer = 0;
+    GLint default_frame_buffer;
     gl::GetIntegerv(gl::FRAMEBUFFER_BINDING, &default_frame_buffer);
     gl::BindFramebuffer(gl::FRAMEBUFFER, rb.buffer_frame);
-    gl::Viewport(0, 0, internal_size.x, internal_size.y);
+    gl::Viewport(0, internal_size.y, internal_size.x / 3, internal_size.y / 3);
     gl::ClearColor(bg.r, bg.g, bg.b, 1);
     gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
+
+    opengl.prog.fill.use();
+    opengl.prog.fill.set_identity();
+    opengl.prog.fill.set_view_identity();
+
+    const float v[]
+    {
+        0, 0,
+        static_cast<float>(opengl.draw_size.x), 0,
+        0, static_cast<float>(opengl.draw_size.y),
+        static_cast<float>(opengl.draw_size.x), static_cast<float>(opengl.draw_size.y)
+    };
+
+    opengl.prog.fill.set_color({.5f, 1, 1, 1});
+    opengl.prog.fill.position_vertex(v);
+    gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
+
+    gl::Viewport(0, 0, internal_size.x, internal_size.y);
     return default_frame_buffer;
 }
 
@@ -155,7 +173,7 @@ class render_guard
 
 public:
     render_guard(::platform::window& win)
-        : default_frame_buffer(setup_buffer_frame(*opengl.render_buffer, opengl.internal_size, ::platform::background))
+        : default_frame_buffer(setup_buffer_frame(*opengl.render_buffer_masked, opengl.internal_size, ::platform::background))
         , window(win)
     {}
 
@@ -163,7 +181,7 @@ public:
     {
         gl::BindFramebuffer(gl::FRAMEBUFFER, default_frame_buffer);
         gl::Viewport(0, 0, opengl.screen_size.x, opengl.screen_size.y);
-        opengl.prog.render_final.draw_buffer(*opengl.render_buffer);
+        opengl.prog.render_masked.draw_buffer(*opengl.render_buffer_masked);
         window.buffer_swap();
     }
 };
@@ -217,7 +235,7 @@ void draw_pause_menu(const graphics::core& gl, const float pause_menu_alpha, con
     const float yshift = (1 - pause_menu_alpha) * 20;
     const auto rect = idle::rect_t(gl.draw_size.x / 2 - 220.f, gl.draw_size.y / 2 - 60.f, gl.draw_size.x / 2 + 220.f, gl.draw_size.y / 2 + 60.f);
     gl.prog.text.use();
-    gl.prog.text.set_color(1, .133f, .196f, pause_menu_alpha);
+    gl.prog.text.set_color({1, .133f, .196f, pause_menu_alpha});
 
     idle::draw_text<idle::TextAlign::Center>(gl, "paused",
                         idle::point_t(gl.draw_size.x / 2.f, rect.top + 10.f + yshift), 55);

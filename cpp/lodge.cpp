@@ -45,21 +45,21 @@ void lodge::draw(const graphics::core& gl)
     // constexpr auto rbw = rainbow_from_saturation(.96f);
 
     gl.prog.normal.use();
-    gl.prog.normal.set_color(1, 1, 1, 1);
+    gl.prog.normal.set_color({1, 1, 1, 1});
     gl.prog.normal.set_transform(mat4x4_t::translate((gl.draw_size.x - bgsz.x) * .5f, (gl.draw_size.y - bgsz.y) * .5f) * mat4x4_t::scale(bgsc, bgsc, {gl.draw_size.x / 2.f, gl.draw_size.y / 2.f}));
     background.draw(gl.prog.normal);
 
     if (alpha < .9999f) {
         gl.prog.normal.set_transform(mat4x4_t::scale(sinf(alpha * F_TAU_4) *.5f + .5f, point_t((emily.right - emily.left) / 2, (emily.bottom - emily.top) / 2))
             * mat4x4_t::scale(.6f) * mat4x4_t::translate(gl.draw_size.x / 2 - 80.f, 25.f));
-        gl.prog.normal.set_color(1, 1, 1, alpha * alpha);
+        gl.prog.normal.set_color({1, 1, 1, alpha * alpha});
         alpha += .025f;
     }
     else
     gl.prog.normal.set_transform(mat4x4_t::scale(.6f) * mat4x4_t::translate(gl.draw_size.x / 2 - 80.f, 25.f));
     picture.draw(gl.prog.normal, emily);
 
-    gl.prog.normal.set_color(1, 1, 1, 1);
+    gl.prog.normal.set_color({1, 1, 1, 1});
     gl.prog.normal.set_identity();
     gl.prog.normal.set_view_identity();
 
@@ -80,7 +80,7 @@ void lodge::draw(const graphics::core& gl)
     //     iterator = 0;
 
     gl.prog.normal.use();
-    gl.prog.normal.set_color(1, 1, 1, 1);
+    gl.prog.normal.set_color({1, 1, 1, 1});
     gl.prog.normal.set_transform(mat4x4_t::rotate(math::degtorad<float>(90)) * mat4x4_t::scale(.4f) * mat4x4_t::translate(gl.draw_size.x - 1, 1));
     picture.draw(gl.prog.normal, text_cp);
 }

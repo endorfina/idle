@@ -62,13 +62,21 @@ struct render_buffer_t
 
     render_buffer_t(math::point2<int> size, GLint quality);
 
+    render_buffer_t(render_buffer_t&&)=delete;
+
+    render_buffer_t(const render_buffer_t&)=delete;
+
     ~render_buffer_t();
 };
 
 struct render_program_t
 {
-    GLuint texture_position_handle = 0, program = 0, position_handle = 0;
+    GLuint program = 0;
 
+private:
+    GLuint texture_position_handle = 0, position_handle = 0;
+
+public:
     void draw_buffer(const render_buffer_t& source) const;
 
     void use() const;
@@ -78,15 +86,28 @@ struct render_program_t
 
 struct blur_render_program_t : render_program_t
 {
+private:
     GLint direction_handle = 0, resolution_handle = 0, radius_handle = 0;
 
+public:
     void prepare();
 
-    void set_radius(const GLfloat x) const;
+    void set_radius(GLfloat x) const;
 
-    void set_resolution(const GLfloat x) const;
+    void set_resolution(GLfloat x) const;
 
-    void set_direction(const GLfloat x, const GLfloat y) const;
+    void set_direction(GLfloat x, GLfloat y) const;
+};
+
+struct masked_render_program_t : render_program_t
+{
+private:
+    GLint mask_offset_handle = 0;
+
+public:
+    void prepare();
+
+    void set_offsets(GLfloat ratio, GLfloat buffer_height) const;
 };
 
 struct core
@@ -94,6 +115,7 @@ struct core
     struct program_container_t
     {
         render_program_t render_final;
+        masked_render_program_t render_masked;
         blur_render_program_t render_blur;
 
         textured_program_t normal;
@@ -107,7 +129,7 @@ struct core
     GLuint image_id_fade = 0, image_id_noise = 0;
     GLint render_quality = gl::LINEAR;
     std::optional<font_t> font;
-    std::optional<render_buffer_t> render_buffer;
+    std::optional<render_buffer_t> render_buffer, render_buffer_masked;
     math::point2<int> draw_size{0, 0}, screen_size{0, 0}, internal_size{0, 0};
     math::point2<float> translate_vector;
 
@@ -118,7 +140,7 @@ struct core
 
     bool setup_graphics();
 
-    void resize(int window_width, int window_height, int quality, int resolution);
+    void resize(int window_width, int window_height);
 
     void new_render_buffer(std::optional<render_buffer_t>& opt, int divider = 1) const;
 

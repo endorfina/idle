@@ -151,7 +151,7 @@ struct blob
 {
     std::array<float, Steps> data;
 
-    constexpt blob(const float radius)
+    constexpr blob(const float radius)
         : data{}
     {
         for (auto& it : data)

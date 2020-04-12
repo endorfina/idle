@@ -64,7 +64,7 @@ void font_t::draw(const graphics::text_program_t& rcp, const std::string_view &s
     if (limit == 0) return;
 
     gl::ActiveTexture(gl::TEXTURE0);
-    gl::BindTexture(gl::TEXTURE_2D, texture.value);
+    gl::BindTexture(gl::TEXTURE_2D, texture.get());
     rcp.position_vertex(idle::square_coordinates);
 
     idle::point_t pos{-LEFT_MARGIN, -topmost_margin};
@@ -92,7 +92,7 @@ void font_t::draw(const graphics::text_program_t& rcp, const std::string_view &s
 void font_t::draw_custom_animation(const graphics::text_program_t& rcp, const std::string_view &str, const ::math::color<float> &col, const idle::text_animation_data* anim, const unsigned start, const unsigned end) const
 {
     gl::ActiveTexture(gl::TEXTURE0);
-    gl::BindTexture(gl::TEXTURE_2D, texture.value);
+    gl::BindTexture(gl::TEXTURE_2D, texture.get());
     rcp.position_vertex(idle::square_coordinates);
 
     idle::point_t pos{-LEFT_MARGIN, -topmost_margin};

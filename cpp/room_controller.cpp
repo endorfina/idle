@@ -136,7 +136,7 @@ void controller::draw_frame(const graphics::core& gl)
     if (crashed && crash_haiku)
     {
         gl.prog.text.use();
-        gl.prog.text.set_color(1, 1, 1, .9f);
+        gl.prog.text.set_color({1, 1, 1, .9f});
 
         draw_text<idle::TextAlign::Center, idle::TextAlign::Center>(gl, *crash_haiku,
                 {gl.draw_size.x / 2.f, gl.draw_size.y / 2.f}, 32);

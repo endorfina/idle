@@ -148,7 +148,7 @@ std::optional<resize_request_t> create_window(egl_display& egl)
     else if (const auto amt = glTest.GetNumMissing(); amt > 0)
         LOGE("Number of functions that failed to load: %i.", amt);
 
-    return {{ w, h, -1, -1 }};
+    return {{ w, h }};
 }
 
 int32_t android_handle_input(android_app * app, AInputEvent* event)
@@ -204,7 +204,8 @@ void android_handle_command(struct android_app* app, const int32_t cmd)
             {
                 win.commands.insert(command::InitWindow);
             }
-            else {
+            else
+            {
                 LOGE("Cannot create the window!");
                 win.commands.insert(command::CloseWindow);
             }
@@ -341,8 +342,8 @@ asset asset::hold(std::string path)
 asset asset::hold(const char * path)
 {
     std::unique_ptr<AAsset, decltype(&AAsset_close)> file{
-        AAssetManager_open(android_activity->activity->assetManager, path, AASSET_MODE_BUFFER), AAsset_close
-    };
+            AAssetManager_open(android_activity->activity->assetManager, path, AASSET_MODE_BUFFER),
+            AAsset_close };
 
     if (auto data = file ? AAsset_getBuffer(file.get()) : nullptr; !data)
     {

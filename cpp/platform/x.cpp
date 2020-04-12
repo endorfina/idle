@@ -89,20 +89,20 @@ window::window()
 
     XSetWindowAttributes setwindowattributes;
 
-    GLint attributes[] = {
-        GLX_X_RENDERABLE    , True,
-        GLX_DRAWABLE_TYPE   , GLX_WINDOW_BIT,
-        GLX_RENDER_TYPE     , GLX_RGBA_BIT,
-        GLX_X_VISUAL_TYPE   , GLX_TRUE_COLOR,
-        GLX_RED_SIZE        , 4,
-        GLX_GREEN_SIZE      , 4,
-        GLX_BLUE_SIZE       , 4,
-        GLX_ALPHA_SIZE      , 4,
-        GLX_DEPTH_SIZE      , 16,
+    GLint attributes[] {
+        GLX_X_RENDERABLE  , True,
+        GLX_DRAWABLE_TYPE , GLX_WINDOW_BIT,
+        GLX_RENDER_TYPE   , GLX_RGBA_BIT,
+        GLX_X_VISUAL_TYPE , GLX_TRUE_COLOR,
+        GLX_RED_SIZE      , 4,
+        GLX_GREEN_SIZE    , 4,
+        GLX_BLUE_SIZE     , 4,
+        GLX_ALPHA_SIZE    , 4,
+        GLX_DEPTH_SIZE    , 16,
         None
     };
 
-    std::unique_ptr<Display, decltype(&XCloseDisplay)> display(XOpenDisplay(nullptr), XCloseDisplay);
+    std::unique_ptr<Display, decltype(&XCloseDisplay)> display{ XOpenDisplay(nullptr), XCloseDisplay };
 
     if(!display) {
         LOGE("Cannot connect to X server");
@@ -121,32 +121,50 @@ window::window()
 
     GLXFBConfig bestFbc; // Get framebuffers
     int fbcount;
-    if (const std::unique_ptr<GLXFBConfig[], decltype(&XFree)> fbc{ glXChooseFBConfig(display.get(), DefaultScreen(display.get()), attributes, &fbcount), XFree })
+    if (const std::unique_ptr<GLXFBConfig[], decltype(&XFree)> fbc{
+            glXChooseFBConfig(display.get(), DefaultScreen(display.get()), attributes, &fbcount),
+            XFree })
     {
         int best_fbc = -1, worst_fbc = -1, best_num_samp = -1, worst_num_samp = 999;
+
         for (int i = 0; i < fbcount; ++i)
-            if (const std::unique_ptr<XVisualInfo, decltype(&XFree)> vi{ glXGetVisualFromFBConfig(display.get(), fbc[i]), XFree }; bool(vi))
+        {
+            if (const std::unique_ptr<XVisualInfo, decltype(&XFree)> vi{
+                    glXGetVisualFromFBConfig(display.get(), fbc[i]),
+                    XFree })
             {
                 int samp_buf, samples;
-                glXGetFBConfigAttrib(display.get(), fbc[i], GLX_SAMPLE_BUFFERS, &samp_buf );
-                glXGetFBConfigAttrib(display.get(), fbc[i], GLX_SAMPLES       , &samples  );
+                glXGetFBConfigAttrib(display.get(), fbc[i], GLX_SAMPLE_BUFFERS, &samp_buf);
+                glXGetFBConfigAttrib(display.get(), fbc[i], GLX_SAMPLES, &samples);
 
-                if ( best_fbc < 0 || (samp_buf && samples > best_num_samp))
-                    best_fbc = i, best_num_samp = samples;
-                if ( worst_fbc < 0 || (!samp_buf || samples < worst_num_samp))
-                    worst_fbc = i, worst_num_samp = samples;
+                if (best_fbc < 0 || (samp_buf && samples > best_num_samp))
+                {
+                    best_fbc = i;
+                    best_num_samp = samples;
+                }
+
+                if (worst_fbc < 0 || (!samp_buf || samples < worst_num_samp))
+                {
+                    worst_fbc = i;
+                    worst_num_samp = samples;
+                }
             }
+        }
         bestFbc = fbc[best_fbc];
     }
-    else {
+    else
+    {
         LOGE("Failed to retrieve a framebuffer config");
         commands.insert(command::CloseWindow);
         return;
     }
 
-    const std::unique_ptr<XVisualInfo, decltype(&XFree)> visualinfo(glXGetVisualFromFBConfig(display.get(), bestFbc), XFree);
+    const std::unique_ptr<XVisualInfo, decltype(&XFree)> visualinfo{
+            glXGetVisualFromFBConfig(display.get(), bestFbc),
+            XFree };
 
-    if(!visualinfo) {
+    if(!visualinfo)
+    {
         LOGE("No appropriate visual found");
         commands.insert(command::CloseWindow);
         return;
@@ -164,7 +182,8 @@ window::window()
 
     x.window = XCreateWindow(display.get(), RootWindow(display.get(), visualinfo->screen), 0, 0, initial_width, initial_height, 0, visualinfo->depth, InputOutput, visualinfo->visual, CWColormap | CWEventMask, &setwindowattributes);
 
-    if(!x.window) {
+    if(!x.window)
+    {
         LOGE("Failed to create a window");
         XFreeColormap(display.get(), x.colormap);
         commands.insert(command::CloseWindow);
@@ -173,13 +192,14 @@ window::window()
     XStoreName(display.get(), x.window, "idle/crimson");
     XMapWindow(display.get(), x.window);
 
-    //auto old_fatal_handler =
-        XSetIOErrorHandler(x_fatal_error_handler);
-    auto old_handler =
-        XSetErrorHandler(x_error_handler);
+
+    auto default_error_handler = XSetErrorHandler(x_error_handler);
+    XSetIOErrorHandler(x_fatal_error_handler);
+
     x.context = glXCreateContext(display.get(), visualinfo.get(), NULL, True);
 
-    if (!x.context) {
+    if (!x.context)
+    {
         XDestroyWindow(display.get(), x.window);
         XFreeColormap(display.get(), x.colormap);
         LOGE("Failed to create a proper gl context");
@@ -194,9 +214,10 @@ window::window()
 
     // Sync to ensure any errors generated are processed.
     XSync(display.get(), False);
-    XSetErrorHandler(old_handler);
+    XSetErrorHandler(default_error_handler);
 
-    if (!glXIsDirect(display.get(), x.context)) {
+    if (!glXIsDirect(display.get(), x.context))
+    {
         LOGE(u8"Indirect GLX rendering context obtained (\U0001f937 why\?\?)");
     }
 
@@ -224,7 +245,7 @@ window::window()
 
     x.display = display.release();
 
-    resize_request.emplace(resize_request_t{ initial_width, initial_height, -1, -1 });
+    resize_request.emplace(initial_width, initial_height);
     commands.insert(command::InitWindow);
     commands.insert(command::GainedFocus); // TODO: Make X handle focus as to reduce resource usage when idle
 }
@@ -240,10 +261,10 @@ void window::event_loop_back(bool)
     auto& x = x11_display::cast(data);
     XEvent xev;
     {
-        // Otherwise the mouse won't work.
+        // Without this query call the mouse might not work at all
         Window root_window;
-        int root_x, root_y; //<--two
-        unsigned int mask; //<--three
+        int root_x, root_y;
+        unsigned int mask;
         XQueryPointer(x.display, x.window, &root_window, &root_window, &root_x, &root_y, &root_x, &root_y, &mask);
     }
 
@@ -267,7 +288,7 @@ void window::event_loop_back(bool)
 
             case ConfigureNotify:
                 glXMakeCurrent(x.display, x.window, x.context);
-                resize_request.emplace(resize_request_t{xev.xconfigure.width, xev.xconfigure.height, -1, -1 });
+                resize_request.emplace(xev.xconfigure.width, xev.xconfigure.height);
                 break;
 
             case KeyPress:
@@ -332,7 +353,9 @@ asset asset::hold(std::string path)
 {
     path.insert(0, "assets/");
 
-    if (const std::unique_ptr<FILE, decltype(&std::fclose)> f{ std::fopen(path.c_str(), "rb"), std::fclose })
+    if (const std::unique_ptr<FILE, decltype(&std::fclose)> f{
+            std::fopen(path.c_str(), "rb"),
+            std::fclose })
     {
         std::fseek(f.get(), 0, SEEK_END);
 
@@ -340,7 +363,10 @@ asset asset::hold(std::string path)
         if (size <= 0 || std::fseek(f.get(), 0, SEEK_SET) != 0)
             return {};
 
-        LOGD("\"%s\" - loaded %ld %s", path.c_str(), size >= 1024 ? size / 1024 : size, size >= 1024 ? "KB" : "bytes");
+        LOGD("\"%s\" - loaded %ld %s",
+                path.c_str(),
+                size >= 1024 ? size / 1024 : size,
+                size >= 1024 ? "KB" : "bytes");
 
         std::unique_ptr<unsigned char[]> ptr(new unsigned char[size]);
 

@@ -115,19 +115,24 @@ struct shader_compiler
 {
     using buffer_t = std::vector<unsigned char>;
 
-    shader_compiler(std::string_view view, const size_t size_check)
-        : buffer(idle::zlib<buffer_t>(view, false, true))
+    shader_compiler(std::string_view view, const size_t expected_size)
+        : buffer(filter(idle::zlib<buffer_t>(view, false, true), expected_size))
     {
-        if (!buffer || buffer->size() != size_check)
-        {
-            buffer.reset();
-        }
     }
 
 private:
     const char * data(const unsigned int addr) const
     {
-        return reinterpret_cast<const char*>(buffer->data()) + addr;
+        return reinterpret_cast<const char*>(buffer.data()) + addr;
+    }
+
+    static buffer_t filter(std::optional<buffer_t>&& opt, const size_t expected_size)
+    {
+        if (opt && opt->size() == expected_size)
+        {
+            return { std::move(*opt) };
+        }
+        return {};
     }
 
 public:
@@ -141,19 +146,19 @@ public:
             }
             else
             {
-                buffer.reset();
+                buffer.clear();
             }
         }
         return 0;
     }
 
 private:
-    std::optional<buffer_t> buffer;
+    buffer_t buffer;
 
 public:
     bool has_failed() const
     {
-        return !buffer;
+        return buffer.empty();
     }
 };
 
@@ -161,6 +166,7 @@ template<typename Call>
 void apply_to_all(core::program_container_t& con, const Call& call)
 {
     call(con.render_final);
+    call(con.render_masked);
     call(con.render_blur);
 
     call(con.normal);
@@ -175,6 +181,7 @@ bool compile_shaders(core::program_container_t& prog)
     shader_compiler sc{ shaders::get_data(), shaders::source_size_uncompressed };
 
     prog.render_final.program = sc.compile(shaders::source_pos_renderv, shaders::source_pos_renderf);
+    prog.render_masked.program = sc.compile(shaders::source_pos_renderv, shaders::source_pos_maskedf);
     prog.render_blur.program = sc.compile(shaders::source_pos_renderv, shaders::source_pos_simpleblurf);
 
     prog.normal.program_id = sc.compile(shaders::source_pos_normv, shaders::source_pos_normf);
@@ -226,7 +233,7 @@ bool core::setup_graphics()
     return true;
 }
 
-void core::resize(const int window_width, const int window_height, const int quality, int resolution)
+void core::resize(const int window_width, const int window_height)
 {
     LOGI("Changing resolution to %i x %i", window_width, window_height);
 
@@ -244,19 +251,8 @@ void core::resize(const int window_width, const int window_height, const int qua
     screen_size.x = window_width;
     screen_size.y = window_height;
 
-    if (resolution < 0 && internal_size.y == 0)
-    {
-        resolution = 720;
-        internal_size.y = resolution;
-    }
-    else {
-        resolution = internal_size.y;
-    }
-
-    internal_size.x = (resolution * window_width) / window_height;
-
-    if (quality >= 0)
-        render_quality = quality;
+    internal_size.y = 720;
+    internal_size.x = (internal_size.y * window_width) / window_height;
 
     translate_vector.x = static_cast<float>(draw_size.x) / static_cast<float>(window_width);
     translate_vector.y = static_cast<float>(draw_size.y) / static_cast<float>(window_height);
@@ -276,9 +272,17 @@ void core::resize(const int window_width, const int window_height, const int qua
 
     render_buffer.emplace(internal_size, render_quality);
 
+    auto masked_size = internal_size;
+    masked_size.y *= 4;
+    masked_size.y /= 3;
+    render_buffer_masked.emplace(masked_size, render_quality);
+
     prog.render_blur.use();
     prog.render_blur.set_radius(1.f);
     prog.render_blur.set_resolution(render_buffer->texture_h / static_cast<float>(draw_size.y));
+
+    prog.render_masked.use();
+    prog.render_masked.set_offsets(.25f, render_buffer_masked->texture_h * .75f);
 }
 
 
@@ -325,11 +329,6 @@ void program_t::use() const
 void program_t::set_color(const idle::color_t& c) const
 {
     gl::Uniform4f(color_handle, c.r, c.g, c.b, c.a);
-}
-
-void program_t::set_color(GLfloat r, GLfloat g, GLfloat b, GLfloat a) const
-{
-    gl::Uniform4f(color_handle, r, g, b, a);
 }
 
 void program_t::set_color(const idle::color_t& c, GLfloat custom_alpha) const
@@ -385,6 +384,11 @@ void blur_render_program_t::set_radius(const GLfloat rad) const
 void blur_render_program_t::set_resolution(const GLfloat res) const
 {
     gl::Uniform1f(resolution_handle, res);
+}
+
+void masked_render_program_t::set_offsets(const GLfloat ratio, const GLfloat buffer_height) const
+{
+    gl::Uniform2f(mask_offset_handle, ratio, buffer_height);
 }
 
 
@@ -460,6 +464,12 @@ void blur_render_program_t::prepare()
 
     set_direction(1, 0);
     set_radius(1.f);
+}
+
+void masked_render_program_t::prepare()
+{
+    render_program_t::prepare();
+    mask_offset_handle = gl::GetUniformLocation(program, "uO");
 }
 
 void render_program_t::draw_buffer(const render_buffer_t& src) const
@@ -583,6 +593,11 @@ unique_texture::~unique_texture()
         LOGD("Destroying unique texture #%u", value);
         gl::DeleteTextures(1, &value);
     }
+}
+
+GLuint unique_texture::get() const
+{
+    return value;
 }
 
 bool assert_opengl_errors()

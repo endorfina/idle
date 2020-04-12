@@ -63,7 +63,8 @@ function(jumbo library filelist)
     target_sources(${library} PRIVATE ${UNITY_FILE})
 endfunction()
 
-set(SHADER_OUTPUT "${PROJECT_NAME}-include/embedded_shaders.hpp")
+set(SHADER_OUTPUT_BASENAME "embedded_shaders.hpp")
+set(SHADER_OUTPUT "${PROJECT_NAME}-include/${SHADER_OUTPUT_BASENAME}")
 set(SHADER_SOURCE "${CMAKE_SOURCE_DIR}/shader_source.txt")
 set(SHADER_GENERATOR "${CMAKE_SOURCE_DIR}/generate.sh")
 
@@ -74,7 +75,7 @@ add_custom_target(${PROJECT_NAME}-generate-dir
     COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_NAME}-include")
 
 add_custom_target(${PROJECT_NAME}-generate-sh
-    COMMAND test -r "${SHADER_OUTPUT}" -a "${SHADER_OUTPUT}" -ot "${SHADER_SOURCE}" -a "${SHADER_OUTPUT}" -ot "${SHADER_GENERATOR}" && echo "${SHADER_OUTPUT} is up-to-date." || "${SHADER_GENERATOR}" < "${SHADER_SOURCE}" > "${SHADER_OUTPUT}"
+    COMMAND test -r "${SHADER_OUTPUT}" -a "${SHADER_OUTPUT}" -nt "${SHADER_SOURCE}" -a "${SHADER_OUTPUT}" -nt "${SHADER_GENERATOR}" && echo "${SHADER_OUTPUT_BASENAME} is up-to-date." || "${SHADER_GENERATOR}" < "${SHADER_SOURCE}" > "${SHADER_OUTPUT}"
     BYPRODUCTS "${SHADER_OUTPUT}"
     COMMENT "Preparing ${SHADER_OUTPUT}"
     VERBATIM)
