@@ -37,7 +37,7 @@ CM_OPTS_CXX=()
 if [[ $# -gt 0 && $1 == dev ]]
 then
   shift
-  set -- '-njdcg' "$@"
+  set -- '-ndcg' "$@"
 fi
 
 for CLI_ARG in "$@"
@@ -55,40 +55,40 @@ do
         ;;
 
       l)
-        CM_OPTS+=("-DCMAKE_CXX_COMPILER=clang++")
-        CM_OPTS_CXX+=("-stdlib=libc++")
+        CM_OPTS+=('-DCMAKE_CXX_COMPILER=clang++')
+        CM_OPTS_CXX+=('-stdlib=libc++')
         ;;
 
       n)
-        CM_OPTS_CXX+=("-march=native" "-mtune=native")
+        CM_OPTS_CXX+=('-march=native' '-mtune=native')
         ;;
 
       u)
-        CM_OPTS+=("-DCMAKE_UNITY_BUILD=ON")  # since cmake 3.16
+        CM_OPTS+=('-DCMAKE_UNITY_BUILD=ON')  # since cmake 3.16
         ;;
 
-      j)
-        CM_OPTS+=("-DMAKESHIFT_UNITY=ON")
+      J)
+        CM_OPTS+=('-DMAKESHIFT_UNITY=OFF')
         ;;
 
       c)
-        CM_OPTS+=("-DCMAKE_EXPORT_COMPILE_COMMANDS=ON")
+        CM_OPTS+=('-DCMAKE_EXPORT_COMPILE_COMMANDS=ON')
         ;;
 
       s)
-        CM_OPTS+=("-DPRUNE_SYMBOLS=ON")
+        CM_OPTS+=('-DPRUNE_SYMBOLS=ON')
         ;;
 
       g)
-        CM_OPTS+=("-DCOMPILE_GALLERY=ON")
+        CM_OPTS+=('-DCOMPILE_GALLERY=ON')
         ;;
 
       X)
-        CM_OPTS+=("-DX11_USE_CLIENTMESSAGE=OFF")
+        CM_OPTS+=('-DX11_USE_CLIENTMESSAGE=OFF')
         ;;
 
       v)
-        CM_OPTS+=("-DCMAKE_VERBOSE_MAKEFILE=ON")
+        CM_OPTS+=('-DCMAKE_VERBOSE_MAKEFILE=ON')
         ;;
 
       *)
@@ -111,6 +111,7 @@ command -v 'ninja' &>/dev/null && ARGS+=('-GNinja')
 readonly ARGS
 
 # READY TO BOOT
+# There should be no side effects before this line
 
 [[ ! -r $SOURCE_DIR/lodepng/lodepng.h ]] && git submodule update --init --recursive
 

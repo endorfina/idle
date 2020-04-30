@@ -26,7 +26,7 @@ endif()
 
 option(PRUNE_SYMBOLS "Removes symbols at build time" OFF)
 
-option(MAKESHIFT_UNITY "Tries to build the main library in unity mode, when cmake doesn't provide one" OFF)
+option(MAKESHIFT_UNITY "Tries to build the main library in unity mode, when cmake doesn't provide one" ON)
 
 option(COMPILE_GALLERY OFF)
 
