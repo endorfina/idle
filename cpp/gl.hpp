@@ -57,8 +57,9 @@ struct core;
 
 struct render_buffer_t
 {
-    GLuint buffer_frame = 0, buffer_depth = 0, texture = 0;
+    GLuint buffer_frame = 0, texture = 0, buffer_depth = 0;
     GLfloat texture_w, texture_h;
+    math::point2<int> internal_size;
 
     render_buffer_t(math::point2<int> size, GLint quality);
 
@@ -107,7 +108,7 @@ private:
 public:
     void prepare();
 
-    void set_offsets(GLfloat ratio, GLfloat buffer_height) const;
+    void set_offsets(GLfloat ratio1, GLfloat ratio2, GLfloat buffer_height) const;
 };
 
 struct core
@@ -123,14 +124,15 @@ struct core
         program_t fill;
         text_program_t text;
         fullbg_program_t fullbg;
+        noise_program_t noise;
+        gradient_program_t gradient;
 
     } prog;
 
-    GLuint image_id_fade = 0, image_id_noise = 0;
     GLint render_quality = gl::LINEAR;
     std::optional<font_t> font;
-    std::optional<render_buffer_t> render_buffer, render_buffer_masked;
-    math::point2<int> draw_size{0, 0}, screen_size{0, 0}, internal_size{0, 0};
+    std::optional<render_buffer_t> render_buffer_masked;
+    math::point2<int> draw_size{0, 0}, screen_size{0, 0}, viewport_size{0, 0};
     math::point2<float> translate_vector;
 
     bool shutdown_was_requested = false;
@@ -146,6 +148,9 @@ struct core
 
     void clean();
 
+    void view_normal() const;
+
+    void view_mask() const;
 };
 
 

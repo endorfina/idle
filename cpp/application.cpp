@@ -137,20 +137,26 @@ bool application::execute_commands(const bool is_nested)
 namespace
 {
 
-GLint setup_buffer_frame(const graphics::render_buffer_t& rb, const math::point2<int> internal_size, const idle::color_t& bg)
+GLint setup_unmasked_buffer_frame(const graphics::render_buffer_t& rb, const idle::color_t& bg)
 {
     GLint default_frame_buffer;
     gl::GetIntegerv(gl::FRAMEBUFFER_BINDING, &default_frame_buffer);
     gl::BindFramebuffer(gl::FRAMEBUFFER, rb.buffer_frame);
-    gl::Viewport(0, internal_size.y, internal_size.x / 3, internal_size.y / 3);
+
+    gl::Viewport(0, 0, rb.internal_size.x, rb.internal_size.y);
     gl::ClearColor(bg.r, bg.g, bg.b, 1);
     gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
 
+    return default_frame_buffer;
+}
+
+void fill_frame_with_color(const idle::color_t& color)
+{
     opengl.prog.fill.use();
     opengl.prog.fill.set_identity();
     opengl.prog.fill.set_view_identity();
 
-    const float v[]
+    const float vert[]
     {
         0, 0,
         static_cast<float>(opengl.draw_size.x), 0,
@@ -158,11 +164,25 @@ GLint setup_buffer_frame(const graphics::render_buffer_t& rb, const math::point2
         static_cast<float>(opengl.draw_size.x), static_cast<float>(opengl.draw_size.y)
     };
 
-    opengl.prog.fill.set_color({.5f, 1, 1, 1});
-    opengl.prog.fill.position_vertex(v);
+    opengl.prog.fill.set_color(color);
+    opengl.prog.fill.position_vertex(vert);
     gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
+}
 
-    gl::Viewport(0, 0, internal_size.x, internal_size.y);
+GLint setup_drawing_buffer_frame(const graphics::render_buffer_t& rb, const idle::color_t& bg)
+{
+    GLint default_frame_buffer;
+    gl::GetIntegerv(gl::FRAMEBUFFER_BINDING, &default_frame_buffer);
+    gl::BindFramebuffer(gl::FRAMEBUFFER, rb.buffer_frame);
+
+    opengl.view_mask();
+
+    gl::ClearColor(bg.r, bg.g, bg.b, 1);
+    gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
+
+    fill_frame_with_color({1,1,1,1});
+
+    opengl.view_normal();
     return default_frame_buffer;
 }
 
@@ -173,7 +193,7 @@ class render_guard
 
 public:
     render_guard(::platform::window& win)
-        : default_frame_buffer(setup_buffer_frame(*opengl.render_buffer_masked, opengl.internal_size, ::platform::background))
+        : default_frame_buffer(setup_drawing_buffer_frame(*opengl.render_buffer_masked, ::platform::background))
         , window(win)
     {}
 
@@ -217,31 +237,33 @@ void draw_pause_menu(const graphics::core& gl, const float pause_menu_alpha, con
     };
 
     gl::ActiveTexture(gl::TEXTURE0);
-    if (pause_menu_alpha < .966f)
-    {
-        gl.prog.normal.set_color({1, 1, 1, 1 - pause_menu_alpha});
-        gl::BindTexture(gl::TEXTURE_2D, rb.texture);
-        gl.prog.normal.position_vertex(v);
-        gl.prog.normal.texture_vertex(t);
-        gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
-    }
+    gl.prog.normal.set_color({1, 1, 1, 1 - pause_menu_alpha * .333f});
+    gl::BindTexture(gl::TEXTURE_2D, rb.texture);
+    gl.prog.normal.position_vertex(v);
+    gl.prog.normal.texture_vertex(t);
+    gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
 
-    gl.prog.normal.set_color({1, 1 - pause_menu_alpha * .2f, 1 - pause_menu_alpha * .1f, pause_menu_alpha * .668f});
+    gl.prog.normal.set_color({1, 1 - pause_menu_alpha * .2f, 1 - pause_menu_alpha * .1f, pause_menu_alpha * .9f});
     gl::BindTexture(gl::TEXTURE_2D, brb.texture);
     gl.prog.normal.position_vertex(v);
     gl.prog.normal.texture_vertex(tb);
     gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
 
     const float yshift = (1 - pause_menu_alpha) * 20;
-    const auto rect = idle::rect_t(gl.draw_size.x / 2 - 220.f, gl.draw_size.y / 2 - 60.f, gl.draw_size.x / 2 + 220.f, gl.draw_size.y / 2 + 60.f);
+    const idle::rect_t rect{
+            gl.draw_size.x / 2 - 220.f,
+            gl.draw_size.y / 2 - 60.f,
+            gl.draw_size.x / 2 + 220.f,
+            gl.draw_size.y / 2 + 60.f};
+
     gl.prog.text.use();
     gl.prog.text.set_color({1, .133f, .196f, pause_menu_alpha});
 
     idle::draw_text<idle::TextAlign::Center>(gl, "paused",
-                        idle::point_t(gl.draw_size.x / 2.f, rect.top + 10.f + yshift), 55);
+            {gl.draw_size.x / 2.f, rect.top + 10.f + yshift}, 55);
 
     idle::draw_text<idle::TextAlign::Center, idle::TextAlign::Center>(gl, "resume",
-                        idle::point_t(gl.draw_size.x / 2.f, rect.bottom - 35.f + yshift), 14 * pause_menu_alpha + 16);
+            {gl.draw_size.x / 2.f, rect.bottom - 35.f + yshift}, 14 * pause_menu_alpha + 16);
 }
 
 void wait_one_frame_with_skipping(std::chrono::steady_clock::time_point& new_time)
@@ -261,6 +283,40 @@ void wait_one_frame_with_skipping(std::chrono::steady_clock::time_point& new_tim
     }
 }
 
+void init_pause_menu_buffers(idle::pause_menu& pause)
+{
+    constexpr unsigned downscale = 4;
+    std::array<std::optional<graphics::render_buffer_t>, 2> intermediate_buffer;
+
+    intermediate_buffer[0].emplace(opengl.render_buffer_masked->internal_size, opengl.render_quality);
+
+    opengl.new_render_buffer(pause.buffers[0]);
+    opengl.new_render_buffer(pause.buffers[1], downscale);
+    opengl.new_render_buffer(intermediate_buffer[1], downscale);
+
+    const auto def = setup_drawing_buffer_frame(*intermediate_buffer[0], platform::background);
+
+    room_ctrl.draw_frame(opengl);
+
+    setup_unmasked_buffer_frame(*pause.buffers[0], platform::background);
+    opengl.prog.render_masked.draw_buffer(*intermediate_buffer[0]);
+
+    opengl.prog.render_blur.use();
+    opengl.prog.render_blur.set_radius(2);
+    opengl.prog.render_blur.set_direction(0, 1);
+
+    setup_unmasked_buffer_frame(*intermediate_buffer[1], platform::background);
+    opengl.prog.render_blur.draw_buffer(*pause.buffers[0]);
+
+    opengl.prog.render_blur.use();
+    opengl.prog.render_blur.set_direction(1, 0);
+
+    setup_unmasked_buffer_frame(*pause.buffers[1], platform::background);
+    opengl.prog.render_blur.draw_buffer(*intermediate_buffer[1]);
+
+    gl::BindFramebuffer(gl::FRAMEBUFFER, def);
+}
+
 }  // namespace
 
 
@@ -270,31 +326,7 @@ void application::draw()
     {
         if (!pause->buffers[1])
         {
-            constexpr unsigned downscale = 4;
-            std::optional<graphics::render_buffer_t> intermediate_buffer;
-
-            opengl.new_render_buffer(pause->buffers[0]);
-            opengl.new_render_buffer(pause->buffers[1], downscale);
-            opengl.new_render_buffer(intermediate_buffer, downscale);
-
-            opengl.prog.render_blur.use();
-            opengl.prog.render_blur.set_radius(3.f);
-            opengl.prog.render_blur.set_direction(0.f, 1.f);
-
-            const auto def = setup_buffer_frame(*pause->buffers[0], opengl.internal_size, platform::background);
-
-            room_ctrl.draw_frame(opengl);
-
-            setup_buffer_frame(*intermediate_buffer, opengl.internal_size / downscale, platform::background);
-            opengl.prog.render_blur.draw_buffer(*pause->buffers[0]);
-
-            opengl.prog.render_blur.use();
-            opengl.prog.render_blur.set_direction(1.f, 0.f);
-
-            setup_buffer_frame(*pause->buffers[1], opengl.internal_size / downscale, platform::background);
-            opengl.prog.render_blur.draw_buffer(*intermediate_buffer);
-
-            gl::BindFramebuffer(gl::FRAMEBUFFER, def);
+            init_pause_menu_buffers(*pause);
         }
 
         render_guard _{window};
@@ -318,18 +350,8 @@ int application::real_main()
 #endif
 
     PRINT_SIZE(platform::window);
-    PRINT_SIZE(window.commands);
     PRINT_SIZE(idle::controller);
-    PRINT_SIZE(graphics::core);
-    PRINT_SIZE(graphics::program_t);
-    PRINT_SIZE(graphics::textured_program_t);
     PRINT_SIZE(idle::mat4x4_t);
-    PRINT_SIZE(font_t);
-    PRINT_SIZE(std::optional<font_t>);
-    PRINT_SIZE(graphics::render_buffer_t);
-    PRINT_SIZE(std::optional<graphics::render_buffer_t>);
-    PRINT_SIZE(platform::pointer);
-    PRINT_SIZE(std::atomic<platform::pointer>);
 
     auto app_time = std::chrono::steady_clock::now();
 

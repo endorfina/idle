@@ -174,21 +174,26 @@ void apply_to_all(core::program_container_t& con, const Call& call)
     call(con.fill);
     call(con.text);
     call(con.fullbg);
+    call(con.noise);
+    call(con.gradient);
 }
 
 bool compile_shaders(core::program_container_t& prog)
 {
-    shader_compiler sc{ shaders::get_data(), shaders::source_size_uncompressed };
+    using source = shaders::source_info;
+    shader_compiler sc{ shaders::get_view(), source::size_uncompressed };
 
-    prog.render_final.program = sc.compile(shaders::source_pos_renderv, shaders::source_pos_renderf);
-    prog.render_masked.program = sc.compile(shaders::source_pos_renderv, shaders::source_pos_maskedf);
-    prog.render_blur.program = sc.compile(shaders::source_pos_renderv, shaders::source_pos_simpleblurf);
+    prog.render_final.program = sc.compile(source::pos_renderv, source::pos_renderf);
+    prog.render_masked.program = sc.compile(source::pos_renderv, source::pos_maskedf);
+    prog.render_blur.program = sc.compile(source::pos_renderv, source::pos_simpleblurf);
 
-    prog.normal.program_id = sc.compile(shaders::source_pos_normv, shaders::source_pos_normf);
-    prog.shift.program_id = sc.compile(shaders::source_pos_doublev, shaders::source_pos_normf);
-    prog.fill.program_id = sc.compile(shaders::source_pos_solidv, shaders::source_pos_solidf);
-    prog.text.program_id = sc.compile(shaders::source_pos_textv, shaders::source_pos_textf);
-    prog.fullbg.program_id = sc.compile(shaders::source_pos_solidv, shaders::source_pos_fullbgf);
+    prog.normal.program_id = sc.compile(source::pos_normv, source::pos_normf);
+    prog.shift.program_id = sc.compile(source::pos_doublev, source::pos_normf);
+    prog.fill.program_id = sc.compile(source::pos_solidv, source::pos_solidf);
+    prog.text.program_id = sc.compile(source::pos_textv, source::pos_textf);
+    prog.fullbg.program_id = sc.compile(source::pos_solidv, source::pos_fullbgf);
+    prog.noise.program_id = sc.compile(source::pos_normv, source::pos_noisef);
+    prog.gradient.program_id = sc.compile(source::pos_gradientv, source::pos_gradientf);
 
 
     if (sc.has_failed())
@@ -203,6 +208,14 @@ template<typename...Progs>
 bool programs_are_functional(const Progs& ... progs)
 {
     return (true && ... && !!progs.program_id);
+}
+
+math::point2<int> appropriate_size(const math::point2<int> size)
+{
+    int u = 64, v = 64;
+    while (u < size.x) u *= 2;
+    while (v < size.y) v *= 2;
+    return { u, v };
 }
 
 }  // namespace
@@ -251,8 +264,8 @@ void core::resize(const int window_width, const int window_height)
     screen_size.x = window_width;
     screen_size.y = window_height;
 
-    internal_size.y = 720;
-    internal_size.x = (internal_size.y * window_width) / window_height;
+    viewport_size.y = 720;
+    viewport_size.x = (viewport_size.y * window_width) / window_height;
 
     translate_vector.x = static_cast<float>(draw_size.x) / static_cast<float>(window_width);
     translate_vector.y = static_cast<float>(draw_size.y) / static_cast<float>(window_height);
@@ -262,7 +275,8 @@ void core::resize(const int window_width, const int window_height)
                 prog.shift,
                 prog.fill,
                 prog.text,
-                prog.fullbg
+                prog.fullbg,
+                prog.noise
             )) return;
 
     copy_projection_matrix(idle::mat4x4_t::orthof_static<-1, 1>(0, draw_size.x, 0, draw_size.y));
@@ -270,19 +284,22 @@ void core::resize(const int window_width, const int window_height)
     prog.fullbg.use();
     prog.fullbg.set_resolution(static_cast<float>(window_width), static_cast<float>(window_height));
 
-    render_buffer.emplace(internal_size, render_quality);
-
-    auto masked_size = internal_size;
+    const auto actual_padded_pixel_size = appropriate_size(viewport_size);
+    auto masked_size = viewport_size;
     masked_size.y *= 4;
     masked_size.y /= 3;
+
     render_buffer_masked.emplace(masked_size, render_quality);
 
     prog.render_blur.use();
     prog.render_blur.set_radius(1.f);
-    prog.render_blur.set_resolution(render_buffer->texture_h / static_cast<float>(draw_size.y));
+    prog.render_blur.set_resolution(
+            static_cast<float>(viewport_size.y)
+            / static_cast<float>(actual_padded_pixel_size.y)
+            / static_cast<float>(draw_size.y));
 
     prog.render_masked.use();
-    prog.render_masked.set_offsets(.25f, render_buffer_masked->texture_h * .75f);
+    prog.render_masked.set_offsets(3.f / 4.f, 1.f / 3.f, render_buffer_masked->texture_h * (3.f / 4.f));
 }
 
 
@@ -371,6 +388,36 @@ void fullbg_program_t::set_resolution(const GLfloat w, const GLfloat h) const
     gl::Uniform2f(resolution_handle, w, h);
 }
 
+void noise_program_t::set_secondary_color(const idle::color_t& c) const
+{
+    gl::Uniform4f(secondary_color_handle, c.r, c.g, c.b, c.a);
+}
+
+void noise_program_t::set_tertiary_color(const idle::color_t& c) const
+{
+    gl::Uniform4f(tertiary_color_handle, c.r, c.g, c.b, c.a);
+}
+
+void noise_program_t::set_seed(const idle::point_t seed) const
+{
+    gl::Uniform2f(noise_seed_handle, seed.x, seed.y);
+}
+
+void gradient_program_t::set_secondary_color(const idle::color_t& c) const
+{
+    gl::Uniform4f(secondary_color_handle, c.r, c.g, c.b, c.a);
+}
+
+void gradient_program_t::set_secondary_color(const idle::color_t& c, const float alpha) const
+{
+    gl::Uniform4f(secondary_color_handle, c.r, c.g, c.b, alpha);
+}
+
+void gradient_program_t::interpolation_vertex(const GLfloat *f) const
+{
+    gl::VertexAttribPointer(interpolation_handle, 1, gl::FLOAT, gl::FALSE_, 0, f);
+}
+
 void blur_render_program_t::set_direction(const GLfloat x, const GLfloat y) const
 {
     gl::Uniform2f(direction_handle, x, y);
@@ -386,9 +433,9 @@ void blur_render_program_t::set_resolution(const GLfloat res) const
     gl::Uniform1f(resolution_handle, res);
 }
 
-void masked_render_program_t::set_offsets(const GLfloat ratio, const GLfloat buffer_height) const
+void masked_render_program_t::set_offsets(const GLfloat ratio1, const GLfloat ratio2, const GLfloat buffer_height) const
 {
-    gl::Uniform2f(mask_offset_handle, ratio, buffer_height);
+    gl::Uniform3f(mask_offset_handle, ratio1, ratio2, buffer_height);
 }
 
 
@@ -425,6 +472,26 @@ void textured_program_t::prepare()
 
     gl::EnableVertexAttribArray(texture_position_handle);
     report_opengl_errors("textured_program_t::prepare()");
+}
+
+void noise_program_t::prepare()
+{
+    textured_program_t::prepare();
+    secondary_color_handle = gl::GetUniformLocation(program_id, "uCo2");
+    tertiary_color_handle = gl::GetUniformLocation(program_id, "uCo3");
+    noise_seed_handle = gl::GetUniformLocation(program_id, "uSeed");
+
+    report_opengl_errors("noise_program_t::prepare()");
+}
+
+void gradient_program_t::prepare()
+{
+    program_t::prepare();
+    secondary_color_handle = gl::GetUniformLocation(program_id, "uCo2");
+    interpolation_handle = static_cast<GLuint>(gl::GetAttribLocation(program_id,"aA"));
+
+    gl::EnableVertexAttribArray(interpolation_handle);
+    report_opengl_errors("gradient_program_t::prepare()");
 }
 
 void text_program_t::prepare()
@@ -512,11 +579,13 @@ void core::copy_projection_matrix(const idle::mat4x4_t& projectionMatrix) const
     set_projection_matrix(prog.fill, projectionMatrix);
     set_projection_matrix(prog.text, projectionMatrix);
     set_projection_matrix(prog.fullbg, projectionMatrix);
+    set_projection_matrix(prog.noise, projectionMatrix);
+    set_projection_matrix(prog.gradient, projectionMatrix);
 }
 
 void core::new_render_buffer(std::optional<render_buffer_t>& opt, const int div) const
 {
-    opt.emplace(internal_size / div, render_quality);
+    opt.emplace(viewport_size / div, render_quality);
 }
 
 render_buffer_t::~render_buffer_t()
@@ -528,6 +597,7 @@ render_buffer_t::~render_buffer_t()
 }
 
 render_buffer_t::render_buffer_t(const math::point2<int> tex_size, const GLint quality)
+    : internal_size(tex_size)
 {
     gl::GenFramebuffers(1, &buffer_frame);
     gl::GenTextures(1, &texture);
@@ -541,18 +611,17 @@ render_buffer_t::render_buffer_t(const math::point2<int> tex_size, const GLint q
     gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE);
     gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE);
 
-    int u = 64, v = 64;
-    while (u < tex_size.x) u *= 2;
-    while (v < tex_size.y) v *= 2;
-    texture_w = static_cast<GLfloat>(tex_size.x) / static_cast<GLfloat>(u);
-    texture_h = static_cast<GLfloat>(tex_size.y) / static_cast<GLfloat>(v);
+    const auto real_size = appropriate_size(tex_size);
+    texture_w = static_cast<GLfloat>(tex_size.x) / static_cast<GLfloat>(real_size.x);
+    texture_h = static_cast<GLfloat>(tex_size.y) / static_cast<GLfloat>(real_size.y);
 
-    LOGD("Creating fr%i/t%i/d%i, input{%d, %d}, tex{%.3f, %.3f}, real{%d, %d}",
-            buffer_frame, texture, buffer_depth, tex_size.x, tex_size.y, texture_w, texture_h, u, v);
+    LOGD("Creating fr%i/t%i/d%i, input{%d, %d}, tex{%.3f, %.3f}, real{%d, %d} (at least ~%.1fMB)",
+            buffer_frame, texture, buffer_depth, tex_size.x, tex_size.y, texture_w, texture_h, real_size.x, real_size.y,
+            real_size.x * real_size.y * sizeof(idle::color_t) / math::sqr<float>(1024) / 8.f);
 
-    gl::TexImage2D(gl::TEXTURE_2D, 0, gl::RGBA, u, v, 0, gl::RGBA, gl::UNSIGNED_BYTE, nullptr);
+    gl::TexImage2D(gl::TEXTURE_2D, 0, gl::RGBA, real_size.x, real_size.y, 0, gl::RGBA, gl::UNSIGNED_BYTE, nullptr);
     gl::BindRenderbuffer(gl::RENDERBUFFER, buffer_depth);
-    gl::RenderbufferStorage(gl::RENDERBUFFER, gl::DEPTH_COMPONENT16, u, v);
+    gl::RenderbufferStorage(gl::RENDERBUFFER, gl::DEPTH_COMPONENT16, real_size.x, real_size.y);
     gl::BindFramebuffer(gl::FRAMEBUFFER, buffer_frame);
     gl::FramebufferTexture2D(gl::FRAMEBUFFER, gl::COLOR_ATTACHMENT0, gl::TEXTURE_2D, texture, 0);
     gl::FramebufferRenderbuffer(gl::FRAMEBUFFER, gl::DEPTH_ATTACHMENT, gl::RENDERBUFFER, buffer_depth);
@@ -567,7 +636,17 @@ render_buffer_t::render_buffer_t(const math::point2<int> tex_size, const GLint q
 void core::clean()
 {
     font.reset();
-    render_buffer.reset();
+    render_buffer_masked.reset();
+}
+
+void core::view_normal() const
+{
+    gl::Viewport(0, 0, viewport_size.x, viewport_size.y);
+}
+
+void core::view_mask() const
+{
+    gl::Viewport(0, viewport_size.y, viewport_size.x / 3, viewport_size.y / 3);
 }
 
 unique_texture::unique_texture(const GLuint val) : value{val}

@@ -22,7 +22,6 @@
 #include "database.hpp"
 #include "config/head.hpp"
 #include "freetype_glue.hpp"
-#include "additional_textures.hpp"
 
 // #include <soloud.h>
 // #include <soloud_modplug.h>
@@ -171,8 +170,6 @@ bool load_everything(const ::platform::window& sys, graphics::core& gl)
         LOGE("Asset %s not found!", config::font_asset);
         return false;
     }
-
-    gl.image_id_fade = create_fade_texture();
 
     LOGD("Asset refresh was successful");
     return true;

@@ -76,7 +76,7 @@ else()
     target_include_directories(${PROJECT_NAME}-ft PRIVATE ${FREETYPE_INCLUDE_DIRS})
     target_link_libraries(${PROJECT_NAME}-ft ${FREETYPE_LIBRARIES})
 
-    get_filename_component(OUTPUT_PATH "../out" REALPATH BASE_DIR "${CMAKE_SOURCE_DIR}" CACHE)
+    get_filename_component(OUTPUT_PATH "../${PROJECT_NAME}-bin" REALPATH BASE_DIR "${CMAKE_SOURCE_DIR}" CACHE)
 
     # mostly so I can run tests in isolation at work
     if(NOT MACOSX)
@@ -97,6 +97,12 @@ else()
         endif()
 
         set_target_properties(${PROJECT_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_PATH})
+
+        set(RUN_COMMAND "cd '${OUTPUT_PATH}' && './${PROJECT_NAME}'" CACHE STRING "CLI used to boot ${PROJECT_NAME}" FORCE)
+
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E create_symlink "${CMAKE_SOURCE_DIR}/config/runtime_assets" assets
+            WORKING_DIRECTORY "${OUTPUT_PATH}")
     endif()
 endif()
 

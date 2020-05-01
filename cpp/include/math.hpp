@@ -499,6 +499,11 @@ struct point2
     }
 };
 
+template<class T, class A>
+constexpr point2<T> point_cast(const point2<A> pt)
+{
+    return { static_cast<T>(pt.x), static_cast<T>(pt.y) };
+}
 
 
 template<typename T>
@@ -1086,6 +1091,32 @@ constexpr point3<T> operator*(const matrix4x4<T, O>& mat, const point3<T> p)
              mat[1] * p.x + mat[5] * p.y + mat[9] * p.z + mat[13],
              mat[2] * p.x + mat[6] * p.y + mat[10] * p.z + mat[14] };
 }
+
+template<typename Uint>
+struct field
+{
+    Uint bits;
+
+    constexpr void set(const Uint val)
+    {
+        bits |= val;
+    }
+
+    constexpr void reset(const Uint val)
+    {
+        bits &= ~val;
+    }
+
+    constexpr bool test(const Uint val) const
+    {
+        return !! (bits & val);
+    }
+
+    constexpr void flip()
+    {
+        bits = ~bits;
+    }
+};
 
 }  // namespace math
 

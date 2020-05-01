@@ -10,11 +10,14 @@ SOURCE=$(sed -E -e 's~//.*$~~' \
     -e 's~([^_ [:alnum:]])[[:space:]]+~\1~g' \
     -e '/^$/d' \
     | tr '\n' '$' \
-    | sed -E 's~([^[:alnum:]])\$([^#@])~\1\2~g' \
+    | sed -E \
+        -e 's~([^[:alnum:]])\$+~\1~g' \
+        -e 's~([^$])(#|@@)~\1\$\2~g' \
     | tr '$' '\n')
 
 NAMESPACE=namespace
 [[ $# -gt 0 ]] && NAMESPACE+=" $*"
+readonly NAMESPACE
 
 indent()
 {
@@ -24,10 +27,15 @@ indent()
 readonly OUTPUT=$(mktemp)
 [[ -z $OUTPUT || ! -w $OUTPUT ]] && exit 1
 
-cat << _EOF
+
+# echo '//// SOURCE (WHITESPACE IS FOR LOSERS): ////'
+# echo "$SOURCE" | sed -E 's~[^[:alnum:][:punct:]]~█~g;s~^~//  ~'
+
+cat << _END
 /*  Generated on $(date) by ${BASH_SOURCE[0]##*/}  */
 
 #pragma once
+#include <array>
 #include <string_view>
 
 #define Ss(byte) static_cast<char>(0x##byte)
@@ -36,25 +44,27 @@ namespace shaders
 {
 $NAMESPACE
 {
-_EOF
+enum source_info
+{
+_END
 
-while [[ $SOURCE =~ @@[[:space:]]*([_[:alnum:]]+)[^_#[:alnum:]]*([^@]+\})(.*)$ ]]
+while [[ $SOURCE =~ @@[[:space:]]*([_[:alnum:]]+)[^[:punct:][:alnum:]]*([^@]+\})(.*)$ ]]
 do
-    echo "constexpr unsigned int source_pos_${BASH_REMATCH[1]} = $(wc -c < "$OUTPUT");"
+    printf '    pos_%s = 0x%03x,\n' "${BASH_REMATCH[1]}" "$(wc -c < "$OUTPUT")"
 
-    echo "${BASH_REMATCH[2]}" >> "${OUTPUT}"
-    dd if=/dev/zero bs=1 count=1 >> "${OUTPUT}" 2>/dev/null
+    printf '%s\0' "${BASH_REMATCH[2]}" >> "$OUTPUT"
 
-    SOURCE="${BASH_REMATCH[3]}"
+    SOURCE=${BASH_REMATCH[3]}
 done
 
-cat << _EOF
+cat << _END
 
-constexpr unsigned int source_size_uncompressed = $(wc -c < "$OUTPUT");
+    size_uncompressed = $(wc -c < "$OUTPUT")
+};
 
-constexpr char raw_data []
+constexpr std::array deflated_data
 {
-_EOF
+_END
 indent
 
 counter=0
@@ -68,10 +78,10 @@ for iter in $(gzip -cn9q < "$OUTPUT" \
     | tr '\n' ' ' \
     | sed -E 's~,[[:space:]]*$~~')
 do
-    (( counter = counter + 1 ))
+    (( ++counter ))
     echo -n "$iter"
 
-    if [[ $counter -eq 12 ]]
+    if [[ $counter -eq 15 ]]
     then
         echo
         indent
@@ -79,20 +89,20 @@ do
     fi
 done
 
-cat << _EOF
+cat << _END
 
 };
 
-constexpr std::string_view get_data()
+constexpr std::string_view get_view()
 {
-    return { raw_data, sizeof(raw_data) };
+    return { deflated_data.data(), deflated_data.size() };
 }
 
 }  // $NAMESPACE
 }  // namespace shaders
 
 #undef Ss
-_EOF
+_END
 
 rm "$OUTPUT" >&2
 

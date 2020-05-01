@@ -18,19 +18,28 @@
 */
 #pragma once
 #include <array>
+#include <random>
 #include "gl.hpp"
 #include "objects.hpp"
 
 namespace idle
 {
-struct landing_room
+
+struct great_crimson_thing
 {
+    using arm_t = std::array<float, 500>;
+
     float alpha = 0, rotation = 0;
     unsigned counter = 1;
+    std::array<arm_t, 2> legs;
+};
 
-    std::array<float, 128> ray_array, ray_array_mirror;
-
-    landing_room(graphics::core&);
+struct landing_room
+{
+    std::minstd_rand fast_random_device;
+    std::array<float, 2> noise_seed;
+    bool clicked_during_intro = false;
+    great_crimson_thing thing;
 
     bool step(graphics::core&);
 

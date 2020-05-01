@@ -28,11 +28,11 @@ precision mediump float;
 #endif
 uniform sampler2D uT;
 varying vec2 vUV;
-uniform vec2 uO; // the uniform offsets
+uniform vec3 uO; // the uniform offsets
 
 void main() {
-  vec4 raw = texture2D(uT, vec2(vUV.x, vUV.y * (1 - uO.x)));
-  vec4 mask = texture2D(uT, vec2(vUV.x * uO.x, vUV.y * uO.x + uO.y));
+  vec4 raw = texture2D(uT, vec2(vUV.x, vUV.y * uO.x));
+  vec4 mask = texture2D(uT, vec2(vUV.x * uO.y, vUV.y * uO.x * uO.y + uO.z));
   gl_FragColor = raw * mask;
 }
 
@@ -114,6 +114,30 @@ void main() {
   gl_FragColor = texture2D(uT, vUV) * uCol;
 }
 
+@@ gradientv
+
+attribute vec2 vPos;
+uniform mat4 uPM, uVM, uMM; // projection, view, model
+attribute float aA;
+varying float vA;
+
+void main() {
+    vA = aA;
+    gl_Position = uPM * uVM * uMM * vec4(vPos, 0.0, 1.0);
+}
+
+@@ gradientf
+
+#ifdef GL_ES
+precision mediump float;
+#endif
+uniform vec4 uCol, uCo2;
+varying float vA;
+
+void main() {
+  gl_FragColor = uCol + (uCo2 - uCol) * vA;
+}
+
 @@ doublev
 
 attribute vec2 vPos, vDest, aUV;
@@ -161,7 +185,30 @@ void main() {
     gl_FragColor = uCol;
 }
 
-// TODO: noise fragment shader, linked to solidv
+@@ noisef  // linked with normv
+
+#ifdef GL_ES
+precision mediump float;
+#endif
+uniform vec4 uCol, uCo2, uCo3;
+varying vec2 vUV;
+uniform vec2 uSeed;
+
+float rand(vec2 co)  // straight up textbook rand
+{
+    float a = 12.9898;
+    float b = 78.233;
+    float c = 43758.5453;
+    float dt= dot(co.xy ,vec2(a,b));
+    float sn= mod(dt,3.14);
+    return fract(sin(sn) * c);
+}
+
+void main() {
+    float dist = min(distance(vUV, vec2(0.5, 0.5)) * 1.49, 1.0);
+    vec4 sum = uCo2 + (uCo3 - uCo2) * dist;
+    gl_FragColor = uCol + (sum - uCol) * rand(vUV + uSeed);
+}
 
 @@ textv
 

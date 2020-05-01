@@ -177,8 +177,18 @@ bool controller::execute_pending_room_change(graphics::core& gl)
         std::visit(
             [&gl, this] (const auto& gate)
             {
-                LOGI("Switching context to: %s", room_label<typename TYPE_REMOVE_CVR(gate)::opened_type>);
-                gate.open(current_variant, gl);
+                using T = typename TYPE_REMOVE_CVR(gate)::opened_type;
+                LOGI("Switching context to: %s", room_label<T>);
+
+                if constexpr (std::is_constructible_v<T, graphics::core&>)
+                {
+                    gate.open(current_variant, gl);
+                }
+                else
+                {
+                    static_assert(std::is_constructible_v<T>);
+                    gate.open(current_variant);
+                }
             },
             *next_variant.rooms);
 

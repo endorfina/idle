@@ -22,8 +22,10 @@
 
 namespace idle
 {
+namespace hsv
+{
 
-constexpr float _color_hsv_m(const float a, const float b, float c)
+constexpr float compose(const float a, const float b, float c)
 {
     if (c > 1.f)
         c -= 1.f;
@@ -34,9 +36,11 @@ constexpr float _color_hsv_m(const float a, const float b, float c)
     else if (2 * c < 1.f)
         return a;
     else if (3 * c < 2.f)
-        return b + (a - b) * (.666f - c) * 6;
+        return b + (a - b) * (.6666f - c) * 6;
     return b;
 }
+
+}  // namespace hsv
 
 constexpr color_t color_hsv(float hue, float sat, float lum)
 {
@@ -45,9 +49,9 @@ constexpr color_t color_hsv(float hue, float sat, float lum)
     lum = 2 * lum - sat;
 
     return {
-        _color_hsv_m(sat, lum, hue + .333f),
-        _color_hsv_m(sat, lum, hue),
-        _color_hsv_m(sat, lum, hue - .333f),
+        hsv::compose(sat, lum, hue + .3333f),
+        hsv::compose(sat, lum, hue),
+        hsv::compose(sat, lum, hue - .3333f),
         1
     };
 }

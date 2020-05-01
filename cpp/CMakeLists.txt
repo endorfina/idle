@@ -47,7 +47,6 @@ set(${PROJECT_NAME}-files
         room_landing.cpp
         room_model.cpp
         scoped_thread.cpp
-        additional_textures.cpp
         lodge.cpp
         application.cpp
         main_wrapper.cpp)
@@ -65,7 +64,7 @@ endfunction()
 
 set(SHADER_OUTPUT_BASENAME "embedded_shaders.hpp")
 set(SHADER_OUTPUT "${PROJECT_NAME}-include/${SHADER_OUTPUT_BASENAME}")
-set(SHADER_SOURCE "${CMAKE_SOURCE_DIR}/shader_source.txt")
+set(SHADER_SOURCE "${CMAKE_SOURCE_DIR}/shader_source.glsl")
 set(SHADER_GENERATOR "${CMAKE_SOURCE_DIR}/generate.sh")
 
 add_library(${PROJECT_NAME}-obj STATIC "${CMAKE_BINARY_DIR}/${SHADER_OUTPUT}")
@@ -74,6 +73,8 @@ target_link_libraries(${PROJECT_NAME}-obj lodepng)
 add_custom_target(${PROJECT_NAME}-generate-dir
     COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_NAME}-include")
 
+# When we build idle this will automatically re-generate the header,
+# provided either the shader source or the script had been modified.
 add_custom_target(${PROJECT_NAME}-generate-sh
     COMMAND test -r "${SHADER_OUTPUT}" -a "${SHADER_OUTPUT}" -nt "${SHADER_SOURCE}" -a "${SHADER_OUTPUT}" -nt "${SHADER_GENERATOR}" && echo "${SHADER_OUTPUT_BASENAME} is up-to-date." || "${SHADER_GENERATOR}" < "${SHADER_SOURCE}" > "${SHADER_OUTPUT}"
     BYPRODUCTS "${SHADER_OUTPUT}"
@@ -91,7 +92,7 @@ else()
     target_sources(${PROJECT_NAME}-obj PRIVATE ${${PROJECT_NAME}-files})
 endif()
 
-target_compile_definitions(${PROJECT_NAME}-obj PUBLIC APPLICATION_FPS=40)
+target_compile_definitions(${PROJECT_NAME}-obj PUBLIC APPLICATION_FPS=60)
 set_target_properties(${PROJECT_NAME}-obj PROPERTIES COMPILE_FLAGS "-Wall -Wredundant-move")
 set_source_files_properties(jpeg.cpp PROPERTIES COMPILE_FLAGS "-Wno-sign-compare")
 

@@ -111,6 +111,37 @@ public:
     void prepare();
 };
 
+struct noise_program_t : textured_program_t
+{
+private:
+    GLint secondary_color_handle = 0, tertiary_color_handle = 0, noise_seed_handle = 0;
+
+public:
+    void prepare();
+
+    void set_secondary_color(const idle::color_t& c) const;
+
+    void set_tertiary_color(const idle::color_t& c) const;
+
+    void set_seed(idle::point_t seed) const;
+};
+
+struct gradient_program_t : program_t
+{
+private:
+    GLuint interpolation_handle = 0;
+    GLint secondary_color_handle = 0;
+
+public:
+    void prepare();
+
+    void set_secondary_color(const idle::color_t& c) const;
+
+    void set_secondary_color(const idle::color_t& c, float alpha) const;
+
+    void interpolation_vertex(const GLfloat *f) const;
+};
+
 struct double_vertex_program_t : textured_program_t
 {
 private:
