@@ -41,7 +41,7 @@ font_t::font_t(const GLuint atlas_tex, font_t::map_t glyph_map, const float glyp
 {
 }
 
-void font_t::glyph_t::draw(const graphics::text_program_t& rcp, const float size, idle::point_t pos) const
+void font_t::glyph_t::draw(const graphics::text_program_t& rcp, const float size, const idle::point_t pos) const
 {
     const float tex_coords[8]
     {
@@ -51,8 +51,7 @@ void font_t::glyph_t::draw(const graphics::text_program_t& rcp, const float size
         texture_position.x + size, texture_position.y + size
     };
 
-    pos += offset;
-    rcp.set_text_offset(pos.x, pos.y);
+    rcp.set_text_offset(pos + offset);
     rcp.texture_vertex(tex_coords);
     gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
 }

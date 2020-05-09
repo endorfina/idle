@@ -142,7 +142,7 @@ struct core
 
     bool setup_graphics();
 
-    void resize(int window_width, int window_height);
+    bool resize(math::point2<int> window_size);
 
     void new_render_buffer(std::optional<render_buffer_t>& opt, int divider = 1) const;
 

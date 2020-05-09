@@ -151,7 +151,7 @@ private:
 public:
     void destination_vertex(const GLfloat *f) const;
 
-    void set_interpolation(const GLfloat x) const;
+    void set_interpolation(GLfloat x) const;
 
     void prepare();
 };
@@ -162,7 +162,7 @@ private:
     GLint font_offset_handle = 0;
 
 public:
-    void set_text_offset(const GLfloat x, const GLfloat y) const;
+    void set_text_offset(idle::point_t offset) const;
 
     void prepare();
 };
@@ -173,9 +173,9 @@ private:
     GLuint offset_handle = 0, resolution_handle = 0;
 
 public:
-    void set_offset(const GLfloat x) const;
+    void set_offset(GLfloat x) const;
 
-    void set_resolution(const GLfloat w, const GLfloat h) const;
+    void set_resolution(idle::point_t res) const;
 
     void prepare();
 };

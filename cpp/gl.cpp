@@ -246,29 +246,20 @@ bool core::setup_graphics()
     return true;
 }
 
-void core::resize(const int window_width, const int window_height)
+bool core::resize(const math::point2<int> window_size)
 {
-    LOGI("Changing resolution to %i x %i", window_width, window_height);
-
-    if (window_width < window_height)
+    if (window_size.x * 4 / 5 < window_size.y)
     {
-        draw_size.x = 360;
-        draw_size.y = (draw_size.x * window_height) / window_width;
-    }
-    else
-    {
-        draw_size.y = 360;
-        draw_size.x = (draw_size.y * window_width) / window_height;
+        LOGW("Vertical mode has been disabled");
+        return false;
     }
 
-    screen_size.x = window_width;
-    screen_size.y = window_height;
+    LOGI("Window size set to %i x %i", window_size.x, window_size.y);
 
-    viewport_size.y = 720;
-    viewport_size.x = (viewport_size.y * window_width) / window_height;
-
-    translate_vector.x = static_cast<float>(draw_size.x) / static_cast<float>(window_width);
-    translate_vector.y = static_cast<float>(draw_size.y) / static_cast<float>(window_height);
+    draw_size = { 360 * window_size.x / window_size.y, 360 };
+    viewport_size = { 720 * window_size.x / window_size.y, 720 };
+    screen_size = window_size;
+    translate_vector = math::point_cast<float>(draw_size) / math::point_cast<float>(window_size);
 
     if (!programs_are_functional(
                 prog.normal,
@@ -277,12 +268,12 @@ void core::resize(const int window_width, const int window_height)
                 prog.text,
                 prog.fullbg,
                 prog.noise
-            )) return;
+            )) return false;
 
     copy_projection_matrix(idle::mat4x4_t::orthof_static<-1, 1>(0, draw_size.x, 0, draw_size.y));
 
     prog.fullbg.use();
-    prog.fullbg.set_resolution(static_cast<float>(window_width), static_cast<float>(window_height));
+    prog.fullbg.set_resolution(math::point_cast<float>(window_size));
 
     const auto actual_padded_pixel_size = appropriate_size(viewport_size);
     auto masked_size = viewport_size;
@@ -300,6 +291,8 @@ void core::resize(const int window_width, const int window_height)
 
     prog.render_masked.use();
     prog.render_masked.set_offsets(3.f / 4.f, 1.f / 3.f, render_buffer_masked->texture_h * (3.f / 4.f));
+
+    return true;
 }
 
 
@@ -368,9 +361,9 @@ void double_vertex_program_t::destination_vertex(const GLfloat *f) const
     gl::VertexAttribPointer(destination_handle, 2, gl::FLOAT, gl::FALSE_, 0, f);
 }
 
-void text_program_t::set_text_offset(const GLfloat x, const GLfloat y) const
+void text_program_t::set_text_offset(const idle::point_t offset) const
 {
-    gl::Uniform2f(font_offset_handle, x, y);
+    gl::Uniform2f(font_offset_handle, offset.x, offset.y);
 }
 
 void double_vertex_program_t::set_interpolation(const GLfloat x) const
@@ -383,9 +376,9 @@ void fullbg_program_t::set_offset(const GLfloat x) const
     gl::Uniform1f(offset_handle, x);
 }
 
-void fullbg_program_t::set_resolution(const GLfloat w, const GLfloat h) const
+void fullbg_program_t::set_resolution(const idle::point_t res) const
 {
-    gl::Uniform2f(resolution_handle, w, h);
+    gl::Uniform2f(resolution_handle, res.x, res.y);
 }
 
 void noise_program_t::set_secondary_color(const idle::color_t& c) const

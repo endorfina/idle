@@ -114,19 +114,23 @@ bool application::execute_commands(const bool is_nested)
     if (window.resize_request)
     {
         const auto now = std::chrono::system_clock::now();
+
         if (now > earliest_available_resize)
         {
-            const auto& rq = *window.resize_request;
-            opengl.resize(rq.w, rq.h);
-
+            const auto request = std::move(*window.resize_request);
             window.resize_request.reset();
 
-            room_ctrl.resize({
-                static_cast<float>(opengl.draw_size.x),
-                static_cast<float>(opengl.draw_size.y)
-            });
+            blank_display = !opengl.resize({request.w, request.h});
 
-            earliest_available_resize = now + std::chrono::seconds(1);
+            if (!blank_display)
+            {
+                room_ctrl.resize({
+                    static_cast<float>(opengl.draw_size.x),
+                    static_cast<float>(opengl.draw_size.y)
+                });
+
+                earliest_available_resize = now + std::chrono::milliseconds(500);
+            }
         }
     }
 
@@ -189,12 +193,10 @@ GLint setup_drawing_buffer_frame(const graphics::render_buffer_t& rb, const idle
 class render_guard
 {
     GLint default_frame_buffer = 0;
-    ::platform::window& window;
 
 public:
-    render_guard(::platform::window& win)
+    render_guard()
         : default_frame_buffer(setup_drawing_buffer_frame(*opengl.render_buffer_masked, ::platform::background))
-        , window(win)
     {}
 
     ~render_guard()
@@ -202,7 +204,6 @@ public:
         gl::BindFramebuffer(gl::FRAMEBUFFER, default_frame_buffer);
         gl::Viewport(0, 0, opengl.screen_size.x, opengl.screen_size.y);
         opengl.prog.render_masked.draw_buffer(*opengl.render_buffer_masked);
-        window.buffer_swap();
     }
 };
 
@@ -322,21 +323,27 @@ void init_pause_menu_buffers(idle::pause_menu& pause)
 
 void application::draw()
 {
-    if (pause)
+    if (blank_display)
+    {
+        gl::ClearColor(0, 0, 0, 1);
+        gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
+    }
+    else if (pause)
     {
         if (!pause->buffers[1])
         {
             init_pause_menu_buffers(*pause);
         }
 
-        render_guard _{window};
+        render_guard rg;
         draw_pause_menu(opengl, pause->animation, *pause->buffers[0], *pause->buffers[1]);
     }
     else
     {
-        render_guard _{window};
+        render_guard rg;
         room_ctrl.draw_frame(opengl);
     }
+    window.buffer_swap();
 }
 
 #define PRINT_SIZE(obj) LOGD("# sizeof " #obj " = %zu", sizeof(obj))
@@ -441,8 +448,11 @@ bool application::load()
             if (update_display && std::chrono::steady_clock::now() - lt > minimum_elapsed)
             {
                 lt += std::chrono::duration_cast<std::chrono::steady_clock::time_point::duration>(minimum_elapsed);
-                render_guard _{window};
-                la.draw(opengl);
+                {
+                    render_guard rg;
+                    la.draw(opengl);
+                }
+                window.buffer_swap();
             }
         }
     }

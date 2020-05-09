@@ -29,7 +29,7 @@ namespace isolation
 class application
 {
     idle::pointer pointer;
-    bool update_display = false;
+    bool update_display = false, blank_display = true;
     std::chrono::system_clock::time_point earliest_available_resize;
 
 public:
