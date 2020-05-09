@@ -42,18 +42,18 @@ struct egl_display
 
     egl_display() = delete;
 
-    static const egl_display& cast(const window::data_t& data)
+    static const egl_display& cast(const context::data_t& data)
     {
         return *std::launder(reinterpret_cast<const egl_display*>(data));
     }
 
-    static egl_display& cast(window::data_t& data)
+    static egl_display& cast(context::data_t& data)
     {
         return *std::launder(reinterpret_cast<egl_display*>(data));
     }
 };
 
-static_assert(sizeof(egl_display) <= sizeof(window::data_t));
+static_assert(sizeof(egl_display) <= sizeof(context::data_t));
 
 /* all higher than 4 are OK with me */
 constexpr EGLint attributes[]
@@ -153,7 +153,7 @@ std::optional<resize_request_t> create_window(egl_display& egl)
 
 int32_t android_handle_input(android_app * app, AInputEvent* event)
 {
-    auto& win = *reinterpret_cast<window*>(app->userData);
+    auto& win = *reinterpret_cast<context*>(app->userData);
 
     switch (AInputEvent_getType(event))
     {
@@ -191,7 +191,7 @@ int32_t android_handle_input(android_app * app, AInputEvent* event)
 
 void android_handle_command(struct android_app* app, const int32_t cmd)
 {
-    auto& win = *reinterpret_cast<window*>(app->userData);
+    auto& win = *reinterpret_cast<context*>(app->userData);
 
     switch (cmd) {
         case APP_CMD_SAVE_STATE:
@@ -230,12 +230,12 @@ void android_handle_command(struct android_app* app, const int32_t cmd)
 
 }  // namespace
 
-window::window(struct android_app* ptr)
+context::context(struct android_app* ptr)
 {
     assert(ptr);
     auto& egl = egl_display::cast(data);
 
-    LOGD("window::window");
+    LOGD("context::context");
 
     asset::android_activity = egl.android = ptr;
     egl.android->onAppCmd = android_handle_command;
@@ -247,13 +247,13 @@ window::window(struct android_app* ptr)
     egl.surface = EGL_NO_SURFACE;
 }
 
-void window::buffer_swap()
+void context::buffer_swap()
 {
     auto& egl = egl_display::cast(data);
     eglSwapBuffers(egl.display, egl.surface);
 }
 
-void window::event_loop_back(bool block_if_possible)
+void context::event_loop_back(bool block_if_possible)
 {
     int events;
     android_poll_source * source;
@@ -277,19 +277,19 @@ void window::event_loop_back(bool block_if_possible)
     }
 }
 
-window::~window()
+context::~context()
 {
-    LOGD("window::~window");
+    LOGD("context::~context");
     terminate_display();
 }
 
-bool window::has_gl_context() const
+bool context::has_opengl() const
 {
     auto& egl = egl_display::cast(data);
     return egl.display != EGL_NO_DISPLAY;
 }
 
-void window::terminate_display()
+void context::terminate_display()
 {
     auto& egl = egl_display::cast(data);
 

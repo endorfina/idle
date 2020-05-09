@@ -17,7 +17,6 @@
     along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "platform/display.hpp"
 #include <log.hpp>
 #include "application.hpp"
 

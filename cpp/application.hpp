@@ -21,7 +21,7 @@
 #include <optional>
 #include "gl.hpp"
 #include "pointer.hpp"
-#include "platform/display.hpp"
+#include "platform/context.hpp"
 #include "pause.hpp"
 
 namespace isolation
@@ -35,7 +35,7 @@ class application
 public:
     std::optional<idle::pause_menu> pause;
 
-    ::platform::window window;
+    ::platform::context window;
 
 private:
     bool execute_commands(bool nested);

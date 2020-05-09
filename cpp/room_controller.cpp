@@ -20,7 +20,6 @@
 #include <chrono>
 #include <log.hpp>
 
-#include "platform/display.hpp"
 #include "room_variant.hpp"
 #include "room_controller.hpp"
 #include "draw_text.hpp"

@@ -31,7 +31,7 @@ namespace platform
 constexpr math::color<float> background{.35f, .3f, .35f};
 
 
-struct window
+struct context
 {
     using data_t = std::byte[sizeof(void*) * 4];
 
@@ -43,10 +43,10 @@ struct window
 #ifdef __ANDROID__
     window(struct android_app *);
 #else
-    window();
+    context();
 #endif
 
-    ~window();
+    ~context();
 
     void terminate_display();
 
@@ -54,7 +54,7 @@ struct window
 
     void event_loop_back(bool block_if_possible);
 
-    bool has_gl_context() const;
+    bool has_opengl() const;
 };
 
 }  // namespace platform

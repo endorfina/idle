@@ -19,15 +19,15 @@
 
 #include <cstdio>
 #include <future>
-#include "platform/display.hpp"
-#include "gl.hpp"
 #include "application.hpp"
 #include "drawable.hpp"
 #include "draw_text.hpp"
 #include "room_variant.hpp"
 #include "room_controller.hpp"
 #include "lodge.hpp"
-#include "database.hpp"
+#include "freetype_glue.hpp"
+#include "config/head.hpp"
+#include "platform/asset_access.hpp"
 
 namespace
 {
@@ -356,7 +356,7 @@ int application::real_main()
     LOGD("### GCC %d.%d", __GNUC__, __GNUC_MINOR__);
 #endif
 
-    PRINT_SIZE(platform::window);
+    PRINT_SIZE(platform::context);
     PRINT_SIZE(idle::controller);
     PRINT_SIZE(idle::mat4x4_t);
 
@@ -381,7 +381,7 @@ int application::real_main()
             pause->animation += (1 - pause->animation) / 20;
         }
 
-        if (window.has_gl_context())
+        if (window.has_opengl())
         {
             if (update_display)
             {
@@ -427,7 +427,25 @@ bool application::load()
     std::thread loader_thread {
             [this] (std::promise<bool> promise)
             {
-                promise.set_value(idle::load_everything(window, opengl));
+                bool success = false;
+
+                if (const auto fontfile = platform::asset::hold(idle::config::font_asset))
+                {
+#ifndef __ANDROID__
+                    constexpr int resolution = 72;
+#else
+                    constexpr int resolution = 48;
+#endif
+                    if (auto opt = fonts::freetype_glue{}.load(fontfile.view(), resolution))
+                    {
+                        LOGD("Font acquired!");
+                        opengl.font.swap(opt);
+                    }
+
+                    success = true;
+                }
+
+                promise.set_value(success);
             },
             std::move(loader_callback)
         };
@@ -441,7 +459,7 @@ bool application::load()
             return false;
         }
 
-        if (window.has_gl_context())
+        if (window.has_opengl())
         {
             idle::image_t::load_topmost_queued_picture();
 

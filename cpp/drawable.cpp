@@ -25,7 +25,6 @@
 #include <zlib.hpp>
 #include "gl.hpp"
 #include "platform/asset_access.hpp"
-#include "platform/display.hpp"
 #include "drawable.hpp"
 #include <lodepng.h>
 

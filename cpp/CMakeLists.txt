@@ -28,7 +28,7 @@ option(PRUNE_SYMBOLS "Removes symbols at build time" OFF)
 
 option(MAKESHIFT_UNITY "Tries to build the main library in unity mode, when cmake doesn't provide one" ON)
 
-option(COMPILE_GALLERY OFF)
+option(COMPILE_GALLERY "Rig testing gallery" OFF)
 
 add_library(lodepng STATIC "lodepng/lodepng.cpp")
 target_compile_definitions(lodepng PUBLIC LODEPNG_NO_COMPILE_ZLIB LODEPNG_NO_COMPILE_DISK)
@@ -37,7 +37,6 @@ target_include_directories(lodepng INTERFACE lodepng)
 include_directories(${PROJECT_SOURCE_DIR}/include)
 
 set(${PROJECT_NAME}-files
-        database.cpp
         drawable.cpp
         pointer.cpp
         fonts.cpp
@@ -45,7 +44,6 @@ set(${PROJECT_NAME}-files
         spinlock.cpp
         room_controller.cpp
         room_landing.cpp
-        room_model.cpp
         scoped_thread.cpp
         lodge.cpp
         application.cpp
@@ -86,6 +84,11 @@ add_dependencies(${PROJECT_NAME}-obj ${PROJECT_NAME}-generate-sh)
 
 target_include_directories(${PROJECT_NAME}-obj PRIVATE "${CMAKE_BINARY_DIR}/${PROJECT_NAME}-include")
 
+if(COMPILE_GALLERY)
+    list(APPEND ${PROJECT_NAME}-files room_model.cpp)
+    target_compile_definitions(${PROJECT_NAME}-obj PUBLIC IDLE_COMPILE_GALLERY)
+endif()
+
 if(MAKESHIFT_UNITY)
     jumbo(${PROJECT_NAME}-obj "${${PROJECT_NAME}-files}")
 else()
@@ -100,10 +103,6 @@ if(DEFINED CMAKE_BUILD_TYPE AND CMAKE_BUILD_TYPE STREQUAL "Debug")
     target_compile_definitions(${PROJECT_NAME}-obj PUBLIC DEBUG)
 else()
     target_compile_definitions(lodepng PUBLIC LODEPNG_NO_COMPILE_ERROR_TEXT)
-endif()
-
-if(COMPILE_GALLERY)
-    target_compile_definitions(${PROJECT_NAME}-obj PUBLIC IDLE_COMPILE_GALLERY)
 endif()
 
 add_subdirectory(platform)

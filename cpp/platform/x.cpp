@@ -29,7 +29,7 @@
 #include <atomic>
 
 #include <log.hpp>
-#include "display.hpp"
+#include "context.hpp"
 #include "asset_access.hpp"
 
 namespace platform
@@ -46,12 +46,12 @@ struct x11_display
 
     x11_display() = delete;
 
-    static const x11_display& cast(const window::data_t& data)
+    static const x11_display& cast(const context::data_t& data)
     {
         return *std::launder(reinterpret_cast<const x11_display*>(data));
     }
 
-    static x11_display& cast(window::data_t& data)
+    static x11_display& cast(context::data_t& data)
     {
         return *std::launder(reinterpret_cast<x11_display*>(data));
     }
@@ -75,15 +75,15 @@ int x_error_handler(Display *dpy, XErrorEvent *ev)
     return 0;
 }
 
-static_assert(sizeof(x11_display) <= sizeof(window::data_t));
+static_assert(sizeof(x11_display) <= sizeof(context::data_t));
 
 } // namespace
 
-window::window()
+context::context()
 {
     auto& x = x11_display::cast(data);
 
-    LOGD("window::window");
+    LOGD("context::context");
 
     x.display = nullptr;
 
@@ -250,13 +250,13 @@ window::window()
     commands.insert(command::GainedFocus); // TODO: Make X handle focus as to reduce resource usage when idle
 }
 
-void window::buffer_swap()
+void context::buffer_swap()
 {
     auto& x = x11_display::cast(data);
     glXSwapBuffers(x.display, x.window);
 }
 
-void window::event_loop_back(bool)
+void context::event_loop_back(bool)
 {
     auto& x = x11_display::cast(data);
     XEvent xev;
@@ -310,23 +310,23 @@ void window::event_loop_back(bool)
     }
 }
 
-window::~window()
+context::~context()
 {
-    LOGD("window::~window");
+    LOGD("context::~context");
     terminate_display();
 }
 
-bool window::has_gl_context() const
+bool context::has_opengl() const
 {
     auto& x = x11_display::cast(data);
     return !!x.display;
 }
 
-void window::terminate_display()
+void context::terminate_display()
 {
     auto& x = x11_display::cast(data);
 
-    LOGD("window::terminate_display");
+    LOGD("context::terminate_display");
 
     if (x.display)
     {
