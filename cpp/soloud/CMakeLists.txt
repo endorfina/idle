@@ -44,8 +44,10 @@ set_target_properties(soloud PROPERTIES CXX_STANDARD 11)
 add_library(modplug STATIC
             "ext/libmodplug/src/libmodplug/it_defs.h"
             "ext/libmodplug/src/libmodplug/sndfile.h"
-            "ext/libmodplug/src/libmodplug/stdafx.h"
-            ${LIBMODPLUG_FILES})
+            "ext/libmodplug/src/libmodplug/stdafx.h")
+
+target_sources(modplug PRIVATE ${LIBMODPLUG_FILES})
+
 target_compile_definitions(modplug PRIVATE MODPLUG_BUILD MODPLUG_STATIC HAVE_SETENV HAVE_SINF)
 set_target_properties(modplug PROPERTIES COMPILE_FLAGS ${SOLOUD_COMPILE_FLAGS})
 set_target_properties(modplug PROPERTIES CXX_STANDARD 11)

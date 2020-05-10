@@ -34,8 +34,6 @@ add_library(lodepng STATIC "lodepng/lodepng.cpp")
 target_compile_definitions(lodepng PUBLIC LODEPNG_NO_COMPILE_ZLIB LODEPNG_NO_COMPILE_DISK)
 target_include_directories(lodepng INTERFACE lodepng)
 
-include_directories(${PROJECT_SOURCE_DIR}/include)
-
 set(${PROJECT_NAME}-files
         drawable.cpp
         pointer.cpp
@@ -65,8 +63,9 @@ set(SHADER_OUTPUT "${PROJECT_NAME}-include/${SHADER_OUTPUT_BASENAME}")
 set(SHADER_SOURCE "${CMAKE_SOURCE_DIR}/shader_source.glsl")
 set(SHADER_GENERATOR "${CMAKE_SOURCE_DIR}/generate.sh")
 
-add_library(${PROJECT_NAME}-obj STATIC "${CMAKE_BINARY_DIR}/${SHADER_OUTPUT}")
-target_link_libraries(${PROJECT_NAME}-obj lodepng)
+add_library(${PROJECT_NAME}-obj STATIC
+        "${CMAKE_BINARY_DIR}/${SHADER_OUTPUT}"
+        include/math.hpp)
 
 add_custom_target(${PROJECT_NAME}-generate-dir
     COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_NAME}-include")
@@ -105,8 +104,13 @@ else()
     target_compile_definitions(lodepng PUBLIC LODEPNG_NO_COMPILE_ERROR_TEXT)
 endif()
 
+add_library(${PROJECT_NAME}-ft STATIC "freetype_glue.cpp")
+
 add_subdirectory(platform)
 add_subdirectory(soloud)
+
+target_include_directories(${PROJECT_NAME}-ft PUBLIC include)
+target_link_libraries(${PROJECT_NAME}-obj PUBLIC ${PROJECT_NAME}-ft PRIVATE lodepng)
 
 if(NOT ANDROID)
     add_subdirectory(test)

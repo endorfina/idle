@@ -41,7 +41,7 @@ struct context
     std::optional<resize_request_t> resize_request;
 
 #ifdef __ANDROID__
-    window(struct android_app *);
+    context(struct android_app *);
 #else
     context();
 #endif

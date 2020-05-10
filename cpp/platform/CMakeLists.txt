@@ -1,6 +1,5 @@
 find_package(ZLIB REQUIRED)
-
-add_library(${PROJECT_NAME}-ft STATIC "../freetype_glue.cpp")
+cmake_policy(SET CMP0079 NEW)
 
 if(ANDROID)
     set(PLATFORM_LIBRARIES "android" "log" "EGL" "GLESv2")
@@ -12,55 +11,50 @@ if(ANDROID)
 
     message(STATUS "Local freetype: ${FREETYPE_SOURCE_LOCATION}")
 
-    file(GLOB FT_PUBLIC_HEADERS "${FREETYPE_SOURCE_LOCATION}/include/ft2build.h" "${FREETYPE_SOURCE_LOCATION}/include/freetype/*.h")
-    file(GLOB FT_PUBLIC_CONFIG_HEADERS "${FREETYPE_SOURCE_LOCATION}/include/freetype/config/*.h")
-    file(GLOB FT_PRIVATE_HEADERS "${FREETYPE_SOURCE_LOCATION}/include/freetype/internal/*.h")
+    file(GLOB FT_HEADERS RELATIVE "${FREETYPE_SOURCE_LOCATION}/include" "ft2build.h" "freetype/*.h" "freetype/config/*.h" "freetype/internal/*.h")
+    file(GLOB FT_SOURCES RELATIVE "${FREETYPE_SOURCE_LOCATION}/src"
+            autofit/autofit.c
+            base/ftbase.c
+            base/ftbbox.c
+            base/ftbitmap.c
+            base/ftdebug.c
+            base/ftfntfmt.c
+            base/ftfstype.c
+            base/ftgasp.c
+            base/ftglyph.c
+            base/ftgxval.c
+            base/ftinit.c
+            base/ftlcdfil.c
+            base/ftmm.c
+            base/ftotval.c
+            base/ftpatent.c
+            base/ftpfr.c
+            base/ftstroke.c
+            base/ftsynth.c
+            base/ftsystem.c
+            base/fttype1.c
+            base/ftwinfnt.c
+            bdf/bdf.c
+            cache/ftcache.c
+            cff/cff.c
+            cid/type1cid.c
+            gzip/ftgzip.c
+            lzw/ftlzw.c
+            pcf/pcf.c
+            pfr/pfr.c
+            psaux/psaux.c
+            pshinter/pshinter.c
+            psnames/psmodule.c
+            raster/raster.c
+            sfnt/sfnt.c
+            smooth/smooth.c
+            truetype/truetype.c
+            type1/type1.c
+            type42/type42.c
+            winfonts/winfnt.c)
 
-    add_library(freetype STATIC
-            ${FT_PUBLIC_HEADERS}
-            ${FT_PUBLIC_CONFIG_HEADERS}
-            ${FT_PRIVATE_HEADERS}
-            ${FREETYPE_SOURCE_LOCATION}/src/autofit/autofit.c
-            ${FREETYPE_SOURCE_LOCATION}/src/base/ftbase.c
-            ${FREETYPE_SOURCE_LOCATION}/src/base/ftbbox.c
-            ${FREETYPE_SOURCE_LOCATION}/src/base/ftbitmap.c
-            ${FREETYPE_SOURCE_LOCATION}/src/base/ftdebug.c
-            ${FREETYPE_SOURCE_LOCATION}/src/base/ftfntfmt.c
-            ${FREETYPE_SOURCE_LOCATION}/src/base/ftfstype.c
-            ${FREETYPE_SOURCE_LOCATION}/src/base/ftgasp.c
-            ${FREETYPE_SOURCE_LOCATION}/src/base/ftglyph.c
-            ${FREETYPE_SOURCE_LOCATION}/src/base/ftgxval.c
-            ${FREETYPE_SOURCE_LOCATION}/src/base/ftinit.c
-            ${FREETYPE_SOURCE_LOCATION}/src/base/ftlcdfil.c
-            ${FREETYPE_SOURCE_LOCATION}/src/base/ftmm.c
-            ${FREETYPE_SOURCE_LOCATION}/src/base/ftotval.c
-            ${FREETYPE_SOURCE_LOCATION}/src/base/ftpatent.c
-            ${FREETYPE_SOURCE_LOCATION}/src/base/ftpfr.c
-            ${FREETYPE_SOURCE_LOCATION}/src/base/ftstroke.c
-            ${FREETYPE_SOURCE_LOCATION}/src/base/ftsynth.c
-            ${FREETYPE_SOURCE_LOCATION}/src/base/ftsystem.c
-            ${FREETYPE_SOURCE_LOCATION}/src/base/fttype1.c
-            ${FREETYPE_SOURCE_LOCATION}/src/base/ftwinfnt.c
-            ${FREETYPE_SOURCE_LOCATION}/src/bdf/bdf.c
-            ${FREETYPE_SOURCE_LOCATION}/src/cache/ftcache.c
-            ${FREETYPE_SOURCE_LOCATION}/src/cff/cff.c
-            ${FREETYPE_SOURCE_LOCATION}/src/cid/type1cid.c
-            ${FREETYPE_SOURCE_LOCATION}/src/gzip/ftgzip.c
-            ${FREETYPE_SOURCE_LOCATION}/src/lzw/ftlzw.c
-            ${FREETYPE_SOURCE_LOCATION}/src/pcf/pcf.c
-            ${FREETYPE_SOURCE_LOCATION}/src/pfr/pfr.c
-            ${FREETYPE_SOURCE_LOCATION}/src/psaux/psaux.c
-            ${FREETYPE_SOURCE_LOCATION}/src/pshinter/pshinter.c
-            ${FREETYPE_SOURCE_LOCATION}/src/psnames/psmodule.c
-            ${FREETYPE_SOURCE_LOCATION}/src/raster/raster.c
-            ${FREETYPE_SOURCE_LOCATION}/src/sfnt/sfnt.c
-            ${FREETYPE_SOURCE_LOCATION}/src/smooth/smooth.c
-            ${FREETYPE_SOURCE_LOCATION}/src/truetype/truetype.c
-            ${FREETYPE_SOURCE_LOCATION}/src/type1/type1.c
-            ${FREETYPE_SOURCE_LOCATION}/src/type42/type42.c
-            ${FREETYPE_SOURCE_LOCATION}/src/winfonts/winfnt.c)
+    add_library(freetype STATIC ${FT_HEADERS} ${FT_SOURCES})
     target_compile_definitions(freetype PRIVATE FT2_BUILD_LIBRARY)
-    target_include_directories(freetype PUBLIC "${FREETYPE_SOURCE_LOCATION}/include")
     target_link_libraries(${PROJECT_NAME}-ft freetype)
 
     # Export ANativeActivity_onCreate(),
@@ -111,7 +105,6 @@ if(NOT MACOSX)
 
     target_link_libraries(${PROJECT_NAME}
                   ${PROJECT_NAME}-obj
-                  ${PROJECT_NAME}-ft
                   ${PLATFORM_LIBRARIES}
                   ${ZLIB_LIBRARIES})
 
