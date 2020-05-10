@@ -34,7 +34,7 @@ void wait_one_frame(std::chrono::steady_clock::time_point& new_time)
 {
     using namespace std::chrono_literals;
     constexpr auto minimum_elapsed_duration = std::chrono::duration_cast<
-                        std::chrono::steady_clock::time_point::duration>(1.0s / APPLICATION_FPS);
+                        std::chrono::steady_clock::time_point::duration>(1.0s / IDLE_APPLICATION_FPS);
 
     new_time += minimum_elapsed_duration;
     std::this_thread::sleep_until(new_time);
@@ -86,7 +86,7 @@ void controller::wake(graphics::core& gl, const std::chrono::steady_clock::time_
 {
     using namespace std::chrono_literals;
     constexpr auto skip_two_beats = std::chrono::duration_cast<
-                        std::chrono::steady_clock::time_point::duration>(2.0s / APPLICATION_FPS);
+                        std::chrono::steady_clock::time_point::duration>(2.0s / IDLE_APPLICATION_FPS);
 
     slumber();
     join_worker();

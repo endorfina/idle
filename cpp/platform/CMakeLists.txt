@@ -2,6 +2,7 @@ find_package(ZLIB REQUIRED)
 cmake_policy(SET CMP0079 NEW)
 
 if(ANDROID)
+    set(CMAKE_VERBOSE_MAKEFILE ON)
     set(PLATFORM_LIBRARIES "android" "log" "EGL" "GLESv2")
     target_include_directories(${PROJECT_NAME}-obj PUBLIC ${ANDROID_NDK}/sources/android/native_app_glue)
     target_include_directories(${PROJECT_NAME}-ft PRIVATE ${ANDROID_NDK}/sources/android/native_app_glue)
@@ -72,45 +73,41 @@ else()
 
     get_filename_component(OUTPUT_PATH "../${PROJECT_NAME}-bin" REALPATH BASE_DIR "${CMAKE_SOURCE_DIR}" CACHE)
 
-    # mostly so I can run tests in isolation at work
-    if(NOT MACOSX)
-        option(X11_USE_CLIENTMESSAGE "Makes x11 handle closing in a cleaner manner by intercepting close calls from your WM" ON)
+    option(X11_USE_CLIENTMESSAGE "Makes x11 handle closing in a cleaner manner by intercepting close calls from your WM" ON)
 
-        find_package(X11 REQUIRED)
-        cmake_policy(SET CMP0072 NEW)
-        find_package(OpenGL REQUIRED)
-        set(PLATFORM_LIBRARIES ${X11_X11_LIB} ${OPENGL_LIBRARIES} pthread atomic)
+    find_package(X11 REQUIRED)
+    cmake_policy(SET CMP0072 NEW)
+    find_package(OpenGL REQUIRED)
+    set(PLATFORM_LIBRARIES ${X11_X11_LIB} ${OPENGL_LIBRARIES} pthread atomic)
 
-        add_executable(${PROJECT_NAME} "x.cpp")
+    add_executable(${PROJECT_NAME} "x.cpp")
 
-        set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "-Wall")
-        target_include_directories(${PROJECT_NAME} PRIVATE ${X11_X11_INCLUDE_PATH})
+    set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "-Wall")
+    target_include_directories(${PROJECT_NAME} PRIVATE ${X11_X11_INCLUDE_PATH})
 
-        if (X11_USE_CLIENTMESSAGE)
-            target_compile_definitions(${PROJECT_NAME} PRIVATE X11_USE_CLIENTMESSAGE)
-        endif()
-
-        set_target_properties(${PROJECT_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_PATH})
-
-        set(RUN_COMMAND "cd '${OUTPUT_PATH}' && './${PROJECT_NAME}'" CACHE STRING "CLI used to boot ${PROJECT_NAME}" FORCE)
-
-        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E create_symlink "${CMAKE_SOURCE_DIR}/config/runtime_assets" assets
-            WORKING_DIRECTORY "${OUTPUT_PATH}")
+    if (X11_USE_CLIENTMESSAGE)
+        target_compile_definitions(${PROJECT_NAME} PRIVATE X11_USE_CLIENTMESSAGE)
     endif()
+
+    set_target_properties(${PROJECT_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${OUTPUT_PATH}")
+
+    set(RUN_COMMAND "cd '${OUTPUT_PATH}' && './${PROJECT_NAME}'" CACHE STRING "CLI used to boot ${PROJECT_NAME}" FORCE)
+
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E create_symlink "${CMAKE_SOURCE_DIR}/config/runtime_assets" assets
+        WORKING_DIRECTORY "${OUTPUT_PATH}")
 endif()
 
-if(NOT MACOSX)
-    target_sources(${PROJECT_NAME} PRIVATE "opengl_core_adaptive.cpp" "cmd_queue.cpp")
+add_library(${PROJECT_NAME}-opengl-glue OBJECT "opengl_core_adaptive.cpp")
 
-    target_link_libraries(${PROJECT_NAME}
-                  ${PROJECT_NAME}-obj
-                  ${PLATFORM_LIBRARIES}
-                  ${ZLIB_LIBRARIES})
+target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAME}-opengl-glue> "cmd_queue.cpp")
 
-    if(PRUNE_SYMBOLS)
-        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-              COMMAND ${CMAKE_STRIP} --strip-debug --strip-unneeded "$<TARGET_FILE:${PROJECT_NAME}>")
-    endif()
+target_link_libraries(${PROJECT_NAME}
+              ${PROJECT_NAME}-obj
+              ${PLATFORM_LIBRARIES}
+              ${ZLIB_LIBRARIES})
 
+if(PRUNE_SYMBOLS)
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+          COMMAND ${CMAKE_STRIP} --strip-debug --strip-unneeded "$<TARGET_FILE:${PROJECT_NAME}>")
 endif()

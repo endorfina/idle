@@ -261,6 +261,13 @@ bool core::resize(const math::point2<int> window_size)
     screen_size = window_size;
     translate_vector = math::point_cast<float>(draw_size) / math::point_cast<float>(window_size);
 
+    draw_bounds_verts = {
+        0, 0,
+        static_cast<float>(draw_size.x), 0,
+        0, static_cast<float>(draw_size.y),
+        static_cast<float>(draw_size.x), static_cast<float>(draw_size.y)
+    };
+
     if (!programs_are_functional(
                 prog.normal,
                 prog.shift,

@@ -22,8 +22,11 @@
 
 namespace idle
 {
+
+namespace detail
+{
 template <TextAlign H, TextAlign V>
-point_t _get_text_transform_(const font_t& font, std::string_view str, point_t p, float a, const unsigned int limit)
+point_t get_text_transform(const fonts::font_t& font, std::string_view str, point_t p, float a, const unsigned int limit)
 {
     if constexpr (H == TextAlign::Near && V == TextAlign::Near)
         return p;
@@ -48,10 +51,12 @@ point_t _get_text_transform_(const font_t& font, std::string_view str, point_t p
     }
 }
 
+}  // namespace detail
+
 template <TextAlign H = TextAlign::Near, TextAlign V = TextAlign::Near>
 void draw_text(const graphics::core& gl, const std::string_view& str, point_t p, float size, const unsigned int limit = static_cast<unsigned int>(-1))
 {
-    gl.prog.text.set_view_transform(mat4x4_t::scale(size) * mat4x4_t::translate(_get_text_transform_<H, V>(*gl.font, str, p, size, limit)));
+    gl.prog.text.set_view_transform(mat4x4_t::scale(size) * mat4x4_t::translate(detail::get_text_transform<H, V>(*gl.font, str, p, size, limit)));
     gl.font->draw(gl.prog.text, str, limit);
 }
 

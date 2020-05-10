@@ -12,7 +12,7 @@ endmacro()
 new_test(glass glass.cpp)
 
 add_library(${IDLE_TEST}-main STATIC EXCLUDE_FROM_ALL "interface.cpp")
-target_include_directories(${IDLE_TEST}-main INTERFACE ${PROJECT_SOURCE_DIR})
+target_include_directories(${IDLE_TEST}-main INTERFACE "${PROJECT_SOURCE_DIR}" INTERFACE "${PROJECT_SOURCE_DIR}/include")
 set_target_properties(${IDLE_TEST}-main PROPERTIES COMPILE_FLAGS "-fexceptions")
 
 foreach(UT IN LISTS IDLE_TEST_UNITS)
@@ -33,5 +33,4 @@ enable_testing()
 add_custom_target(${IDLE_TEST}-run
     COMMAND ${CMAKE_CTEST_COMMAND} --force-new-ctest-process --output-on-failure -j4
     DEPENDS ${IDLE_TEST}
-    #COMMENT "Running ctest"
 )

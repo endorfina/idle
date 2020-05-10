@@ -253,9 +253,9 @@ void collection::iterate_object_draw(const graphics::core& gl)
 //         mAniID = id;
 //         mAnimation = 0.f;
 //      if ((mAnimationRepeat = (*_swr)[id].repeat))
-//          mAnimationSpeed = (*_swr)[id].speed / (APPLICATION_FPS * (*_swr)[id].f.size());
+//          mAnimationSpeed = (*_swr)[id].speed / (IDLE_APPLICATION_FPS * (*_swr)[id].f.size());
 //      else
-//          mAnimationSpeed = (*_swr)[id].speed / (APPLICATION_FPS * ((*_swr)[id].f.size() - 1));
+//          mAnimationSpeed = (*_swr)[id].speed / (IDLE_APPLICATION_FPS * ((*_swr)[id].f.size() - 1));
 //     }
 // }
 

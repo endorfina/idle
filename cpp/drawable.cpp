@@ -375,6 +375,12 @@ void draw_rectangle(const graphics::program_t& prog, const rect_t &rect)
     gl::DrawArrays(gl::LINE_STRIP, 0, 5);
 }
 
+void fill_screen(const graphics::core& gl, const graphics::program_t& prog)
+{
+    prog.position_vertex(gl.draw_bounds_verts.data());
+    gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
+}
+
 void fill_rectangle(const graphics::program_t& prog, point_t rect)
 {
     const float v[] = {

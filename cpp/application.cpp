@@ -159,17 +159,8 @@ void fill_frame_with_color(const idle::color_t& color)
     opengl.prog.fill.use();
     opengl.prog.fill.set_identity();
     opengl.prog.fill.set_view_identity();
-
-    const float vert[]
-    {
-        0, 0,
-        static_cast<float>(opengl.draw_size.x), 0,
-        0, static_cast<float>(opengl.draw_size.y),
-        static_cast<float>(opengl.draw_size.x), static_cast<float>(opengl.draw_size.y)
-    };
-
     opengl.prog.fill.set_color(color);
-    opengl.prog.fill.position_vertex(vert);
+    opengl.prog.fill.position_vertex(opengl.draw_bounds_verts.data());
     gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
 }
 
@@ -213,14 +204,6 @@ void draw_pause_menu(const graphics::core& gl, const float pause_menu_alpha, con
     gl.prog.normal.set_identity();
     gl.prog.normal.set_view_identity();
 
-    const float v[]
-    {
-        0, 0,
-        static_cast<float>(gl.draw_size.x), 0,
-        0, static_cast<float>(gl.draw_size.y),
-        static_cast<float>(gl.draw_size.x), static_cast<float>(gl.draw_size.y)
-    };
-
     const float t[]
     {
         0, rb.texture_h,
@@ -240,13 +223,12 @@ void draw_pause_menu(const graphics::core& gl, const float pause_menu_alpha, con
     gl::ActiveTexture(gl::TEXTURE0);
     gl.prog.normal.set_color({1, 1, 1, 1 - pause_menu_alpha * .333f});
     gl::BindTexture(gl::TEXTURE_2D, rb.texture);
-    gl.prog.normal.position_vertex(v);
+    gl.prog.normal.position_vertex(opengl.draw_bounds_verts.data());
     gl.prog.normal.texture_vertex(t);
     gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
 
     gl.prog.normal.set_color({1, 1 - pause_menu_alpha * .2f, 1 - pause_menu_alpha * .1f, pause_menu_alpha * .9f});
     gl::BindTexture(gl::TEXTURE_2D, brb.texture);
-    gl.prog.normal.position_vertex(v);
     gl.prog.normal.texture_vertex(tb);
     gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
 
@@ -271,7 +253,7 @@ void wait_one_frame_with_skipping(std::chrono::steady_clock::time_point& new_tim
 {
     using namespace std::chrono_literals;
     constexpr auto minimum_elapsed_duration = std::chrono::duration_cast<
-                        std::chrono::steady_clock::time_point::duration>(1.0s / APPLICATION_FPS);
+                        std::chrono::steady_clock::time_point::duration>(1.0s / IDLE_APPLICATION_FPS);
 
     if (std::chrono::steady_clock::now() - new_time < 1.0s)
     {
@@ -280,7 +262,7 @@ void wait_one_frame_with_skipping(std::chrono::steady_clock::time_point& new_tim
     }
     else
     {
-        new_time += minimum_elapsed_duration * APPLICATION_FPS;
+        new_time += minimum_elapsed_duration * IDLE_APPLICATION_FPS;
     }
 }
 
@@ -405,7 +387,7 @@ int application::real_main()
 bool application::load()
 {
     using namespace std::chrono_literals;
-    constexpr auto minimum_elapsed = 1.0s / (APPLICATION_FPS / 2 + 5);
+    constexpr auto minimum_elapsed = 1.0s / (IDLE_APPLICATION_FPS / 2 + 5);
 
     if (room_ctrl.get_crashed())
         return false;
@@ -436,13 +418,22 @@ bool application::load()
 #else
                     constexpr int resolution = 48;
 #endif
-                    if (auto opt = fonts::freetype_glue{}.load(fontfile.view(), resolution))
+                    if (auto opt = fonts::freetype_glue{}(fontfile.view(), resolution))
                     {
                         LOGD("Font acquired!");
-                        opengl.font.swap(opt);
-                    }
 
-                    success = true;
+                        auto image = graphics::unique_texture(idle::image_t::load_from_memory(
+                                    opt->width, opt->width,
+#ifdef __ANDROID__
+                                    gl::LUMINANCE, gl::LUMINANCE,
+#else
+                                    gl::R8, gl::RED,
+#endif
+                                    gl::LINEAR, gl::CLAMP_TO_EDGE, std::move(opt->pixels)).release());
+
+                        opengl.font.emplace(std::move(opt->map), opt->cell_size, std::move(image));
+                        success = true;
+                    }
                 }
 
                 promise.set_value(success);
@@ -476,6 +467,32 @@ bool application::load()
     }
 
     loader_thread.join();
+
+#ifdef IDLE_COMPILE_FONT_DEBUG_SCREEN
+    if (!window.has_opengl())
+    {
+        LOGE("Couldn't display the debug splash, because there's no graphical context to draw it on");
+    }
+    else
+    {
+        {
+            render_guard rg;
+
+            opengl.prog.normal.use();
+            opengl.prog.normal.set_identity();
+            opengl.prog.normal.set_view_identity();
+
+            gl::ActiveTexture(gl::TEXTURE0);
+            opengl.prog.normal.set_color({1, 1, 1, 1});
+            gl::BindTexture(gl::TEXTURE_2D, opengl.font->texture.get());
+            opengl.prog.normal.position_vertex(opengl.draw_bounds_verts.data());
+            opengl.prog.normal.texture_vertex(opengl.texture_bounds_verts.data());
+            gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
+        }
+        window.buffer_swap();
+        std::this_thread::sleep_for(std::chrono::seconds(5));
+    }
+#endif
 
     room_ctrl.default_room_if_none_set();
 

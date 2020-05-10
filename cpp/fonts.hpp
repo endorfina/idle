@@ -18,41 +18,33 @@
 */
 
 #pragma once
-
-#include <optional>
-#include <string>
 #include <string_view>
-#include <unordered_map>
+#include <math.hpp>
+#include "glyph.hpp"
 #include "gl_programs.hpp"
+
+namespace fonts
+{
 
 struct font_t
 {
-    struct glyph_t
-    {
-        idle::point_t offset, texture_position;
-        float width;
-
-    private:
-        friend struct font_t;
-        void draw(const graphics::text_program_t& rcp, float size, idle::point_t pos) const;
-    };
-
-    using map_t = std::unordered_map<unsigned long, glyph_t>;
-
     void draw(const graphics::text_program_t& rcp, const std::string_view &str, unsigned int limit = (-1)) const;
 
     void draw_custom_animation(const graphics::text_program_t& rcp, const std::string_view &str, const math::color<float> &col, const idle::text_animation_data* anim, unsigned start, unsigned end) const;
-
 
     //Return the width/height of the rendered text at given size
     idle::point_t get_extent(const std::string_view &str, float size, unsigned int limit = (-1)) const;
 
     std::string prepare_string(const std::string_view &str, float size, float max_width) const;
 
-    font_t(GLuint texture, map_t character_map, float cell_size);
+    font_t(glyph_map_t character_map, float cell_size, graphics::unique_texture texture);
 
+#ifndef IDLE_COMPILE_FONT_DEBUG_SCREEN
 private:
+#endif
     graphics::unique_texture texture;
-    std::unordered_map<unsigned long, glyph_t> character_map;
+    glyph_map_t character_map;
     float cell_size, topmost_margin;
 };
+
+}  // namespace fonts

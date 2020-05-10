@@ -16,24 +16,29 @@
     You should have received a copy of the GNU General Public License
     along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
+
 #pragma once
 
-#include <string_view>
-#include <optional>
-#include "glyph.hpp"
+#include <memory>
+#include <unordered_map>
+#include <math.hpp>
 
 namespace fonts
 {
-
-struct freetype_glue
+struct glyph_t
 {
-    std::optional<ft_data_t> operator()(const std::string_view &memory, int resolution) const;
-
-    freetype_glue();
-    ~freetype_glue();
-
-    freetype_glue(const freetype_glue &) = delete;
-    freetype_glue(freetype_glue &&) = delete;
+    math::point2<float> offset, texture_position;
+    float width;
 };
 
-}
+using glyph_map_t = std::unordered_map<unsigned long, glyph_t>;
+
+struct ft_data_t
+{
+    std::unique_ptr<unsigned char[]> pixels;
+    unsigned width = 0;
+    glyph_map_t map;
+    float cell_size = 0;
+};
+
+}  // namespace fonts

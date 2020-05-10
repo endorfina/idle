@@ -17,6 +17,7 @@
     along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <cmath>
 #include <memory>
 
 #include <ft2build.h>
@@ -27,7 +28,6 @@
 
 #include "freetype_glue.hpp"
 #include <log.hpp>
-#include "drawable.hpp"
 
 namespace fonts
 {
@@ -43,28 +43,28 @@ std::enable_if_t<std::is_integral_v<T>, T> next_power_of_2(T a) {
     return rval;
 }
 
-void set_pixel(unsigned char *texture, int offset, int size, int x, int y, unsigned char val) {
-    texture[offset + x + y * size] = val % 0xff == 0 ? val : static_cast<unsigned char>(sinf(static_cast<float>(val) * F_TAU_4 / 255) * 255);
+void set_pixel(unsigned char *texture, int offset, int size, int x, int y, unsigned char val)
+{
+    texture[offset + x + y * size] = val % 0xff == 0 ? val : static_cast<unsigned char>(std::sin(static_cast<float>(val) * F_TAU_4 / 255) * 255);
 }
 
 using font_face_t = std::unique_ptr<std::remove_pointer_t<FT_Face>, decltype(&FT_Done_Face)>;
 
-std::optional<font_t> create_font(font_face_t freetype_font_face, const int resolution, const int cell_margin)
+std::optional<ft_data_t> create_font(font_face_t freetype_font_face, const int resolution, const int cell_margin)
 {
     FT_Set_Pixel_Sizes(freetype_font_face.get(), resolution, resolution);
 
     const int character_count = freetype_font_face->num_glyphs;
     const int cell_size = resolution + cell_margin * 2;
-    const int character_row_width = (int)ceilf(sqrt(character_count));
+    const int character_row_width = static_cast<int>(std::ceil(std::sqrt(character_count)));
     const int texSize = character_row_width * cell_size;
     const int actual_texture_size = next_power_of_2(texSize);
 
     auto texture_data = std::make_unique<unsigned char[]>(actual_texture_size * actual_texture_size);
 
-    font_t::map_t glyphs;
+    glyph_map_t glyphs;
 
     math::point2<int> texture_position{0, 0};
-
 
     FT_UInt gindex;
     for (FT_ULong charcode = FT_Get_First_Char(freetype_font_face.get(), &gindex); !!gindex;
@@ -72,18 +72,18 @@ std::optional<font_t> create_font(font_face_t freetype_font_face, const int reso
     if (!FT_Load_Glyph(freetype_font_face.get(), gindex, FT_LOAD_DEFAULT))
     {
         FT_GlyphSlot glyph = freetype_font_face->glyph;
-        font_t::glyph_t g;
+        glyph_t g;
         FT_Render_Glyph(glyph, FT_RENDER_MODE_NORMAL);
 
         // Calculate glyph informations
 
-        g.offset = idle::point_t{ glyph->bitmap_left / static_cast<float>(cell_size),
+        g.offset = { glyph->bitmap_left / static_cast<float>(cell_size),
                 -(glyph->bitmap_top / static_cast<float>(cell_size)) };
 
-        g.texture_position = idle::point_t{ texture_position.x * cell_size / static_cast<float>(actual_texture_size),
+        g.texture_position = { texture_position.x * cell_size / static_cast<float>(actual_texture_size),
                 (texture_position.y * cell_size + 1) / static_cast<float>(actual_texture_size) };
 
-        g.width = (glyph->advance.x) / static_cast<float>(64.0f * cell_size);
+        g.width = glyph->advance.x / static_cast<float>(64 * cell_size);
 
         glyphs.emplace(charcode, std::move(g));
 
@@ -118,37 +118,32 @@ std::optional<font_t> create_font(font_face_t freetype_font_face, const int reso
         }
     }
 
-    return font_t{ idle::image_t::load_from_memory(
-                actual_texture_size, actual_texture_size,
-#ifdef __ANDROID__
-                gl::LUMINANCE, gl::LUMINANCE,
-#else
-                gl::R8, gl::RED,
-#endif
-                gl::LINEAR, gl::CLAMP_TO_EDGE, std::move(texture_data)).release(),
-            std::move(glyphs), cell_size / (float)actual_texture_size };
+    return {{
+        std::move(texture_data),
+        static_cast<unsigned>(actual_texture_size),
+        std::move(glyphs),
+        cell_size / (float)actual_texture_size
+    }};
 }
+
+FT_Library library;
+unsigned library_ref_count = 0;
+bool library_loaded = false;
 
 }  // namespace
 
 
-std::optional<font_t> freetype_glue::load(const std::string_view &memory, int resolution) const
+std::optional<ft_data_t> freetype_glue::operator()(const std::string_view &memory, int resolution) const
 {
-    const int margin = static_cast<int>(ceilf(resolution / 10.f));
-    return load(memory, resolution, margin);
-}
+    if (!library_loaded) return {};
 
-
-static FT_Library library;
-
-std::optional<font_t> freetype_glue::load(const std::string_view &memory, int resolution, int cell_margin) const
-{
     if (FT_Face ff = nullptr;
             !FT_New_Memory_Face(
                 library,
                 reinterpret_cast<const FT_Byte *>(memory.data()),
                 static_cast<FT_Long>(memory.size()), 0, &ff))
     {
+        const int cell_margin = static_cast<int>(std::ceil(static_cast<float>(resolution) / 10));
         return create_font({ ff, FT_Done_Face }, resolution, cell_margin);
     }
 
@@ -156,19 +151,23 @@ std::optional<font_t> freetype_glue::load(const std::string_view &memory, int re
     return {};
 }
 
-static unsigned library_ref_count = 0;
 
 freetype_glue::freetype_glue()
 {
-    if (++library_ref_count == 1 && FT_Init_FreeType(&library))
+    if (++library_ref_count == 1)
     {
-        LOGE("Failed to initialize freetype library");
+        library_loaded = FT_Init_FreeType(&library) == 0;
+
+        if (!library_loaded)
+        {
+            LOGE("Failed to initialize freetype library");
+        }
     }
 }
 
 freetype_glue::~freetype_glue()
 {
-    if (library_ref_count && !--library_ref_count)
+    if (--library_ref_count == 0)
     {
         FT_Done_FreeType(library);
     }

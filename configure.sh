@@ -22,7 +22,7 @@ fi
 
 die()
 {
-  echo >&2 '💀' "${color_red}${PROGNAME} !!${color_norm} $*"
+  printf >&2 '💀 %s\n' "${color_red}${PROGNAME} !!${color_norm} $*"
   exit 1
 }
 
@@ -159,6 +159,9 @@ tee "$SOURCE_DIR/Makefile" << _EOF | sed 's~\.\./~~' > 'Makefile'
 ${PROJECT_NAME}:
 ${INDENT}cmake --build '../${BUILD_DIR}'
 
+vars:
+${INDENT}cmake -N -L --build '../${BUILD_DIR}'
+
 test:
 ${INDENT}cmake --build '../${BUILD_DIR}' --target '${PROJECT_NAME}-test-run'
 
@@ -168,6 +171,6 @@ ${INDENT}cmake --build '../${BUILD_DIR}' --target 'clean'
 run: ${PROJECT_NAME}
 $(cmake -N -L --build "$BUILD_DIR" 2>/dev/null | sed -nE "$RUN_SED_FILTER")
 
-.PHONY: ${PROJECT_NAME} test clean run
+.PHONY: ${PROJECT_NAME} test clean run vars
 _EOF
 

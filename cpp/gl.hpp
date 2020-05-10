@@ -130,10 +130,20 @@ struct core
     } prog;
 
     GLint render_quality = gl::LINEAR;
-    std::optional<font_t> font;
+    std::optional<fonts::font_t> font;
     std::optional<render_buffer_t> render_buffer_masked;
     math::point2<int> draw_size{0, 0}, screen_size{0, 0}, viewport_size{0, 0};
     math::point2<float> translate_vector;
+
+    std::array<GLfloat, 8> draw_bounds_verts;
+
+    static constexpr std::array<float, 8> texture_bounds_verts
+    {
+        0, 0,
+        1, 0,
+        0, 1,
+        1, 1
+    };
 
     bool shutdown_was_requested = false;
     std::atomic<platform::pointer> pointer;

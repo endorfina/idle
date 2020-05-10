@@ -24,9 +24,11 @@
 
 #include "fonts.hpp"
 
+namespace fonts
+{
 
-font_t::font_t(const GLuint atlas_tex, font_t::map_t glyph_map, const float glyph_size)
-  : texture{atlas_tex},
+font_t::font_t(glyph_map_t glyph_map, const float glyph_size, graphics::unique_texture atlas_tex)
+  : texture{std::move(atlas_tex)},
     character_map{std::move(glyph_map)},
     cell_size{glyph_size},
     topmost_margin{
@@ -41,17 +43,17 @@ font_t::font_t(const GLuint atlas_tex, font_t::map_t glyph_map, const float glyp
 {
 }
 
-void font_t::glyph_t::draw(const graphics::text_program_t& rcp, const float size, const idle::point_t pos) const
+static void draw_glyph(const glyph_t& g, const graphics::text_program_t& rcp, const float size, const idle::point_t pos)
 {
     const float tex_coords[8]
     {
-        texture_position.x, texture_position.y,
-        texture_position.x + size, texture_position.y,
-        texture_position.x, texture_position.y + size,
-        texture_position.x + size, texture_position.y + size
+        g.texture_position.x, g.texture_position.y,
+        g.texture_position.x + size, g.texture_position.y,
+        g.texture_position.x, g.texture_position.y + size,
+        g.texture_position.x + size, g.texture_position.y + size
     };
 
-    rcp.set_text_offset(pos + offset);
+    rcp.set_text_offset(pos + g.offset);
     rcp.texture_vertex(tex_coords);
     gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
 }
@@ -79,7 +81,7 @@ void font_t::draw(const graphics::text_program_t& rcp, const std::string_view &s
         {
             if (auto gi = character_map.find(u8c); gi != character_map.end())
             {
-                gi->second.draw(rcp, cell_size, pos);
+                draw_glyph(gi->second, rcp, cell_size, pos);
                 pos.x += gi->second.width;
             }
         }
@@ -117,11 +119,11 @@ void font_t::draw_custom_animation(const graphics::text_program_t& rcp, const st
                         rcp.set_color(col, col.a * (1 - ::math::sqr(cosf(anim->scale))));
 
                     rcp.set_transform(idle::mat4x4_t::scale(1 - cosf(anim->scale) / 2) * idle::mat4x4_t::rotate(anim->rotation));
-                    gi->second.draw(rcp, cell_size, pos);
+                    draw_glyph(gi->second, rcp, cell_size, pos);
                     ++anim;
                 }
                 else
-                    gi->second.draw(rcp, cell_size, pos);
+                    draw_glyph(gi->second, rcp, cell_size, pos);
 
                 pos.x += gi->second.width;
             }
@@ -228,3 +230,5 @@ std::string font_t::prepare_string(const std::string_view &str, const float size
     }
     return out;
 }
+
+}  // namespace fonts

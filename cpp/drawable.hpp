@@ -74,6 +74,8 @@ public:
     }
 };
 
+void fill_screen(const graphics::core& gl, const graphics::program_t& prog);
+
 void fill_rectangle(const graphics::program_t& prog, const rect_t &rect);
 void fill_rectangle(const graphics::program_t& prog, point_t rect);
 
