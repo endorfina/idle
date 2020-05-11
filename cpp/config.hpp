@@ -17,12 +17,18 @@
     along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
 #pragma once
-#include "gl.hpp"
-#include "platform/display.hpp"
 
-namespace idle
+#if __has_include ("config/head.hpp")
+
+#include "config/head.hpp"
+
+#else
+
+namespace idle::config
 {
 
-bool load_everything(const ::platform::window& sys, graphics::core& gl);
+constexpr char font_asset[] = "font.ttf";
 
-}  // namespace idle
+}  // namespace idle::config
+
+#endif

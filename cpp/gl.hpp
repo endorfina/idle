@@ -51,6 +51,10 @@
 
 namespace graphics
 {
+
+constexpr idle::color_t black{0, 0, 0, 1};
+
+
 bool assert_opengl_errors();
 
 struct core;

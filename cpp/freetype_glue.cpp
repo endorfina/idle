@@ -36,29 +36,83 @@ namespace
 {
 
 template <typename T>
-std::enable_if_t<std::is_integral_v<T>, T> next_power_of_2(T a) {
+std::enable_if_t<std::is_integral_v<T>, T> next_power_of_2(const T a) {
     T rval = 1;
     while (rval < a)
         rval *= 2;
     return rval;
 }
 
-void set_pixel(unsigned char *texture, int offset, int size, int x, int y, unsigned char val)
+unsigned char fine(unsigned char val)
 {
-    texture[offset + x + y * size] = val % 0xff == 0 ? val : static_cast<unsigned char>(std::sin(static_cast<float>(val) * F_TAU_4 / 255) * 255);
+    return static_cast<unsigned char>(std::sin(static_cast<float>(val) * F_TAU_4 / 255.f) * 255.f);
+}
+
+void set_pixel(unsigned char *texture, unsigned offset, unsigned size, unsigned x, unsigned y, unsigned char val)
+{
+    texture[offset + x + y * size] = val % 0xff == 0 ? val : fine(val);
 }
 
 using font_face_t = std::unique_ptr<std::remove_pointer_t<FT_Face>, decltype(&FT_Done_Face)>;
 
-std::optional<ft_data_t> create_font(font_face_t freetype_font_face, const int resolution, const int cell_margin)
+struct glyph_view
+{
+    FT_Face face;
+
+    struct glyph_iterator
+    {
+        FT_Face face;
+        FT_UInt gindex;
+        FT_ULong code;
+
+        std::pair<FT_ULong, FT_UInt> operator*() const
+        {
+            return { code, gindex };
+        }
+
+        glyph_iterator& operator++()
+        {
+            code = FT_Get_Next_Char(face, code, &gindex);
+            return *this;
+        }
+    };
+
+    glyph_iterator begin() const
+    {
+        glyph_iterator out;
+        out.face = face;
+        out.code = FT_Get_First_Char(face, &out.gindex);
+        return out;
+    }
+
+    struct sentinel
+    {
+        friend bool operator!=(const sentinel&, const glyph_iterator& g)
+        {
+            return !!g.gindex;
+        }
+
+        friend bool operator!=(const glyph_iterator& g, const sentinel&)
+        {
+            return !!g.gindex;
+        }
+    };
+
+    sentinel end() const
+    {
+        return {};
+    }
+};
+
+std::optional<ft_data_t> create_font(font_face_t freetype_font_face, const unsigned resolution, const unsigned cell_margin)
 {
     FT_Set_Pixel_Sizes(freetype_font_face.get(), resolution, resolution);
 
-    const int character_count = freetype_font_face->num_glyphs;
-    const int cell_size = resolution + cell_margin * 2;
-    const int character_row_width = static_cast<int>(std::ceil(std::sqrt(character_count)));
-    const int texSize = character_row_width * cell_size;
-    const int actual_texture_size = next_power_of_2(texSize);
+    const unsigned character_count = freetype_font_face->num_glyphs;
+    const unsigned cell_size = resolution + cell_margin * 2;
+    const unsigned character_row_width = static_cast<unsigned>(std::ceil(std::sqrt(character_count)));
+    const unsigned texSize = character_row_width * cell_size;
+    const unsigned actual_texture_size = next_power_of_2(texSize);
 
     auto texture_data = std::make_unique<unsigned char[]>(actual_texture_size * actual_texture_size);
 
@@ -66,11 +120,10 @@ std::optional<ft_data_t> create_font(font_face_t freetype_font_face, const int r
 
     math::point2<int> texture_position{0, 0};
 
-    FT_UInt gindex;
-    for (FT_ULong charcode = FT_Get_First_Char(freetype_font_face.get(), &gindex); !!gindex;
-                charcode = FT_Get_Next_Char(freetype_font_face.get(), charcode, &gindex))
-    if (!FT_Load_Glyph(freetype_font_face.get(), gindex, FT_LOAD_DEFAULT))
+    for (const auto [charcode, gindex] : glyph_view{freetype_font_face.get()})
     {
+        if (FT_Load_Glyph(freetype_font_face.get(), gindex, FT_LOAD_DEFAULT)) continue;
+
         FT_GlyphSlot glyph = freetype_font_face->glyph;
         glyph_t g;
         FT_Render_Glyph(glyph, FT_RENDER_MODE_NORMAL);
@@ -87,32 +140,38 @@ std::optional<ft_data_t> create_font(font_face_t freetype_font_face, const int r
 
         glyphs.emplace(charcode, std::move(g));
 
-        const int base_offset = texture_position.x * cell_size + texture_position.y * cell_size * actual_texture_size;
-        const int gr = glyph->bitmap.rows;
-        const int gw = glyph->bitmap.width;
+        const unsigned base_offset = texture_position.x * cell_size + texture_position.y * cell_size * actual_texture_size;
+        const unsigned gr = glyph->bitmap.rows;
+        const unsigned gw = glyph->bitmap.width;
 
-        for (int h = 0; h < gr; ++h)
-            for (int w = 0; w < gw; ++w)
+        for (unsigned h = 0; h < gr; ++h)
+            for (unsigned w = 0; w < gw; ++w)
                 set_pixel(texture_data.get(), base_offset + cell_margin, actual_texture_size, w, cell_margin + h,
                         glyph->bitmap.buffer[w + h * gw]);
 
-        for (int h = 0; h < cell_size; ++h) {
-            if (h < cell_margin || h >= cell_margin + gr) {
+        for (unsigned h = 0; h < cell_size; ++h)
+        {
+            if (h < cell_margin || h >= cell_margin + gr)
+            {
                 // bottom padding => whole rows
-                for (int w = 0; w < cell_size; ++w) {
+                for (unsigned w = 0; w < cell_size; ++w)
+                {
                     set_pixel(texture_data.get(), base_offset, actual_texture_size, w, h, 0);
                 }
-            } else {
+            }
+            else
+            {
                 // left padding
-                for (int w = 0; w < cell_margin; ++w)
+                for (unsigned w = 0; w < cell_margin; ++w)
                     set_pixel(texture_data.get(), base_offset, actual_texture_size, w, h, 0);
                 // right padding
-                for (int w = gw + cell_margin; w < cell_size; ++w)
+                for (unsigned w = gw + cell_margin; w < cell_size; ++w)
                     set_pixel(texture_data.get(), base_offset, actual_texture_size, w, h, 0);
             }
         }
 
-        if (++texture_position.x >= character_row_width) {
+        if (static_cast<unsigned>(++texture_position.x) >= character_row_width)
+        {
             texture_position.x = 0;
             ++texture_position.y;
         }
@@ -133,7 +192,7 @@ bool library_loaded = false;
 }  // namespace
 
 
-std::optional<ft_data_t> freetype_glue::operator()(const std::string_view &memory, int resolution) const
+std::optional<ft_data_t> freetype_glue::operator()(const std::string_view &memory, const unsigned resolution) const
 {
     if (!library_loaded) return {};
 
@@ -143,7 +202,7 @@ std::optional<ft_data_t> freetype_glue::operator()(const std::string_view &memor
                 reinterpret_cast<const FT_Byte *>(memory.data()),
                 static_cast<FT_Long>(memory.size()), 0, &ff))
     {
-        const int cell_margin = static_cast<int>(std::ceil(static_cast<float>(resolution) / 10));
+        const auto cell_margin = static_cast<unsigned int>(std::ceil(static_cast<float>(resolution) / 10));
         return create_font({ ff, FT_Done_Face }, resolution, cell_margin);
     }
 

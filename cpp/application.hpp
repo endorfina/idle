@@ -19,13 +19,23 @@
 #pragma once
 #include <chrono>
 #include <optional>
+#include <memory>
 #include "gl.hpp"
 #include "pointer.hpp"
 #include "platform/context.hpp"
-#include "pause.hpp"
 
 namespace isolation
 {
+
+struct pause_menu
+{
+    std::optional<graphics::render_buffer_t> buffers[2];
+    float fadein_alpha = 0, shift = 0;
+
+    void draw() const;
+    void init();
+};
+
 class application
 {
     idle::pointer pointer;
@@ -33,7 +43,7 @@ class application
     std::chrono::system_clock::time_point earliest_available_resize;
 
 public:
-    std::optional<idle::pause_menu> pause;
+    std::unique_ptr<pause_menu> pause;
 
     ::platform::context window;
 

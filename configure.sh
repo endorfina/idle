@@ -168,9 +168,11 @@ ${INDENT}cmake --build '../${BUILD_DIR}' --target '${PROJECT_NAME}-test-run'
 clean:
 ${INDENT}cmake --build '../${BUILD_DIR}' --target 'clean'
 
-run: ${PROJECT_NAME}
+exec:
 $(cmake -N -L --build "$BUILD_DIR" 2>/dev/null | sed -nE "$RUN_SED_FILTER")
 
-.PHONY: ${PROJECT_NAME} test clean run vars
+run: ${PROJECT_NAME} exec
+
+.PHONY: ${PROJECT_NAME} test clean run exec vars
 _EOF
 

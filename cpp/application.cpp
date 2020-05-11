@@ -26,7 +26,7 @@
 #include "room_controller.hpp"
 #include "lodge.hpp"
 #include "freetype_glue.hpp"
-#include "config/head.hpp"
+#include "config.hpp"
 #include "platform/asset_access.hpp"
 
 namespace
@@ -102,7 +102,7 @@ bool application::execute_commands(const bool is_nested)
                 LOGI(log_prefix, "PausePressed");
                 room_ctrl.slumber();
                 if (!pause)
-                    pause.emplace();
+                    pause = std::make_unique<pause_menu>();
                 break;
             }
 
@@ -198,57 +198,6 @@ public:
     }
 };
 
-void draw_pause_menu(const graphics::core& gl, const float pause_menu_alpha, const graphics::render_buffer_t& rb, const graphics::render_buffer_t& brb)
-{
-    gl.prog.normal.use();
-    gl.prog.normal.set_identity();
-    gl.prog.normal.set_view_identity();
-
-    const float t[]
-    {
-        0, rb.texture_h,
-        rb.texture_w, rb.texture_h,
-        0, 0,
-        rb.texture_w, 0
-    };
-
-    const float tb[]
-    {
-        0, brb.texture_h,
-        brb.texture_w, brb.texture_h,
-        0, 0,
-        brb.texture_w, 0
-    };
-
-    gl::ActiveTexture(gl::TEXTURE0);
-    gl.prog.normal.set_color({1, 1, 1, 1 - pause_menu_alpha * .333f});
-    gl::BindTexture(gl::TEXTURE_2D, rb.texture);
-    gl.prog.normal.position_vertex(opengl.draw_bounds_verts.data());
-    gl.prog.normal.texture_vertex(t);
-    gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
-
-    gl.prog.normal.set_color({1, 1 - pause_menu_alpha * .2f, 1 - pause_menu_alpha * .1f, pause_menu_alpha * .9f});
-    gl::BindTexture(gl::TEXTURE_2D, brb.texture);
-    gl.prog.normal.texture_vertex(tb);
-    gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
-
-    const float yshift = (1 - pause_menu_alpha) * 20;
-    const idle::rect_t rect{
-            gl.draw_size.x / 2 - 220.f,
-            gl.draw_size.y / 2 - 60.f,
-            gl.draw_size.x / 2 + 220.f,
-            gl.draw_size.y / 2 + 60.f};
-
-    gl.prog.text.use();
-    gl.prog.text.set_color({1, .133f, .196f, pause_menu_alpha});
-
-    idle::draw_text<idle::TextAlign::Center>(gl, "paused",
-            {gl.draw_size.x / 2.f, rect.top + 10.f + yshift}, 55);
-
-    idle::draw_text<idle::TextAlign::Center, idle::TextAlign::Center>(gl, "resume",
-            {gl.draw_size.x / 2.f, rect.bottom - 35.f + yshift}, 14 * pause_menu_alpha + 16);
-}
-
 void wait_one_frame_with_skipping(std::chrono::steady_clock::time_point& new_time)
 {
     using namespace std::chrono_literals;
@@ -266,42 +215,95 @@ void wait_one_frame_with_skipping(std::chrono::steady_clock::time_point& new_tim
     }
 }
 
-void init_pause_menu_buffers(idle::pause_menu& pause)
+}  // namespace
+
+void pause_menu::draw() const
+{
+    const float glare = std::sin(shift);
+    const float glare_sqr = math::sqr(glare);
+
+    opengl.prog.normal.use();
+    opengl.prog.normal.set_identity();
+    opengl.prog.normal.set_view_identity();
+
+    const float t[]
+    {
+        0, buffers[0]->texture_h,
+        buffers[0]->texture_w, buffers[0]->texture_h,
+        0, 0,
+        buffers[0]->texture_w, 0
+    };
+
+    const float tb[]
+    {
+        0, buffers[1]->texture_h,
+        buffers[1]->texture_w, buffers[1]->texture_h,
+        0, 0,
+        buffers[1]->texture_w, 0
+    };
+
+    gl::ActiveTexture(gl::TEXTURE0);
+    opengl.prog.normal.set_color({1, 1, 1, 1 - fadein_alpha * .333f});
+    gl::BindTexture(gl::TEXTURE_2D, buffers[0]->texture);
+    opengl.prog.normal.position_vertex(opengl.draw_bounds_verts.data());
+    opengl.prog.normal.texture_vertex(t);
+    gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
+
+    opengl.prog.normal.set_color({1, 1 - fadein_alpha * .2f, 1 - fadein_alpha * .1f, fadein_alpha * .9f});
+    gl::BindTexture(gl::TEXTURE_2D, buffers[1]->texture);
+    opengl.prog.normal.texture_vertex(tb);
+    gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
+
+    const float y_shift = (1 - fadein_alpha) * 20;
+    const idle::rect_t rect{
+            opengl.draw_size.x / 2 - 220.f,
+            opengl.draw_size.y / 2 - 60.f,
+            opengl.draw_size.x / 2 + 220.f,
+            opengl.draw_size.y / 2 + 60.f};
+
+    opengl.prog.text.use();
+    opengl.prog.text.set_color({1, .733f, .796f, fadein_alpha * (1 - glare_sqr * .55f)});
+
+    idle::draw_text<idle::TextAlign::Center>(opengl, "paused",
+            {opengl.draw_size.x / 2.f, rect.top + 10.f + y_shift}, 55);
+
+    idle::draw_text<idle::TextAlign::Center, idle::TextAlign::Center>(opengl, "resume",
+            {opengl.draw_size.x / 2.f, rect.bottom - 35.f + y_shift}, 8 * fadein_alpha + 24);
+}
+
+void pause_menu::init()
 {
     constexpr unsigned downscale = 4;
     std::array<std::optional<graphics::render_buffer_t>, 2> intermediate_buffer;
 
     intermediate_buffer[0].emplace(opengl.render_buffer_masked->internal_size, opengl.render_quality);
 
-    opengl.new_render_buffer(pause.buffers[0]);
-    opengl.new_render_buffer(pause.buffers[1], downscale);
+    opengl.new_render_buffer(buffers[0]);
+    opengl.new_render_buffer(buffers[1], downscale);
     opengl.new_render_buffer(intermediate_buffer[1], downscale);
 
     const auto def = setup_drawing_buffer_frame(*intermediate_buffer[0], platform::background);
 
     room_ctrl.draw_frame(opengl);
 
-    setup_unmasked_buffer_frame(*pause.buffers[0], platform::background);
+    setup_unmasked_buffer_frame(*buffers[0], platform::background);
     opengl.prog.render_masked.draw_buffer(*intermediate_buffer[0]);
 
     opengl.prog.render_blur.use();
     opengl.prog.render_blur.set_radius(2);
     opengl.prog.render_blur.set_direction(0, 1);
 
-    setup_unmasked_buffer_frame(*intermediate_buffer[1], platform::background);
-    opengl.prog.render_blur.draw_buffer(*pause.buffers[0]);
+    setup_unmasked_buffer_frame(*intermediate_buffer[1], graphics::black);
+    opengl.prog.render_blur.draw_buffer(*buffers[0]);
 
     opengl.prog.render_blur.use();
     opengl.prog.render_blur.set_direction(1, 0);
 
-    setup_unmasked_buffer_frame(*pause.buffers[1], platform::background);
+    setup_unmasked_buffer_frame(*buffers[1], graphics::black);
     opengl.prog.render_blur.draw_buffer(*intermediate_buffer[1]);
 
     gl::BindFramebuffer(gl::FRAMEBUFFER, def);
 }
-
-}  // namespace
-
 
 void application::draw()
 {
@@ -314,11 +316,11 @@ void application::draw()
     {
         if (!pause->buffers[1])
         {
-            init_pause_menu_buffers(*pause);
+            pause->init();
         }
 
         render_guard rg;
-        draw_pause_menu(opengl, pause->animation, *pause->buffers[0], *pause->buffers[1]);
+        pause->draw();
     }
     else
     {
@@ -360,7 +362,12 @@ int application::real_main()
                     continue;
                 }
             }
-            pause->animation += (1 - pause->animation) / 20;
+
+            pause->fadein_alpha += (1 - pause->fadein_alpha) / 30;
+
+            pause->shift += .029f;
+            if (pause->shift > F_TAU)
+                pause->shift -= F_TAU;
         }
 
         if (window.has_opengl())

@@ -21,6 +21,7 @@
 #include <memory>
 #include <math.hpp>
 #include "gl_programs.hpp"
+#include "gl.hpp"
 
 namespace idle
 {

@@ -233,9 +233,9 @@ uniform vec4 uCol;
 varying vec2 vUV;
 
 void main() {
-  float t = texture2D(uT, vUV).x;
-  float a = 0.3 + (t * 0.7);
-  gl_FragColor = vec4(a, a, a, t) * uCol; // swizzling won't work on earlier OpenGL
+  float a = texture2D(uT, vUV).x;
+  float c = 0.8 + (a * 0.2);
+  gl_FragColor = vec4(c, c, c, a) * uCol; // swizzling won't work on earlier OpenGL
 }
 
 @@ fullbgf

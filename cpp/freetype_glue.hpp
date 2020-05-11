@@ -27,7 +27,7 @@ namespace fonts
 
 struct freetype_glue
 {
-    std::optional<ft_data_t> operator()(const std::string_view &memory, int resolution) const;
+    std::optional<ft_data_t> operator()(const std::string_view &memory, unsigned resolution) const;
 
     freetype_glue();
     ~freetype_glue();
