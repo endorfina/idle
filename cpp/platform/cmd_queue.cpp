@@ -52,7 +52,7 @@ unsigned command_queue_t::size() const
     return count;
 }
 
-resize_request_t::resize_request_t(const int width, const int height)
+resize_request_t::resize_request_t(const unsigned width, const unsigned height)
     : w(width), h(height)
 {
 }

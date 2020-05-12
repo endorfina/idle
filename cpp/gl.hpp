@@ -54,6 +54,7 @@ namespace graphics
 
 constexpr idle::color_t black{0, 0, 0, 1};
 
+using buffer_size = math::point2<unsigned>;
 
 bool assert_opengl_errors();
 
@@ -63,9 +64,9 @@ struct render_buffer_t
 {
     GLuint buffer_frame = 0, texture = 0, buffer_depth = 0;
     GLfloat texture_w, texture_h;
-    math::point2<int> internal_size;
+    buffer_size internal_size;
 
-    render_buffer_t(math::point2<int> size, GLint quality);
+    render_buffer_t(buffer_size size, GLint quality);
 
     render_buffer_t(render_buffer_t&&)=delete;
 
@@ -136,7 +137,7 @@ struct core
     GLint render_quality = gl::LINEAR;
     std::optional<fonts::font_t> font;
     std::optional<render_buffer_t> render_buffer_masked;
-    math::point2<int> draw_size{0, 0}, screen_size{0, 0}, viewport_size{0, 0};
+    buffer_size draw_size{0, 0}, screen_size{0, 0}, viewport_size{0, 0};
     math::point2<float> translate_vector;
 
     std::array<GLfloat, 8> draw_bounds_verts;
@@ -156,9 +157,9 @@ struct core
 
     bool setup_graphics();
 
-    bool resize(math::point2<int> window_size);
+    bool resize(buffer_size window_size);
 
-    void new_render_buffer(std::optional<render_buffer_t>& opt, int divider = 1) const;
+    void new_render_buffer(std::optional<render_buffer_t>& opt, unsigned divider = 1) const;
 
     void clean();
 

@@ -53,9 +53,9 @@ struct command_queue_t
 
 struct resize_request_t
 {
-    int w, h;
+    unsigned w, h;
 
-    resize_request_t(int, int);
+    resize_request_t(unsigned, unsigned);
 };
 
 }  // namespace platform

@@ -210,12 +210,12 @@ bool programs_are_functional(const Progs& ... progs)
     return (true && ... && !!progs.program_id);
 }
 
-math::point2<int> appropriate_size(const math::point2<int> size)
+buffer_size appropriate_size(const buffer_size size)
 {
-    int u = 64, v = 64;
-    while (u < size.x) u *= 2;
-    while (v < size.y) v *= 2;
-    return { u, v };
+    buffer_size u{ 64, 64 };
+    while (u.x < size.x) u.x *= 2;
+    while (u.y < size.y) u.y *= 2;
+    return u;
 }
 
 }  // namespace
@@ -246,7 +246,7 @@ bool core::setup_graphics()
     return true;
 }
 
-bool core::resize(const math::point2<int> window_size)
+bool core::resize(const buffer_size window_size)
 {
     if (window_size.x * 4 / 5 < window_size.y)
     {
@@ -256,8 +256,11 @@ bool core::resize(const math::point2<int> window_size)
 
     LOGI("Window size set to %i x %i", window_size.x, window_size.y);
 
-    draw_size = { 360 * window_size.x / window_size.y, 360 };
-    viewport_size = { 720 * window_size.x / window_size.y, 720 };
+    constexpr unsigned draw_height = 360;
+    constexpr unsigned main_buffer_height = 720;
+
+    draw_size = { draw_height * window_size.x / window_size.y, draw_height };
+    viewport_size = { main_buffer_height * window_size.x / window_size.y, main_buffer_height };
     screen_size = window_size;
     translate_vector = math::point_cast<float>(draw_size) / math::point_cast<float>(window_size);
 
@@ -583,7 +586,7 @@ void core::copy_projection_matrix(const idle::mat4x4_t& projectionMatrix) const
     set_projection_matrix(prog.gradient, projectionMatrix);
 }
 
-void core::new_render_buffer(std::optional<render_buffer_t>& opt, const int div) const
+void core::new_render_buffer(std::optional<render_buffer_t>& opt, const unsigned div) const
 {
     opt.emplace(viewport_size / div, render_quality);
 }
@@ -596,7 +599,7 @@ render_buffer_t::~render_buffer_t()
     gl::DeleteRenderbuffers(1, &buffer_depth);
 }
 
-render_buffer_t::render_buffer_t(const math::point2<int> tex_size, const GLint quality)
+render_buffer_t::render_buffer_t(const buffer_size tex_size, const GLint quality)
     : internal_size(tex_size)
 {
     gl::GenFramebuffers(1, &buffer_frame);
