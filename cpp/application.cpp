@@ -254,21 +254,21 @@ void pause_menu::draw() const
     opengl.prog.normal.texture_vertex(tb);
     gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
 
-    const float y_shift = (1 - fadein_alpha) * 20;
-    const idle::rect_t rect{
-            opengl.draw_size.x / 2 - 220.f,
-            opengl.draw_size.y / 2 - 60.f,
-            opengl.draw_size.x / 2 + 220.f,
-            opengl.draw_size.y / 2 + 60.f};
+    const float y_shift = opengl.draw_size.y / 2 - 60.f + (1 - fadein_alpha) * 20;
 
     opengl.prog.text.use();
-    opengl.prog.text.set_color({1, .733f, .796f, fadein_alpha * (1 - glare_sqr * .55f)});
+    opengl.prog.text.set_color({1, .733f, .796f, fadein_alpha});
 
     idle::draw_text<idle::TextAlign::Center>(opengl, "paused",
-            {opengl.draw_size.x / 2.f, rect.top + 10.f + y_shift}, 55);
+            {opengl.draw_size.x / 2.f, y_shift}, 64);
 
-    idle::draw_text<idle::TextAlign::Center, idle::TextAlign::Center>(opengl, "resume",
-            {opengl.draw_size.x / 2.f, rect.bottom - 35.f + y_shift}, 8 * fadein_alpha + 24);
+    if (fadein_alpha > .8f)
+    {
+        opengl.prog.text.set_color({1, .733f, .796f, (fadein_alpha - .8f) / .2f * (1 - glare_sqr * .5f)});
+
+        idle::draw_text<idle::TextAlign::Center>(opengl, "press to resume",
+                {opengl.draw_size.x / 2.f, 80.f + y_shift}, 20);
+    }
 }
 
 void pause_menu::init()
@@ -414,18 +414,13 @@ bool application::load()
     auto loader_result = loader_callback.get_future();
 
     std::thread loader_thread {
-            [this] (std::promise<bool> promise)
+            [] (std::promise<bool> promise)
             {
                 bool success = false;
 
                 if (const auto fontfile = platform::asset::hold(idle::config::font_asset))
                 {
-#ifndef __ANDROID__
-                    constexpr int resolution = 72;
-#else
-                    constexpr int resolution = 48;
-#endif
-                    if (auto opt = fonts::freetype_glue{}(fontfile.view(), resolution))
+                    if (auto opt = fonts::freetype_glue{}(fontfile.view(), fonts::texture_quality::ok))
                     {
                         LOGD("Font acquired!");
 
@@ -476,11 +471,7 @@ bool application::load()
     loader_thread.join();
 
 #ifdef IDLE_COMPILE_FONT_DEBUG_SCREEN
-    if (!window.has_opengl())
-    {
-        LOGE("Couldn't display the debug splash, because there's no graphical context to draw it on");
-    }
-    else
+    if (!!window.has_opengl())
     {
         {
             render_guard rg;

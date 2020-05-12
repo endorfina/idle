@@ -24,10 +24,17 @@
 
 namespace fonts
 {
+enum class texture_quality : unsigned
+{
+    poor = 2 << 9,
+    ok = 2 << 10,
+    sharp = 2 << 11,
+    ludicrous = 2 << 12
+};
 
 struct freetype_glue
 {
-    std::optional<ft_data_t> operator()(const std::string_view &memory, unsigned resolution) const;
+    std::optional<ft_data_t> operator()(const std::string_view &memory, texture_quality resolution) const;
 
     freetype_glue();
     ~freetype_glue();

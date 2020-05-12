@@ -58,8 +58,6 @@ static void draw_glyph(const glyph_t& g, const graphics::text_program_t& rcp, co
     gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
 }
 
-#define LEFT_MARGIN 0.081f ///0.0415f
-
 void font_t::draw(const graphics::text_program_t& rcp, const std::string_view &str, unsigned int limit) const
 {
     if (limit == 0) return;
@@ -68,22 +66,19 @@ void font_t::draw(const graphics::text_program_t& rcp, const std::string_view &s
     gl::BindTexture(gl::TEXTURE_2D, texture.get());
     rcp.position_vertex(idle::square_coordinates);
 
-    idle::point_t pos{-LEFT_MARGIN, -topmost_margin};
+    idle::point_t pos{ 0, -topmost_margin };
 
     for (const auto u8c : utf8x::translator<char>{str})
     {
         if (u8c == '\n')
         {
-            pos.x = -LEFT_MARGIN;
+            pos.x = 0;
             pos.y += 1;
         }
-        else if (u8c > 0xd)
+        else if (auto gi = character_map.find(u8c); gi != character_map.end())
         {
-            if (auto gi = character_map.find(u8c); gi != character_map.end())
-            {
-                draw_glyph(gi->second, rcp, cell_size, pos);
-                pos.x += gi->second.width;
-            }
+            draw_glyph(gi->second, rcp, cell_size, pos);
+            pos.x += gi->second.width;
         }
 
         if (!--limit) break;
@@ -96,7 +91,7 @@ void font_t::draw_custom_animation(const graphics::text_program_t& rcp, const st
     gl::BindTexture(gl::TEXTURE_2D, texture.get());
     rcp.position_vertex(idle::square_coordinates);
 
-    idle::point_t pos{-LEFT_MARGIN, -topmost_margin};
+    idle::point_t pos{0, -topmost_margin};
 
     rcp.set_color(col);
     unsigned int i = 0;
@@ -106,27 +101,24 @@ void font_t::draw_custom_animation(const graphics::text_program_t& rcp, const st
     {
         if (u8c == '\n')
         {
-            pos.x = -LEFT_MARGIN;
+            pos.x = 0;
             pos.y += 1;
         }
-        else if (u8c > 0xd)
+        else if (auto gi = character_map.find(u8c); gi != character_map.end())
         {
-            if (auto gi = character_map.find(u8c); gi != character_map.end())
+            if (i >= start)
             {
-                if (i >= start)
-                {
-                    if (anim[1].scale < F_TAU_4)
-                        rcp.set_color(col, col.a * (1 - ::math::sqr(cosf(anim->scale))));
+                if (anim[1].scale < F_TAU_4)
+                    rcp.set_color(col, col.a * (1 - ::math::sqr(cosf(anim->scale))));
 
-                    rcp.set_transform(idle::mat4x4_t::scale(1 - cosf(anim->scale) / 2) * idle::mat4x4_t::rotate(anim->rotation));
-                    draw_glyph(gi->second, rcp, cell_size, pos);
-                    ++anim;
-                }
-                else
-                    draw_glyph(gi->second, rcp, cell_size, pos);
-
-                pos.x += gi->second.width;
+                rcp.set_transform(idle::mat4x4_t::scale(1 - cosf(anim->scale) / 2) * idle::mat4x4_t::rotate(anim->rotation));
+                draw_glyph(gi->second, rcp, cell_size, pos);
+                ++anim;
             }
+            else
+                draw_glyph(gi->second, rcp, cell_size, pos);
+
+            pos.x += gi->second.width;
         }
 
         if (++i > end) break;
@@ -153,11 +145,8 @@ void font_t::draw_custom_animation(const graphics::text_program_t& rcp, const st
 
             current_line_width = 0;
         }
-        else if (u8c > 0xd)
-        {
-            if (auto gi = character_map.find(u8c); gi != character_map.end())
+        else if (auto gi = character_map.find(u8c); gi != character_map.end())
                 current_line_width += gi->second.width * size;
-        }
 
         if (!--limit) break;
     }
@@ -182,8 +171,7 @@ std::string font_t::prepare_string(const std::string_view &str, const float size
             if (write_pos++ == out.size())
                 out += '\n';
         }
-        else if (u8c > 0xd)
-            if (auto gi = character_map.find(u8c); gi != character_map.end())
+        else if (auto gi = character_map.find(u8c); gi != character_map.end())
             {
                 if(u8c == 0x20)
                 {
