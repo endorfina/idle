@@ -80,11 +80,6 @@ struct glyph_view
 
     struct sentinel
     {
-        friend bool operator!=(const sentinel&, const iterator& it)
-        {
-            return !!it.pos.gindex;
-        }
-
         friend bool operator!=(const iterator& it, const sentinel&)
         {
             return !!it.pos.gindex;

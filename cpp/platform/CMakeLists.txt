@@ -1,5 +1,4 @@
 find_package(ZLIB REQUIRED)
-cmake_policy(SET CMP0079 NEW)
 
 if(ANDROID)
     set(CMAKE_VERBOSE_MAKEFILE ON)
@@ -12,8 +11,18 @@ if(ANDROID)
 
     message(STATUS "Local freetype: ${FREETYPE_SOURCE_LOCATION}")
 
-    file(GLOB FT_HEADERS RELATIVE "${FREETYPE_SOURCE_LOCATION}/include" "ft2build.h" "freetype/*.h" "freetype/config/*.h" "freetype/internal/*.h")
-    file(GLOB FT_SOURCES RELATIVE "${FREETYPE_SOURCE_LOCATION}/src"
+    function(resolve_files library base_dir filelist)
+        set(globs "")
+        foreach(FF IN LISTS filelist)
+            list(APPEND globs "${base_dir}/${FF}")
+        endforeach()
+
+        file(GLOB new_filelist ${globs})
+        target_sources(${library} PRIVATE ${new_filelist})
+    endfunction()
+
+    set(FT_HEADERS "ft2build.h" "freetype/*.h" "freetype/config/*.h" "freetype/internal/*.h")
+    set(FT_SOURCES
             autofit/autofit.c
             base/ftbase.c
             base/ftbbox.c
@@ -54,9 +63,12 @@ if(ANDROID)
             type42/type42.c
             winfonts/winfnt.c)
 
-    add_library(freetype STATIC ${FT_HEADERS} ${FT_SOURCES})
+    add_library(freetype STATIC)
+    resolve_files(freetype "${FREETYPE_SOURCE_LOCATION}/include" "${FT_HEADERS}")
+    resolve_files(freetype "${FREETYPE_SOURCE_LOCATION}/src" "${FT_SOURCES}")
     target_compile_definitions(freetype PRIVATE FT2_BUILD_LIBRARY)
-    target_link_libraries(${PROJECT_NAME}-ft freetype)
+    target_include_directories(freetype PRIVATE "${FREETYPE_SOURCE_LOCATION}/include")
+    target_include_directories(${PROJECT_NAME}-ft PRIVATE "${FREETYPE_SOURCE_LOCATION}/include")
 
     # Export ANativeActivity_onCreate(),
     # Refer to: https://github.com/android-ndk/ndk/issues/381.
@@ -69,6 +81,8 @@ if(ANDROID)
 else()
     find_package(Freetype REQUIRED)
     target_include_directories(${PROJECT_NAME}-ft PRIVATE ${FREETYPE_INCLUDE_DIRS})
+
+    cmake_policy(SET CMP0079 NEW) # this is unavailable on android because it's stuck with 3.10.2
     target_link_libraries(${PROJECT_NAME}-ft ${FREETYPE_LIBRARIES})
 
     get_filename_component(OUTPUT_PATH "../${PROJECT_NAME}-bin" REALPATH BASE_DIR "${CMAKE_SOURCE_DIR}" CACHE)

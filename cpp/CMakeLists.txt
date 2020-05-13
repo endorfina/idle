@@ -103,7 +103,9 @@ set_target_properties(${PROJECT_NAME}-obj PROPERTIES COMPILE_FLAGS "-Wall -Wredu
 set_target_properties(${PROJECT_NAME}-ft PROPERTIES COMPILE_FLAGS "-Wall -Wredundant-move")
 target_link_libraries(${PROJECT_NAME}-obj PUBLIC ${PROJECT_NAME}-ft PRIVATE lodepng)
 
-if(NOT ANDROID)
+if(ANDROID)
+    target_link_libraries(${PROJECT_NAME}-ft freetype)
+else()
     add_subdirectory(test)
 endif()
 

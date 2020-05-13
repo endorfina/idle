@@ -29,7 +29,7 @@ class asset
 protected:
 #ifdef __ANDROID__
     static const struct android_app * android_activity;
-    friend struct window;
+    friend struct context;
 
     AAsset * file = nullptr;
     std::string_view data;

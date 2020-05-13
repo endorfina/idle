@@ -25,7 +25,7 @@
 
 #include <EGL/egl.h>
 #include "opengl_core_adaptive.hpp"
-#include "display.hpp"
+#include "context.hpp"
 #include "asset_access.hpp"
 
 namespace platform
@@ -148,7 +148,7 @@ std::optional<resize_request_t> create_window(egl_display& egl)
     else if (const auto amt = glTest.GetNumMissing(); amt > 0)
         LOGE("Number of functions that failed to load: %i.", amt);
 
-    return {{ w, h }};
+    return {{ static_cast<unsigned>(w), static_cast<unsigned>(h) }};
 }
 
 int32_t android_handle_input(android_app * app, AInputEvent* event)
