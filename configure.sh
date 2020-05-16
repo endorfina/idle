@@ -33,11 +33,12 @@ cd "$(dirname "${BASH_SOURCE[0]}")" || die "Couldn't move to the root directory"
 BUILD_TYPE='Release'
 CM_OPTS=()
 CM_OPTS_CXX=()
+CM_LOG_LEVEL=2 # default: 2 (warnings)
 
 if [[ $# -gt 0 && $1 == dev ]]
 then
   shift
-  set -- '-ndcg' "$@"
+  set -- '-ndcgSl' "$@"
 fi
 
 for CLI_ARG in "$@"
@@ -54,7 +55,7 @@ do
         BUILD_TYPE='Debug'
         ;;
 
-      l)
+      +)
         CM_OPTS+=('-DCMAKE_CXX_COMPILER=clang++')
         CM_OPTS_CXX+=('-stdlib=libc++')
         ;;
@@ -79,6 +80,10 @@ do
         CM_OPTS+=('-DPRUNE_SYMBOLS=ON')
         ;;
 
+      S)
+        CM_OPTS+=('-DPRUNE_SYMBOLS=OFF')
+        ;;
+
       g)
         CM_OPTS+=('-DCOMPILE_GALLERY=ON')
         ;;
@@ -91,6 +96,14 @@ do
         CM_OPTS+=('-DCMAKE_VERBOSE_MAKEFILE=ON')
         ;;
 
+      l)
+        (( ++CM_LOG_LEVEL ))
+        ;;
+
+      L)
+        CM_LOG_LEVEL=0
+        ;;
+
       *)
         echo >&2 "$PROGNAME: Ignoring unknown option \"$OPT\""
         ;;
@@ -98,15 +111,15 @@ do
   done
 done
 
-# TODO: change -H to -S for cmake 3.14 compliance
-#       once it becomes available on android
-ARGS=("-H$SOURCE_DIR" "-B$BUILD_DIR" "-DCMAKE_BUILD_TYPE=$BUILD_TYPE")
+ARGS=("-S$SOURCE_DIR" "-B$BUILD_DIR" "-DCMAKE_BUILD_TYPE=$BUILD_TYPE")
 
 command -v 'ninja' &>/dev/null && ARGS+=('-GNinja')
 
 [[ ${#CM_OPTS_CXX[*]} -gt 0 ]] && ARGS+=("-DCMAKE_CXX_FLAGS=${CM_OPTS_CXX[*]}")
 
 [[ ${#CM_OPTS[*]} -gt 0 ]] && ARGS+=("${CM_OPTS[@]}")
+
+ARGS+=("-DLOG_LEVEL=$CM_LOG_LEVEL")
 
 readonly ARGS
 
@@ -136,12 +149,16 @@ do
   else
     echo "$arg_iter"
   fi
-  (( hearts_iter++ ))
+  (( ++hearts_iter ))
   [[ $hearts_iter -ge ${#hearts[*]} ]] && hearts_iter=0
 done
 
 echo '--'
-cmake "${ARGS[@]}" || die "CMake configuration failed. Verbatim CLI arguments: \"${ARGS[*]}\""
+if ! cmake "${ARGS[@]}"
+then
+  # a long while before -S was available -H could have been used instead
+  cmake "${ARGS[@]/#-S/-H}" || die "CMake configuration failed. Verbatim CLI arguments: \"${ARGS[*]}\""
+fi
 
 [[ ! -f "$SOURCE_DIR/$COMPC_FILE" \
   && -f "$BUILD_DIR/$COMPC_FILE" ]] \
@@ -160,7 +177,7 @@ ${PROJECT_NAME}:
 ${INDENT}cmake --build '../${BUILD_DIR}'
 
 vars:
-${INDENT}cmake -N -L --build '../${BUILD_DIR}'
+${INDENT}cmake -N -LH --build '../${BUILD_DIR}'
 
 test:
 ${INDENT}cmake --build '../${BUILD_DIR}' --target '${PROJECT_NAME}-test-run'
@@ -172,6 +189,9 @@ exec:
 $(cmake -N -L --build "$BUILD_DIR" 2>/dev/null | sed -nE "$RUN_SED_FILTER")
 
 run: ${PROJECT_NAME} exec
+
+perf:
+$(cmake -N -L --build "$BUILD_DIR" 2>/dev/null | sed -nE "${RUN_SED_FILTER/'p;q'/'s~(&&)[[:space:]]*([^&]+)$~\1 perf stat \2~;p;q'}")
 
 .PHONY: ${PROJECT_NAME} test clean run exec vars
 _EOF

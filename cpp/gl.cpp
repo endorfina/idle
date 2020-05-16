@@ -230,7 +230,7 @@ bool core::setup_graphics()
     compile_shaders(prog);
     apply_to_all(prog, [] (auto& program) { program.prepare(); });
 
-#ifdef DEBUG
+#if LOG_LEVEL > 3
     // Check openGL on the system
     constexpr std::pair<GLenum, const char *> opengl_info[] {
         { gl::VENDOR, "Vendor" },
@@ -240,7 +240,7 @@ bool core::setup_graphics()
     };
 
     for (const auto [name, label] : opengl_info) {
-        LOGI("OpenGL %s: %s", label, gl::GetString(name));
+        LOGD("OpenGL %s: %s", label, gl::GetString(name));
     }
 #endif
     return true;

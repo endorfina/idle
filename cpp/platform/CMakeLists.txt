@@ -67,8 +67,7 @@ if(ANDROID)
     resolve_files(freetype "${FREETYPE_SOURCE_LOCATION}/include" "${FT_HEADERS}")
     resolve_files(freetype "${FREETYPE_SOURCE_LOCATION}/src" "${FT_SOURCES}")
     target_compile_definitions(freetype PRIVATE FT2_BUILD_LIBRARY)
-    target_include_directories(freetype PRIVATE "${FREETYPE_SOURCE_LOCATION}/include")
-    target_include_directories(${PROJECT_NAME}-ft PRIVATE "${FREETYPE_SOURCE_LOCATION}/include")
+    target_include_directories(freetype PUBLIC "${FREETYPE_SOURCE_LOCATION}/include")
 
     # Export ANativeActivity_onCreate(),
     # Refer to: https://github.com/android-ndk/ndk/issues/381.
@@ -83,7 +82,9 @@ else()
     target_include_directories(${PROJECT_NAME}-ft PRIVATE ${FREETYPE_INCLUDE_DIRS})
 
     cmake_policy(SET CMP0079 NEW) # this is unavailable on android because it's stuck with 3.10.2
-    target_link_libraries(${PROJECT_NAME}-ft ${FREETYPE_LIBRARIES})
+    target_link_libraries(${PROJECT_NAME}-ft
+                PRIVATE ${PROJECT_NAME}-top
+                PRIVATE ${FREETYPE_LIBRARIES})
 
     get_filename_component(OUTPUT_PATH "../${PROJECT_NAME}-bin" REALPATH BASE_DIR "${CMAKE_SOURCE_DIR}" CACHE)
 
@@ -107,9 +108,11 @@ else()
 
     set(RUN_COMMAND "cd '${OUTPUT_PATH}' && './${PROJECT_NAME}'" CACHE STRING "CLI used to boot ${PROJECT_NAME}" FORCE)
 
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E create_symlink "${CMAKE_SOURCE_DIR}/config/runtime_assets" assets
-        WORKING_DIRECTORY "${OUTPUT_PATH}")
+    if(NOT EXISTS "${OUTPUT_PATH}")
+        file(MAKE_DIRECTORY "${OUTPUT_PATH}")
+        # links seem to depend on cmake 3.14, but we're gonna assume its 3.14 on X11
+        file(CREATE_LINK "${CMAKE_SOURCE_DIR}/config/runtime_assets" "${OUTPUT_PATH}/assets" COPY_ON_ERROR SYMBOLIC)
+    endif()
 endif()
 
 add_library(${PROJECT_NAME}-opengl-glue OBJECT "opengl_core_adaptive.cpp")

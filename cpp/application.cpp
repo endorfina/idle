@@ -50,7 +50,7 @@ bool application::execute_commands(const bool is_nested)
 
     if (!!window.commands.size())
     {
-        constexpr auto log_prefix = "command::%s";
+        [[maybe_unused]] constexpr auto log_prefix = "command::%s";
 
         for (const auto cmd : window.commands)
             switch (cmd)

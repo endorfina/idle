@@ -35,7 +35,9 @@ set(SHADER_OUTPUT "${PROJECT_NAME}-include/${SHADER_OUTPUT_BASENAME}")
 set(SHADER_SOURCE "${CMAKE_SOURCE_DIR}/shader_source.glsl")
 set(SHADER_GENERATOR "${CMAKE_SOURCE_DIR}/generate.sh")
 
-option(PRUNE_SYMBOLS "Removes symbols at build time" OFF)
+set(LOG_LEVEL "2" CACHE STRING "Print or hide logs. 0 - nothing, 1 - error, 2 - warning, 3 - info, 4 - verbose")
+
+option(PRUNE_SYMBOLS "Removes symbols at build time" ON)
 
 option(MAKESHIFT_UNITY "Tries to build the main library in unity mode, when cmake doesn't provide one" ON)
 
@@ -58,11 +60,11 @@ add_library(lodepng STATIC "lodepng/lodepng.cpp")
 target_compile_definitions(lodepng PUBLIC LODEPNG_NO_COMPILE_ZLIB LODEPNG_NO_COMPILE_DISK)
 target_include_directories(lodepng INTERFACE lodepng)
 
+add_library(${PROJECT_NAME}-top INTERFACE)
 add_library(${PROJECT_NAME}-ft STATIC "freetype_glue.cpp")
 add_library(${PROJECT_NAME}-obj STATIC "${CMAKE_BINARY_DIR}/${SHADER_OUTPUT}")
 
-add_custom_target(${PROJECT_NAME}-generate-dir
-    COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_NAME}-include")
+file(MAKE_DIRECTORY "${PROJECT_NAME}-include")
 
 # When we build idle this will automatically re-generate the header,
 # provided either the shader source or the script had been modified.
@@ -72,7 +74,6 @@ add_custom_target(${PROJECT_NAME}-generate-sh
     COMMENT "Preparing ${SHADER_OUTPUT}"
     VERBATIM)
 
-add_dependencies(${PROJECT_NAME}-generate-sh ${PROJECT_NAME}-generate-dir)
 add_dependencies(${PROJECT_NAME}-obj ${PROJECT_NAME}-generate-sh)
 
 target_include_directories(${PROJECT_NAME}-obj PRIVATE "${CMAKE_BINARY_DIR}/${PROJECT_NAME}-include")
@@ -95,22 +96,28 @@ endif()
 if(NOT MACOSX)
     add_subdirectory(platform)
 endif()
-add_subdirectory(soloud)
+# add_subdirectory(soloud) # TODO: turn this back on when we need sound again
 
-target_include_directories(${PROJECT_NAME}-ft PUBLIC include)
+target_include_directories(${PROJECT_NAME}-top INTERFACE include)
+target_compile_definitions(${PROJECT_NAME}-top INTERFACE "LOG_LEVEL=${LOG_LEVEL}")
 target_compile_definitions(${PROJECT_NAME}-obj PRIVATE IDLE_APPLICATION_FPS=60)
 set_target_properties(${PROJECT_NAME}-obj PROPERTIES COMPILE_FLAGS "-Wall -Wredundant-move")
 set_target_properties(${PROJECT_NAME}-ft PROPERTIES COMPILE_FLAGS "-Wall -Wredundant-move")
-target_link_libraries(${PROJECT_NAME}-obj PUBLIC ${PROJECT_NAME}-ft PRIVATE lodepng)
+target_link_libraries(${PROJECT_NAME}-obj
+            PUBLIC ${PROJECT_NAME}-top
+            PRIVATE ${PROJECT_NAME}-ft
+            PRIVATE lodepng)
 
 if(ANDROID)
-    target_link_libraries(${PROJECT_NAME}-ft freetype)
+    target_link_libraries(${PROJECT_NAME}-ft
+                PRIVATE ${PROJECT_NAME}-top
+                PRIVATE freetype)
 else()
     add_subdirectory(test)
 endif()
 
 if(DEFINED CMAKE_BUILD_TYPE AND CMAKE_BUILD_TYPE STREQUAL "Debug")
-    target_compile_definitions(${PROJECT_NAME}-ft PUBLIC DEBUG)
+    target_compile_definitions(${PROJECT_NAME}-top INTERFACE DEBUG)
 else()
     target_compile_definitions(lodepng PUBLIC LODEPNG_NO_COMPILE_ERROR_TEXT)
 endif()

@@ -20,7 +20,7 @@
 #include <array>
 #include <random>
 #include "gl.hpp"
-#include "objects.hpp"
+#include "gui.hpp"
 
 namespace idle
 {

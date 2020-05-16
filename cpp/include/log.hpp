@@ -17,6 +17,9 @@
     along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
 #pragma once
+
+#if defined(LOG_LEVEL) && LOG_LEVEL > 0
+
 #ifdef __ANDROID__ //Android build
 #include <jni.h>
 #include <android/sensor.h>
@@ -26,9 +29,19 @@
 
 #define LOGCAT_COMMENT "na.idle"
 
-#define LOGW(...) ((void)__android_log_print(ANDROID_LOG_WARN, LOGCAT_COMMENT, __VA_ARGS__))
-#define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, LOGCAT_COMMENT, __VA_ARGS__))
 #define LOGE(...) ((void)__android_log_print(ANDROID_LOG_ERROR, LOGCAT_COMMENT, __VA_ARGS__))
+
+#if LOG_LEVEL > 1
+#define LOGW(...) ((void)__android_log_print(ANDROID_LOG_WARN, LOGCAT_COMMENT, __VA_ARGS__))
+#endif
+
+#if LOG_LEVEL > 2
+#define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, LOGCAT_COMMENT, __VA_ARGS__))
+#endif
+
+#if LOG_LEVEL > 3
+#define LOGD(...) ((void)__android_log_print(ANDROID_LOG_INFO, LOGCAT_COMMENT, __VA_ARGS__))
+#endif
 
 #else
 
@@ -38,20 +51,38 @@
                     ((void)std::fprintf(stderr, __VA_ARGS__));\
                     ((void)std::putc('\n', stderr))
 
-#define LOGI(...) ((void)std::fputs(u8"ℹ️", stdout));\
-                    ((void)std::fprintf(stdout, __VA_ARGS__));\
-                    ((void)std::putc('\n', stdout))
-
+#if LOG_LEVEL > 1
 #define LOGW(...) ((void)std::fputs(u8"⚠️", stderr));\
                     ((void)std::fprintf(stderr, __VA_ARGS__));\
                     ((void)std::putc('\n', stderr))
-
 #endif
 
-#ifdef DEBUG
+#if LOG_LEVEL > 2
+#define LOGI(...) ((void)std::fputs(u8"ℹ️", stdout));\
+                    ((void)std::fprintf(stdout, __VA_ARGS__));\
+                    ((void)std::putc('\n', stdout))
+#endif
+
+#if LOG_LEVEL > 3
 #define LOGD(...) ((void)std::putc(' ', stdout));\
                     ((void)std::fprintf(stdout, __VA_ARGS__));\
                     ((void)std::putc('\n', stdout))
-#else
+#endif
+
+#endif  // __ANDROID__
+
+#endif  // LOG_LEVEL > 0
+
+#ifndef LOGD
 #define LOGD(...) ((void)0)
 #endif
+#ifndef LOGI
+#define LOGI(...) ((void)0)
+#endif
+#ifndef LOGW
+#define LOGW(...) ((void)0)
+#endif
+#ifndef LOGE
+#define LOGE(...) ((void)0)
+#endif
+
