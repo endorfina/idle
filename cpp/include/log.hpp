@@ -52,19 +52,19 @@
                     ((void)std::putc('\n', stderr))
 
 #if LOG_LEVEL > 1
-#define LOGW(...) ((void)std::fputs(u8"⚠️", stderr));\
+#define LOGW(...) ((void)std::fputs(u8"🔔", stderr));\
                     ((void)std::fprintf(stderr, __VA_ARGS__));\
                     ((void)std::putc('\n', stderr))
 #endif
 
 #if LOG_LEVEL > 2
-#define LOGI(...) ((void)std::fputs(u8"ℹ️", stdout));\
+#define LOGI(...) ((void)std::fputs(u8"🔹", stdout));\
                     ((void)std::fprintf(stdout, __VA_ARGS__));\
                     ((void)std::putc('\n', stdout))
 #endif
 
 #if LOG_LEVEL > 3
-#define LOGD(...) ((void)std::putc(' ', stdout));\
+#define LOGD(...) ((void)std::fputs("  ", stdout));\
                     ((void)std::fprintf(stdout, __VA_ARGS__));\
                     ((void)std::putc('\n', stdout))
 #endif
