@@ -22,35 +22,40 @@
 namespace idle
 {
 
-void pointer::clear(platform::pointer& cursor)
+void pointer_keeper::clear()
 {
-    cursor.single_press = false;
+    pointer.single_press = false;
 }
 
-void pointer::update(platform::pointer& cursor)
+void pointer_keeper::update(const platform::pointer& cursor, const point_t translate_vec)
 {
-    if (cursor.pressed && cursor.touch < 0.99f)
-        cursor.touch += .05f;
-    else if (!cursor.pressed && cursor.touch > 0.01f) {
-        cursor.touch -= .1f;
-        if (cursor.touch < .049f)
-            cursor.touch = 0.f;
-    }
+    pointer.cursor = cursor;
+    pointer.cursor.pos *= translate_vec;
 
-    cursor.double_tap = false;
-
-    if ((single_press_previous_state < 1) && cursor.pressed)
+    if (pointer.cursor.pressed)
     {
-        cursor.single_press = true;
-        single_press_previous_state = 2;
-        if (double_tap_timer < 1) {
-            double_tap_timer = 15;
-        }
-        else cursor.double_tap = true;
+        pointer.touch = std::min(pointer.touch + .05f, 1.f);
     }
-    else cursor.single_press = false;
+    else
+    {
+        pointer.touch = std::max(pointer.touch - .1f, 0.f);
+    }
 
-    if (single_press_previous_state > 0 && !cursor.pressed)
+    pointer.single_press = false;
+    pointer.double_tap = false;
+
+    if (single_press_previous_state < 1 && pointer.cursor.pressed)
+    {
+        pointer.single_press = true;
+        single_press_previous_state = 2;
+
+        if (double_tap_timer < 1)
+            double_tap_timer = 15;
+        else
+            pointer.double_tap = true;
+    }
+
+    if (single_press_previous_state > 0 && !pointer.cursor.pressed)
         --single_press_previous_state;
 
     if (double_tap_timer > 0)

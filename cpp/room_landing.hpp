@@ -21,6 +21,7 @@
 #include <random>
 #include "gl.hpp"
 #include "gui.hpp"
+#include "draw_text.hpp"
 
 namespace idle
 {
@@ -40,6 +41,8 @@ struct landing_room
     std::array<float, 2> noise_seed;
     bool clicked_during_intro = false;
     great_crimson_thing thing;
+
+    void on_resize(point_t);
 
     bool step(graphics::core&);
 

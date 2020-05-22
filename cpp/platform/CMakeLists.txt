@@ -86,7 +86,7 @@ else()
                 PRIVATE ${PROJECT_NAME}-top
                 PRIVATE ${FREETYPE_LIBRARIES})
 
-    get_filename_component(OUTPUT_PATH "../${PROJECT_NAME}-bin" REALPATH BASE_DIR "${CMAKE_SOURCE_DIR}" CACHE)
+    get_filename_component(OUTPUT_PATH "../out" REALPATH BASE_DIR "${CMAKE_SOURCE_DIR}" CACHE)
 
     option(X11_USE_CLIENTMESSAGE "Makes x11 handle closing in a cleaner manner by intercepting close calls from your WM" ON)
 
@@ -106,7 +106,7 @@ else()
 
     set_target_properties(${PROJECT_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${OUTPUT_PATH}")
 
-    set(RUN_COMMAND "cd '${OUTPUT_PATH}' && './${PROJECT_NAME}'" CACHE STRING "CLI used to boot ${PROJECT_NAME}" FORCE)
+    set(CLI_RUN_COMMAND "cd '${OUTPUT_PATH}' && './${PROJECT_NAME}'" CACHE STRING "A command which can be used to boot ${PROJECT_NAME}" FORCE)
 
     if(NOT EXISTS "${OUTPUT_PATH}")
         file(MAKE_DIRECTORY "${OUTPUT_PATH}")

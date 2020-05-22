@@ -67,7 +67,6 @@ TEMPLATE_CHECK_METHOD(draw);
 controller::~controller()
 {
     LOGD("controller::~controller");
-    slumber();
     join_worker();
 }
 
@@ -82,25 +81,15 @@ bool controller::get_crashed() const
     return crashed;
 }
 
-void controller::wake(graphics::core& gl, const std::chrono::steady_clock::time_point& step_time)
+void controller::awake(const bool state)
 {
-    using namespace std::chrono_literals;
-    constexpr auto skip_two_beats = std::chrono::duration_cast<
-                        std::chrono::steady_clock::time_point::duration>(2.0s / IDLE_APPLICATION_FPS);
-
-    slumber();
-    join_worker();
-    worker_active_flag.store(true, std::memory_order_relaxed);
-    worker_thread.emplace(dance, std::ref(*this), std::ref(gl), step_time + skip_two_beats);
-}
-
-void controller::slumber()
-{
-    worker_active_flag.store(false, std::memory_order_relaxed);
+    worker_active_flag.store(state, std::memory_order_relaxed);
 }
 
 void controller::join_worker()
 {
+    awake(false);
+
     if (worker_thread)
     {
         worker_thread->join();
@@ -167,7 +156,7 @@ constexpr char room_label<model_room>[] = "MODEL";
 
 }  // namespace
 
-bool controller::execute_pending_room_change(graphics::core& gl)
+bool controller::execute_pending_room_change(graphics::core& gl, const std::chrono::steady_clock::time_point& clock)
 {
     if (next_variant.rooms)
     {
@@ -193,9 +182,18 @@ bool controller::execute_pending_room_change(graphics::core& gl)
 
         next_variant.rooms.reset();
 
-        worker_active_flag.store(true, std::memory_order_relaxed);
-        worker_thread.emplace(dance, std::ref(*this), std::ref(gl), std::chrono::steady_clock::now());
+        resize(math::point_cast<float>(gl.draw_size));
+
+        awake(true);
     }
+
+    using namespace std::chrono_literals;
+    constexpr auto skip_two_beats = std::chrono::duration_cast<
+                        std::chrono::steady_clock::time_point::duration>(2.0s / IDLE_APPLICATION_FPS);
+
+    if (!worker_thread && should_stay_awake())
+        worker_thread.emplace(dance, std::ref(*this), std::ref(gl), clock + skip_two_beats);
+
     return true;
 }
 

@@ -151,7 +151,6 @@ struct core
     };
 
     bool shutdown_was_requested = false;
-    std::atomic<platform::pointer> pointer;
 
     void copy_projection_matrix(const idle::mat4x4_t&) const;
 

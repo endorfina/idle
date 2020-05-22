@@ -236,5 +236,10 @@ void landing_room::draw(const graphics::core& gl) const
     gl.view_normal();
 }
 
+void landing_room::on_resize(point_t screen_size)
+{
+    gui.resize(screen_size);
+}
+
 }  // namespace idle
 

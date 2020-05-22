@@ -25,19 +25,8 @@
 namespace idle
 {
 
-#ifdef DEBUG
-lodge::~lodge()
-{
-    LOGD("Closing the lodge after %u frames", frame_count);
-}
-#endif
-
 void lodge::draw(const graphics::core& gl)
 {
-#ifdef DEBUG
-    ++frame_count;
-#endif
-
     auto bgsz = background.get_size<float>();
     const float bgsc = std::max(static_cast<float>(gl.draw_size.y) / bgsz.y, static_cast<float>(gl.draw_size.x) / bgsz.x);
     constexpr rect_t emily{0, 0, 398, 432}, /* text_loading{0, 512 - 70, 360, 512},*/ text_cp{450, 0, 512, 512};

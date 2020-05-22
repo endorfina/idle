@@ -40,11 +40,7 @@ struct context
     command_queue_t commands;
     std::optional<resize_request_t> resize_request;
 
-#ifdef __ANDROID__
-    context(struct android_app *);
-#else
     context();
-#endif
 
     ~context();
 

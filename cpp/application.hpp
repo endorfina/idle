@@ -21,7 +21,6 @@
 #include <optional>
 #include <memory>
 #include "gl.hpp"
-#include "pointer.hpp"
 #include "platform/context.hpp"
 
 namespace isolation
@@ -36,11 +35,12 @@ struct pause_menu
     void init();
 };
 
-class application
+struct application
 {
-    idle::pointer pointer;
+private:
     bool update_display = false, blank_display = true;
     std::chrono::system_clock::time_point earliest_available_resize;
+    std::chrono::steady_clock::time_point clock = std::chrono::steady_clock::now();
 
 public:
     std::unique_ptr<pause_menu> pause;
@@ -51,16 +51,11 @@ private:
     bool execute_commands(bool nested);
 
 public:
-    template<typename...Vars>
-    application(Vars&&...vars)
-        : window(std::forward<Vars>(vars)...)
-    {}
-
-    int real_main();
+    static int real_main();
 
     bool load();
 
     void draw();
 };
 
-}  //namespace isolation
+}  // namespace isolation

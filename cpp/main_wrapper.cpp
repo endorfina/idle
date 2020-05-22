@@ -21,17 +21,16 @@
 #include "application.hpp"
 
 #ifdef __ANDROID__
-#define IDLE_ANDROID_STATE android_internal_state
 
-void android_main(android_app * IDLE_ANDROID_STATE)
+void android_main(android_app * android_internal_state)
 {
+    ::platform::asset::android_activity = android_internal_state;
 #else
-#define IDLE_ANDROID_STATE
 
 int main(void)
 {
     return
 #endif
-    ::isolation::application{ IDLE_ANDROID_STATE }.real_main();
+    ::isolation::application::real_main();
 }
 

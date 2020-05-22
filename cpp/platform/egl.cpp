@@ -230,14 +230,14 @@ void android_handle_command(struct android_app* app, const int32_t cmd)
 
 }  // namespace
 
-context::context(struct android_app* ptr)
+context::context()
 {
-    assert(ptr);
+    assert(asset::android_activity);
     auto& egl = egl_display::cast(data);
 
     LOGD("context::context");
 
-    asset::android_activity = egl.android = ptr;
+    egl.android = asset::android_activity;
     egl.android->onAppCmd = android_handle_command;
     egl.android->onInputEvent = android_handle_input;
     egl.android->userData = this;

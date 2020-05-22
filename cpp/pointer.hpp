@@ -17,20 +17,31 @@
     along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
 #pragma once
+
 #include "platform/pointer.hpp"
+#include "gl_programs.hpp"
 
 namespace idle
 {
 
-struct pointer
+struct pointer_wrapper
 {
+    platform::pointer cursor;
+    bool single_press = false, double_tap = false;
+    float touch = 0.f;
+};
+
+struct pointer_keeper
+{
+    pointer_wrapper pointer;
+
 private:
     int single_press_previous_state = 0, double_tap_timer = 0;
 
 public:
-    void clear(platform::pointer&);
+    void clear();
 
-    void update(platform::pointer&);
+    void update(const platform::pointer& cursor, point_t translate_vec);
 };
 
 }  // namepsace idle

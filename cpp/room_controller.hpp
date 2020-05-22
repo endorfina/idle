@@ -27,14 +27,15 @@
 
 #include "gl.hpp"
 #include "room_variant.hpp"
+#include "pointer.hpp"
 
 namespace idle
 {
 
-template<typename O>
+template<typename Open>
 struct door
 {
-    using opened_type = O;
+    using opened_type = Open;
 
     template<typename Variant, typename...Args>
     void open(Variant& var, Args&&...args) const
@@ -43,13 +44,13 @@ struct door
     }
 };
 
-template<typename T>
+template<typename SkipMonostate>
 struct hotel
 {
 };
 
-template<typename Skip, typename...Rooms>
-struct hotel<std::variant<Skip, Rooms...>>
+template<typename SkipMonostate, typename...Rooms>
+struct hotel<std::variant<SkipMonostate, Rooms...>>
 {
     std::optional<std::variant<door<Rooms>...>> rooms;
 };
@@ -64,11 +65,11 @@ class controller
     bool crashed{false};
 
 public:
+    pointer_keeper pointer;
+
     ~controller();
 
-    void wake(graphics::core& gl, const std::chrono::steady_clock::time_point& step_time);
-
-    void slumber();
+    void awake(bool);
 
     bool should_stay_awake() const;
 
@@ -78,12 +79,12 @@ public:
 
     void draw_frame(const graphics::core& gl);
 
-    bool execute_pending_room_change(graphics::core&);
+    bool execute_pending_room_change(graphics::core&, const std::chrono::steady_clock::time_point& step_time);
 
     template<typename Room>
     void change_room()
     {
-        slumber();
+        awake(false);
         next_variant.rooms.emplace(door<Room>{});
     }
 

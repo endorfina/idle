@@ -22,10 +22,10 @@
 namespace platform
 {
 
-struct pointer {
+struct pointer
+{
     math::point2<float> pos;
-    bool pressed = false, single_press = false, double_tap = false;
-    float touch = 0.f;
+    bool pressed = false;
 };
 
 }  // namespace platform

@@ -100,7 +100,7 @@ bool application::execute_commands(const bool is_nested)
 
             case ::platform::command::PausePressed:
                 LOGI(log_prefix, "PausePressed");
-                room_ctrl.slumber();
+                room_ctrl.awake(false);
                 if (!pause)
                     pause = std::make_unique<pause_menu>();
                 break;
@@ -334,6 +334,8 @@ void application::draw()
 
 int application::real_main()
 {
+    application app;
+
 #ifdef __clang__
     LOGD("%s", "### CLANG " __clang_version__);
 #elif __GNUC__
@@ -344,49 +346,44 @@ int application::real_main()
     PRINT_SIZE(idle::controller);
     PRINT_SIZE(idle::mat4x4_t);
 
-    auto app_time = std::chrono::steady_clock::now();
-
-    while (execute_commands(false) && room_ctrl.execute_pending_room_change(opengl))
+    while (app.execute_commands(false) && room_ctrl.execute_pending_room_change(opengl, app.clock))
     {
-        if (pause)
+        if (app.pause)
         {
-            if (window.cursor.single_press)
+            const auto& pointer = room_ctrl.pointer.pointer;
+            if (pointer.single_press)
             {
-                const auto p = opengl.pointer.load(std::memory_order_relaxed).pos;
+                const auto p = pointer.cursor.pos;
                 if (fabsf(p.x - opengl.draw_size.x / 2) < 150.f
                         && fabsf(p.y - (opengl.draw_size.y / 2 + 30.f)) < 60.f)
                 {
-                    pause.reset();
-                    pointer.clear(window.cursor);
-                    room_ctrl.wake(opengl, app_time);
+                    app.pause.reset();
+                    room_ctrl.pointer.clear();
+                    room_ctrl.awake(true);
                     continue;
                 }
             }
 
-            pause->fadein_alpha += (1 - pause->fadein_alpha) / 30;
+            app.pause->fadein_alpha += (1 - app.pause->fadein_alpha) / 30;
 
-            pause->shift += .029f;
-            if (pause->shift > F_TAU)
-                pause->shift -= F_TAU;
+            app.pause->shift += .029f;
+            if (app.pause->shift > F_TAU)
+                app.pause->shift -= F_TAU;
         }
 
-        if (window.has_opengl())
+        if (app.window.has_opengl())
         {
-            if (update_display)
+            if (app.update_display)
             {
-                draw();
+                app.draw();
             }
 
             idle::image_t::load_topmost_queued_picture();
         }
 
-        pointer.update(window.cursor);
+        room_ctrl.pointer.update(app.window.cursor, opengl.translate_vector);
 
-        auto cursor = window.cursor;
-        cursor.pos *= opengl.translate_vector;
-        opengl.pointer.store(cursor, std::memory_order_relaxed);
-
-        wait_one_frame_with_skipping(app_time);
+        wait_one_frame_with_skipping(app.clock);
     }
     return 0;
 }
@@ -406,7 +403,6 @@ bool application::load()
         idle::image_t::load_from_assets_immediate("space-1.png")
     };
 
-    room_ctrl.slumber();
     room_ctrl.join_worker();
 
     std::chrono::time_point<std::chrono::steady_clock> lt = std::chrono::steady_clock::now();

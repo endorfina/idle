@@ -24,9 +24,6 @@ namespace idle
 {
 class lodge
 {
-#ifdef DEBUG
-    unsigned frame_count = 0;
-#endif
     idle::image_t picture, background;
     float alpha = 0;
     // bool loaded = false;
@@ -37,10 +34,6 @@ class lodge
         : picture(std::forward<Im1>(i1)), background(std::forward<Im2>(i2))
     {
     }
-
-#ifdef DEBUG
-    ~lodge();
-#endif
 
     void draw(const graphics::core&);
 };
