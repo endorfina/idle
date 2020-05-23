@@ -28,7 +28,7 @@ class asset
 {
 protected:
 #ifdef __ANDROID__
-    static const struct android_app * android_activity;
+    static struct android_app * android_activity;
     friend struct context;
 
     AAsset * file = nullptr;
