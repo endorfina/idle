@@ -18,6 +18,7 @@
 */
 
 #pragma once
+#include <string>
 #include <string_view>
 #include <math.hpp>
 #include "glyph.hpp"

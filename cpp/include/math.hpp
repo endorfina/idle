@@ -18,9 +18,14 @@
 */
 #pragma once
 
+#include <stdint.h>
 #include <type_traits>
 #include <array>
 #include <algorithm>
+
+#ifdef __GNUC__          // gcc is love
+#include <cmath>
+#endif
 
 #include <memory.h> // memcpy
 
@@ -45,15 +50,6 @@
 
 #ifndef M_PI
 #define M_PI F_PI
-#endif
-
-#ifdef __clang__        // clang, am I right?
-#define CONST_MATH ce
-#elif __GNUC__          // gcc is love
-#include <cmath>
-#define CONST_MATH std
-#else
-#define CONST_MATH ce
 #endif
 
 namespace math
@@ -426,6 +422,14 @@ constexpr T degtorad(T a)
     return a * T(M_PI) / T(180);
 }
 
+
+#ifdef __GNUC__
+namespace const_math = ::std;
+#else
+namespace const_math = ce;
+#endif
+
+
 template<typename T>
 struct point2
 {
@@ -495,7 +499,7 @@ struct point2
     // Distance
     friend float operator^(const point2& first, const point2& second)
     {
-        return CONST_MATH::hypot(first.x - second.x, first.y - second.y);
+        return const_math::hypot(first.x - second.x, first.y - second.y);
     }
 };
 
@@ -581,7 +585,7 @@ struct point3
     // Distance
     friend float operator^(const point3& first, const point3& second)
     {
-        return CONST_MATH::hypot(first.x - second.x, first.y - second.y, first.z - second.z);
+        return const_math::hypot(first.x - second.x, first.y - second.y, first.z - second.z);
     }
 };
 
@@ -995,8 +999,8 @@ public:
     {
         const auto r = degtorad(angle);
         matrix4x4 mat{ identity() };
-        mat[5] = mat[0] = CONST_MATH::cos(r);
-        mat[4] = -(mat[1] = CONST_MATH::sin(r));
+        mat[5] = mat[0] = const_math::cos(r);
+        mat[4] = -(mat[1] = const_math::sin(r));
 
         mat[12] = -p.x * mat[0] + -p.y * mat[4] + p.x;
         mat[13] = -p.x * mat[1] + -p.y * mat[5] + p.y;
@@ -1006,32 +1010,32 @@ public:
     constexpr static matrix4x4 rotate_x(value_type rad)
     {
         matrix4x4 mat{ identity() };
-        mat[10] = mat[5] = CONST_MATH::cos(rad);
-        mat[9] = -(mat[6] = CONST_MATH::sin(rad));
+        mat[10] = mat[5] = const_math::cos(rad);
+        mat[9] = -(mat[6] = const_math::sin(rad));
         return mat;
     }
 
     constexpr static matrix4x4 rotate_y(value_type rad)
     {
         matrix4x4 mat{ identity() };
-        mat[10] = mat[0] = CONST_MATH::cos(rad);
-        mat[2] = -(mat[8] = CONST_MATH::sin(rad));
+        mat[10] = mat[0] = const_math::cos(rad);
+        mat[2] = -(mat[8] = const_math::sin(rad));
         return mat;
     }
 
     constexpr static matrix4x4 rotate(value_type rad)
     {
         matrix4x4 mat{ identity() };
-        mat[5] = mat[0] = CONST_MATH::cos(rad);
-        mat[4] = -(mat[1] = CONST_MATH::sin(rad));
+        mat[5] = mat[0] = const_math::cos(rad);
+        mat[4] = -(mat[1] = const_math::sin(rad));
         return mat;
     }
 
     constexpr static matrix4x4 rotate(value_type rad, const point2<value_type> &p)
     {
         matrix4x4 mat{ identity() };
-        mat[5] = mat[0] = CONST_MATH::cos(rad);
-        mat[4] = -(mat[1] = CONST_MATH::sin(rad));
+        mat[5] = mat[0] = const_math::cos(rad);
+        mat[4] = -(mat[1] = const_math::sin(rad));
 
         mat[12] = -p.x * mat[0] + -p.y * mat[4] + p.x;
         mat[13] = -p.x * mat[1] + -p.y * mat[5] + p.y;
@@ -1119,6 +1123,4 @@ struct field
 };
 
 }  // namespace math
-
-#undef CONST_MATH
 

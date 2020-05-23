@@ -18,15 +18,15 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 endif()
 
 set(${PROJECT_NAME}-files
-        drawable.cpp
-        pointer.cpp
-        fonts.cpp
-        gl.cpp
         spinlock.cpp
+        scoped_thread.cpp
+        drawable.cpp
         room_controller.cpp
         room_landing.cpp
-        scoped_thread.cpp
         lodge.cpp
+        gl.cpp
+        fonts.cpp
+        pointer.cpp
         application.cpp
         main_wrapper.cpp)
 
@@ -60,11 +60,11 @@ add_library(lodepng STATIC "lodepng/lodepng.cpp")
 target_compile_definitions(lodepng PUBLIC LODEPNG_NO_COMPILE_ZLIB LODEPNG_NO_COMPILE_DISK)
 target_include_directories(lodepng INTERFACE lodepng)
 
+file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/${PROJECT_NAME}-include")
+
 add_library(${PROJECT_NAME}-top INTERFACE)
 add_library(${PROJECT_NAME}-ft STATIC "freetype_glue.cpp")
 add_library(${PROJECT_NAME}-obj STATIC "${CMAKE_BINARY_DIR}/${SHADER_OUTPUT}")
-
-file(MAKE_DIRECTORY "${PROJECT_NAME}-include")
 
 # When we build idle this will automatically re-generate the header,
 # provided either the shader source or the script had been modified.
