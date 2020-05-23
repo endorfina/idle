@@ -52,6 +52,10 @@
 #define M_PI F_PI
 #endif
 
+#ifndef M_PI_2
+#define M_PI_2 F_PI_2
+#endif
+
 namespace math
 {
 
@@ -146,7 +150,7 @@ constexpr auto cbrt(T x)
 }
 
 template <typename T>
-constexpr T hypot(T x, T y)
+constexpr auto hypot(T x, T y)
 {
     return sqrt(x * x + y * y);
 }
@@ -200,9 +204,9 @@ template <typename T>
 constexpr auto sin(T x)
 {
     if constexpr (std::is_floating_point_v<T>)
-        return detail::trigonometry(x, x, T{6}, 4, -1, x * x*x);
+        return detail::trigonometry(x, x, T{6}, 4, -1, x * x * x);
     else
-        return detail::trigonometry<float>(x, x, 6.f, 4, -1, x * x*x);
+        return detail::trigonometry<float>(x, x, 6.f, 4, -1, x * x * x);
 }
 
 template <typename T>
@@ -215,7 +219,7 @@ constexpr auto cos(T x)
 }
 
 template <typename T>
-constexpr T tan(T x)
+constexpr auto tan(T x)
 {
     static_assert(std::is_floating_point_v<T>);
     const auto c = cos(x);
@@ -229,22 +233,24 @@ namespace detail
     template <typename T>
     constexpr T atan_term(T x2, int k)
     {
-    return (T{2} * static_cast<T>(k) * x2)
-        / ((T{2} * static_cast<T>(k) + T{1}) * (T{1} + x2));
+        return (T{2} * static_cast<T>(k) * x2)
+            / ((T{2} * static_cast<T>(k) + T{1}) * (T{1} + x2));
     }
+
     template <typename T>
     constexpr T atan_product(T x, int k)
     {
-    return k == 1 ? atan_term(x * x, k) :
-        atan_term(x * x, k) * atan_product(x, k-1);
+        return k == 1 ? atan_term(x * x, k) :
+            atan_term(x * x, k) * atan_product(x, k-1);
     }
+
     template <typename T>
     constexpr T atan_sum(T x, T sum, int n)
     {
-    return sum + atan_product(x, n) == sum ?
-        sum :
-        atan_sum(x, sum + atan_product(x, n), n+1);
+        return sum + atan_product(x, n) == sum ? sum :
+            atan_sum(x, sum + atan_product(x, n), n+1);
     }
+
 }  // namespace detail
 
 template <typename T>
@@ -260,10 +266,10 @@ template <typename T>
 constexpr T atan2(T x, T y)
 {
     return x > 0 ? atan(y/x) :
-    y >= 0 && x < 0 ? atan(y/x) + static_cast<T>(M_PI) :
-    y < 0 && x < 0 ? atan(y/x) - static_cast<T>(M_PI) :
-    y > 0 && x == 0 ? static_cast<T>(M_PI/2.0l) :
-    -static_cast<T>(M_PI/2.0l);
+        y >= 0 && x < 0 ? atan(y/x) + static_cast<T>(M_PI) :
+        y < 0 && x < 0 ? atan(y/x) - static_cast<T>(M_PI) :
+        y > 0 && x == 0 ? static_cast<T>(M_PI_2) :
+        -static_cast<T>(M_PI_2);
 }
 
 namespace detail
@@ -271,47 +277,47 @@ namespace detail
     template <typename T>
     constexpr T floor2(T x, T guess, T inc)
     {
-    return guess + inc <= x ? floor2(x, guess + inc, inc) :
-        inc <= T{1} ? guess : floor2(x, guess, inc/T{2});
+        return guess + inc <= x ? floor2(x, guess + inc, inc) :
+            inc <= T{1} ? guess : floor2(x, guess, inc/T{2});
     }
 
     template <typename T>
     constexpr T floor(T x, T guess, T inc)
     {
-    return
-        inc < T{8} ? floor2(x, guess, inc) :
-        guess + inc <= x ? floor(x, guess + inc, inc) :
-        guess + (inc/T{8})*T{7} <= x ? floor(x, guess + (inc/T{8})*T{7}, inc/T{8}) :
-        guess + (inc/T{8})*T{6} <= x ? floor(x, guess + (inc/T{8})*T{6}, inc/T{8}) :
-        guess + (inc/T{8})*T{5} <= x ? floor(x, guess + (inc/T{8})*T{5}, inc/T{8}) :
-        guess + (inc/T{8})*T{4} <= x ? floor(x, guess + (inc/T{8})*T{4}, inc/T{8}) :
-        guess + (inc/T{8})*T{3} <= x ? floor(x, guess + (inc/T{8})*T{3}, inc/T{8}) :
-        guess + (inc/T{8})*T{2} <= x ? floor(x, guess + (inc/T{8})*T{2}, inc/T{8}) :
-        guess + inc/T{8} <= x ? floor(x, guess + inc/T{8}, inc/T{8}) :
-        floor(x, guess, inc/T{8});
+        return
+            inc < T{8} ? floor2(x, guess, inc) :
+            guess + inc <= x ? floor(x, guess + inc, inc) :
+            guess + (inc/T{8})*T{7} <= x ? floor(x, guess + (inc/T{8})*T{7}, inc/T{8}) :
+            guess + (inc/T{8})*T{6} <= x ? floor(x, guess + (inc/T{8})*T{6}, inc/T{8}) :
+            guess + (inc/T{8})*T{5} <= x ? floor(x, guess + (inc/T{8})*T{5}, inc/T{8}) :
+            guess + (inc/T{8})*T{4} <= x ? floor(x, guess + (inc/T{8})*T{4}, inc/T{8}) :
+            guess + (inc/T{8})*T{3} <= x ? floor(x, guess + (inc/T{8})*T{3}, inc/T{8}) :
+            guess + (inc/T{8})*T{2} <= x ? floor(x, guess + (inc/T{8})*T{2}, inc/T{8}) :
+            guess + inc/T{8} <= x ? floor(x, guess + inc/T{8}, inc/T{8}) :
+            floor(x, guess, inc/T{8});
     }
 
     template <typename T>
     constexpr T ceil2(T x, T guess, T dec)
     {
-    return guess - dec >= x ? ceil2(x, guess - dec, dec) :
-        dec <= T{1} ? guess : ceil2(x, guess, dec/T{2});
+        return guess - dec >= x ? ceil2(x, guess - dec, dec) :
+            dec <= T{1} ? guess : ceil2(x, guess, dec/T{2});
     }
 
     template <typename T>
     constexpr T ceil(T x, T guess, T dec)
     {
-    return
-        dec < T{8} ? ceil2(x, guess, dec) :
-        guess - dec >= x ? ceil(x, guess - dec, dec) :
-        guess - (dec/T{8})*T{7} >= x ? ceil(x, guess - (dec/T{8})*T{7}, dec/T{8}) :
-        guess - (dec/T{8})*T{6} >= x ? ceil(x, guess - (dec/T{8})*T{6}, dec/T{8}) :
-        guess - (dec/T{8})*T{5} >= x ? ceil(x, guess - (dec/T{8})*T{5}, dec/T{8}) :
-        guess - (dec/T{8})*T{4} >= x ? ceil(x, guess - (dec/T{8})*T{4}, dec/T{8}) :
-        guess - (dec/T{8})*T{3} >= x ? ceil(x, guess - (dec/T{8})*T{3}, dec/T{8}) :
-        guess - (dec/T{8})*T{2} >= x ? ceil(x, guess - (dec/T{8})*T{2}, dec/T{8}) :
-        guess - dec/T{8} >= x ? ceil(x, guess - dec/T{8}, dec/T{8}) :
-        ceil(x, guess, dec/T{8});
+        return
+            dec < T{8} ? ceil2(x, guess, dec) :
+            guess - dec >= x ? ceil(x, guess - dec, dec) :
+            guess - (dec/T{8})*T{7} >= x ? ceil(x, guess - (dec/T{8})*T{7}, dec/T{8}) :
+            guess - (dec/T{8})*T{6} >= x ? ceil(x, guess - (dec/T{8})*T{6}, dec/T{8}) :
+            guess - (dec/T{8})*T{5} >= x ? ceil(x, guess - (dec/T{8})*T{5}, dec/T{8}) :
+            guess - (dec/T{8})*T{4} >= x ? ceil(x, guess - (dec/T{8})*T{4}, dec/T{8}) :
+            guess - (dec/T{8})*T{3} >= x ? ceil(x, guess - (dec/T{8})*T{3}, dec/T{8}) :
+            guess - (dec/T{8})*T{2} >= x ? ceil(x, guess - (dec/T{8})*T{2}, dec/T{8}) :
+            guess - dec/T{8} >= x ? ceil(x, guess - dec/T{8}, dec/T{8}) :
+            ceil(x, guess, dec/T{8});
     }
 }  // namespace detail
 
@@ -324,45 +330,47 @@ constexpr float ceil(T x);
 constexpr float floor(float x)
 {
     return x < 0 ? -ceil(-x) :
-    detail::floor(
-        x, 0.0f,
-        detail::power<int>(2.0f, std::numeric_limits<float>::max_exponent-1));
+        detail::floor(
+            x, 0.0f,
+            detail::power<int>(2.0f, std::numeric_limits<float>::max_exponent-1)
+        );
 }
 constexpr double floor(double x)
 {
     return x < 0 ? -ceil(-x) :
-    detail::floor(
-        x, 0.0,
-        detail::power<int>(2.0, std::numeric_limits<double>::max_exponent-1));
+        detail::floor(
+            x, 0.0,
+            detail::power<int>(2.0, std::numeric_limits<double>::max_exponent-1)
+        );
 }
-template <typename Integral>
-constexpr double floor(
-    Integral x,
-    typename std::enable_if<std::is_integral<Integral>::value>::type* = nullptr)
+
+template<typename T>
+constexpr std::enable_if_t<std::is_integral_v<T>, double> floor(T x)
 {
-    return x;
+    return static_cast<double>(x);
 }
 
 constexpr float ceil(float x)
 {
     return x < 0 ? -floor(-x) :
-    detail::ceil(
-        x, detail::power<int>(2.0f, std::numeric_limits<float>::max_exponent-1),
-        detail::power<int>(2.0f, std::numeric_limits<float>::max_exponent-1));
+        detail::ceil(
+            x, detail::power<int>(2.f, std::numeric_limits<float>::max_exponent - 1),
+            detail::power<int>(2.f, std::numeric_limits<float>::max_exponent - 1)
+        );
 }
 
 constexpr double ceil(double x)
 {
     return x < 0 ? -floor(-x) :
-    detail::ceil(
-        x, detail::power<int>(2.0, std::numeric_limits<double>::max_exponent-1),
-        detail::power<int>(2.0, std::numeric_limits<double>::max_exponent-1));
+        detail::ceil(
+            x, detail::power<int>(2., std::numeric_limits<double>::max_exponent - 1),
+            detail::power<int>(2., std::numeric_limits<double>::max_exponent - 1)
+        );
 }
 
 template <typename T>
-constexpr float ceil(T x)
+constexpr std::enable_if_t<std::is_integral_v<T>, float> ceil(T x)
 {
-    static_assert(std::is_integral_v<T>);
     return static_cast<float>(x);
 }
 
@@ -370,6 +378,7 @@ constexpr float trunc(float x)
 {
     return x >= 0 ? floor(x) : -floor(-x);
 }
+
 constexpr double trunc(double x)
 {
     return x >= 0 ? floor(x) : -floor(-x);
@@ -390,6 +399,7 @@ constexpr float fmod(float x, float y)
 {
     return x - trunc(x / y) * y;
 }
+
 constexpr double fmod(double x, double y)
 {
     return x - trunc(x / y) * y;
@@ -399,6 +409,7 @@ constexpr float remainder(float x, float y)
 {
     return x - y * round(x / y);
 }
+
 constexpr double remainder(double x, double y)
 {
     return x - y * round(x / y);
@@ -417,9 +428,9 @@ constexpr bool is_power_of_2(const T a)
 }
 
 template<typename T>
-constexpr T degtorad(T a)
+constexpr std::enable_if_t<std::is_floating_point_v<T>, float> degtorad(T a)
 {
-    return a * T(M_PI) / T(180);
+    return a * T{M_PI} / T{180};
 }
 
 
