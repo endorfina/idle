@@ -37,8 +37,8 @@ struct context
 
     data_t data;
     pointer cursor;
-    command_queue_t commands;
     std::optional<resize_request_t> resize_request;
+    command_queue_t commands;
 
     context();
 

@@ -1,10 +1,6 @@
-find_package(ZLIB REQUIRED)
-
 if(ANDROID)
     set(CMAKE_VERBOSE_MAKEFILE ON)
-    set(PLATFORM_LIBRARIES "android" "log" "EGL" "GLESv2")
-    target_include_directories(${PROJECT_NAME}-obj PUBLIC ${ANDROID_NDK}/sources/android/native_app_glue)
-    target_include_directories(${PROJECT_NAME}-ft PRIVATE ${ANDROID_NDK}/sources/android/native_app_glue)
+    target_include_directories(${PROJECT_NAME}-top INTERFACE ${ANDROID_NDK}/sources/android/native_app_glue)
     add_library(android_glue OBJECT "${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c")
 
     get_filename_component(FREETYPE_SOURCE_LOCATION ../freetype REALPATH BASE_DIR "${CMAKE_SOURCE_DIR}" CACHE)
@@ -74,31 +70,21 @@ if(ANDROID)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -u ANativeActivity_onCreate")
 
     add_library(${PROJECT_NAME} SHARED $<TARGET_OBJECTS:android_glue> "egl.cpp")
-
-    set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "-Wall")
+    target_link_libraries(${PROJECT_NAME} PRIVATE "android" "log" "EGL" "GLESv2")
 
 else()
-    find_package(Freetype REQUIRED)
-    target_include_directories(${PROJECT_NAME}-ft PRIVATE ${FREETYPE_INCLUDE_DIRS})
-
-    cmake_policy(SET CMP0079 NEW) # this is unavailable on android because it's stuck with 3.10.2
-    target_link_libraries(${PROJECT_NAME}-ft
-                PRIVATE ${PROJECT_NAME}-top
-                PRIVATE ${FREETYPE_LIBRARIES})
-
     get_filename_component(OUTPUT_PATH "../out" REALPATH BASE_DIR "${CMAKE_SOURCE_DIR}" CACHE)
 
     option(X11_USE_CLIENTMESSAGE "Makes x11 handle closing in a cleaner manner by intercepting close calls from your WM" ON)
 
+    set(THREADS_PREFER_PTHREAD_FLAG ON)
+    find_package(Threads REQUIRED)
     find_package(X11 REQUIRED)
     cmake_policy(SET CMP0072 NEW)
     find_package(OpenGL REQUIRED)
-    set(PLATFORM_LIBRARIES ${X11_X11_LIB} ${OPENGL_LIBRARIES} pthread atomic)
 
     add_executable(${PROJECT_NAME} "x.cpp")
-
-    set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "-Wall")
-    target_include_directories(${PROJECT_NAME} PRIVATE ${X11_X11_INCLUDE_PATH})
+    target_link_libraries(${PROJECT_NAME} PRIVATE X11::X11 OpenGL::GL Threads::Threads atomic)
 
     if (X11_USE_CLIENTMESSAGE)
         target_compile_definitions(${PROJECT_NAME} PRIVATE X11_USE_CLIENTMESSAGE)
@@ -119,10 +105,8 @@ add_library(${PROJECT_NAME}-opengl-glue OBJECT "opengl_core_adaptive.cpp")
 
 target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAME}-opengl-glue> "cmd_queue.cpp")
 
-target_link_libraries(${PROJECT_NAME}
-              ${PROJECT_NAME}-obj
-              ${PLATFORM_LIBRARIES}
-              ${ZLIB_LIBRARIES})
+find_package(ZLIB REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAME}-obj ZLIB::ZLIB)
 
 if(PRUNE_SYMBOLS)
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD

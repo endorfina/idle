@@ -274,16 +274,14 @@ void context::event_loop_back(bool)
         switch (xev.type) {
             case ButtonPress:
             case ButtonRelease:
-                cursor.pos.x = static_cast<float>(xev.xbutton.x);
-                cursor.pos.y = static_cast<float>(xev.xbutton.y);
+                cursor.pos = { static_cast<float>(xev.xbutton.x), static_cast<float>(xev.xbutton.y) };
                 cursor.pressed = xev.xbutton.type == ButtonPress;
                 break;
 
             case EnterNotify:
             case MotionNotify:
             case LeaveNotify:
-                cursor.pos.x = static_cast<float>(xev.xmotion.x);
-                cursor.pos.y = static_cast<float>(xev.xmotion.y);
+                cursor.pos = { static_cast<float>(xev.xmotion.x), static_cast<float>(xev.xmotion.y) };
                 break;
 
             case ConfigureNotify:

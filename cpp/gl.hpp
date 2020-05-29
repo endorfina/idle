@@ -58,8 +58,6 @@ using buffer_size = math::point2<unsigned>;
 
 bool assert_opengl_errors();
 
-struct core;
-
 struct render_buffer_t
 {
     GLuint buffer_frame = 0, texture = 0, buffer_depth = 0;
@@ -138,7 +136,7 @@ struct core
     std::optional<fonts::font_t> font;
     std::optional<render_buffer_t> render_buffer_masked;
     buffer_size draw_size{0, 0}, screen_size{0, 0}, viewport_size{0, 0};
-    math::point2<float> translate_vector;
+    math::point2<GLfloat> translate_vector;
 
     std::array<GLfloat, 8> draw_bounds_verts;
 
@@ -149,8 +147,6 @@ struct core
         0, 1,
         1, 1
     };
-
-    bool shutdown_was_requested = false;
 
     void copy_projection_matrix(const idle::mat4x4_t&) const;
 

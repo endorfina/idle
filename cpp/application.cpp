@@ -46,6 +46,7 @@ bool application::execute_commands(const bool is_nested)
 {
     window.event_loop_back(!update_display);
 
+    bool shutdown_was_requested = false;
     bool perform_load = false;
 
     if (!!window.commands.size())
@@ -95,7 +96,7 @@ bool application::execute_commands(const bool is_nested)
                 LOGI(log_prefix, "CloseWindow");
                 opengl.clean();
                 window.terminate_display();
-                opengl.shutdown_was_requested = true;
+                shutdown_was_requested = true;
                 return false;
 
             case ::platform::command::PausePressed:
@@ -120,9 +121,11 @@ bool application::execute_commands(const bool is_nested)
             const auto request = std::move(*window.resize_request);
             window.resize_request.reset();
 
-            blank_display = !opengl.resize({request.w, request.h});
+            const auto resize_result = opengl.resize({request.w, request.h});
 
-            if (!blank_display)
+            blank_display = !resize_result;
+
+            if (!!resize_result)
             {
                 room_ctrl.resize({
                     static_cast<float>(opengl.draw_size.x),
@@ -134,7 +137,7 @@ bool application::execute_commands(const bool is_nested)
         }
     }
 
-    return !(perform_load && !load()) && !opengl.shutdown_was_requested;
+    return !(perform_load && !load()) && !shutdown_was_requested;
 }
 
 
@@ -198,7 +201,7 @@ public:
     }
 };
 
-void wait_one_frame_with_skipping(std::chrono::steady_clock::time_point& new_time)
+auto wait_one_frame_with_skipping(std::chrono::steady_clock::time_point new_time)
 {
     using namespace std::chrono_literals;
     constexpr auto minimum_elapsed_duration = std::chrono::duration_cast<
@@ -213,6 +216,7 @@ void wait_one_frame_with_skipping(std::chrono::steady_clock::time_point& new_tim
     {
         new_time += minimum_elapsed_duration * IDLE_APPLICATION_FPS;
     }
+    return new_time;
 }
 
 }  // namespace
@@ -345,6 +349,7 @@ int application::real_main()
     PRINT_SIZE(platform::context);
     PRINT_SIZE(idle::controller);
     PRINT_SIZE(idle::mat4x4_t);
+    PRINT_SIZE(std::chrono::steady_clock::time_point);
 
     while (app.execute_commands(false) && room_ctrl.execute_pending_room_change(opengl, app.clock))
     {
@@ -383,7 +388,7 @@ int application::real_main()
 
         room_ctrl.pointer.update(app.window.cursor, opengl.translate_vector);
 
-        wait_one_frame_with_skipping(app.clock);
+        app.clock = wait_one_frame_with_skipping(app.clock);
     }
     return 0;
 }

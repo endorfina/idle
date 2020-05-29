@@ -30,7 +30,7 @@ namespace idle
 namespace
 {
 
-void wait_one_frame(std::chrono::steady_clock::time_point& new_time)
+auto wait_one_frame(std::chrono::steady_clock::time_point new_time)
 {
     using namespace std::chrono_literals;
     constexpr auto minimum_elapsed_duration = std::chrono::duration_cast<
@@ -38,6 +38,7 @@ void wait_one_frame(std::chrono::steady_clock::time_point& new_time)
 
     new_time += minimum_elapsed_duration;
     std::this_thread::sleep_until(new_time);
+    return new_time;
 }
 
 
@@ -50,7 +51,7 @@ void dance(controller& ctrl, graphics::core& gl, std::chrono::steady_clock::time
 
     while (ctrl.should_stay_awake())
     {
-        wait_one_frame(step_time);
+        step_time = wait_one_frame(step_time);
         ctrl.do_step(gl);
     }
     LOGD("Dancer closed shop.");

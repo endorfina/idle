@@ -100,19 +100,22 @@ endif()
 
 target_include_directories(${PROJECT_NAME}-top INTERFACE include)
 target_compile_definitions(${PROJECT_NAME}-top INTERFACE "LOG_LEVEL=${LOG_LEVEL}")
+target_compile_options(${PROJECT_NAME}-top INTERFACE -Wall -Wredundant-move)
+
+target_link_libraries(${PROJECT_NAME}-ft PUBLIC ${PROJECT_NAME}-top)
+
 target_compile_definitions(${PROJECT_NAME}-obj PRIVATE IDLE_APPLICATION_FPS=60)
-set_target_properties(${PROJECT_NAME}-obj PROPERTIES COMPILE_FLAGS "-Wall -Wredundant-move")
-set_target_properties(${PROJECT_NAME}-ft PROPERTIES COMPILE_FLAGS "-Wall -Wredundant-move")
 target_link_libraries(${PROJECT_NAME}-obj
             PUBLIC ${PROJECT_NAME}-top
             PRIVATE ${PROJECT_NAME}-ft
             PRIVATE lodepng)
 
 if(ANDROID)
-    target_link_libraries(${PROJECT_NAME}-ft
-                PRIVATE ${PROJECT_NAME}-top
-                PRIVATE freetype)
+    target_link_libraries(${PROJECT_NAME}-ft PRIVATE freetype)
 else()
+    find_package(Freetype REQUIRED)
+    target_link_libraries(${PROJECT_NAME}-ft PRIVATE Freetype::Freetype)
+
     add_subdirectory(test)
 endif()
 
