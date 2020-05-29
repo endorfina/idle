@@ -104,9 +104,7 @@ endif()
 add_library(${PROJECT_NAME}-opengl-glue OBJECT "opengl_core_adaptive.cpp")
 
 target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAME}-opengl-glue> "cmd_queue.cpp")
-
-find_package(ZLIB REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAME}-obj ZLIB::ZLIB)
+target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAME}-obj)
 
 if(PRUNE_SYMBOLS)
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD

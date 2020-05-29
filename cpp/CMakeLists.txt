@@ -5,7 +5,7 @@ project(idle
     LANGUAGES C CXX)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti -fno-exceptions -ffast-math")
-set(CMAKE_CXX_STANDARD 17) # 17 requires 3.8.2, 20 requires 3.12.4
+# set(CMAKE_CXX_STANDARD 17) # 17 requires 3.8.2, 20 requires 3.12.4
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_SKIP_RPATH ON)
 set(CMAKE_CXX_EXTENSIONS OFF) # enforces -std=c++11 instead of -std=gnu++11
@@ -69,7 +69,12 @@ add_library(${PROJECT_NAME}-obj STATIC "${CMAKE_BINARY_DIR}/${SHADER_OUTPUT}")
 # When we build idle this will automatically re-generate the header,
 # provided either the shader source or the script had been modified.
 add_custom_target(${PROJECT_NAME}-generate-sh
-    COMMAND test -r "${SHADER_OUTPUT}" -a "${SHADER_OUTPUT}" -nt "${SHADER_SOURCE}" -a "${SHADER_OUTPUT}" -nt "${SHADER_GENERATOR}" && echo "${SHADER_OUTPUT_BASENAME} is up-to-date." || "${SHADER_GENERATOR}" < "${SHADER_SOURCE}" > "${SHADER_OUTPUT}"
+    COMMAND test
+        -r "${SHADER_OUTPUT}"
+        -a "${SHADER_OUTPUT}" -nt "${SHADER_SOURCE}"
+        -a "${SHADER_OUTPUT}" -nt "${SHADER_GENERATOR}"
+        && echo "${SHADER_OUTPUT_BASENAME} is up-to-date."
+        || "${SHADER_GENERATOR}" < "${SHADER_SOURCE}" > "${SHADER_OUTPUT}"
     BYPRODUCTS "${SHADER_OUTPUT}"
     COMMENT "Preparing ${SHADER_OUTPUT}"
     VERBATIM)
@@ -99,16 +104,20 @@ endif()
 # add_subdirectory(soloud) # TODO: turn this back on when we need sound again
 
 target_include_directories(${PROJECT_NAME}-top INTERFACE include)
-target_compile_definitions(${PROJECT_NAME}-top INTERFACE "LOG_LEVEL=${LOG_LEVEL}")
+target_compile_definitions(${PROJECT_NAME}-top INTERFACE "$<$<CONFIG:Debug>:DEBUG>" "LOG_LEVEL=${LOG_LEVEL}")
 target_compile_options(${PROJECT_NAME}-top INTERFACE -Wall -Wredundant-move)
+target_compile_features(${PROJECT_NAME}-top INTERFACE cxx_std_17)
+
+target_compile_definitions(lodepng PUBLIC "$<$<NOT:$<CONFIG:Debug>>:LODEPNG_NO_COMPILE_ERROR_TEXT>")
 
 target_link_libraries(${PROJECT_NAME}-ft PUBLIC ${PROJECT_NAME}-top)
 
-target_compile_definitions(${PROJECT_NAME}-obj PRIVATE IDLE_APPLICATION_FPS=60)
+find_package(ZLIB REQUIRED)
 target_link_libraries(${PROJECT_NAME}-obj
             PUBLIC ${PROJECT_NAME}-top
             PRIVATE ${PROJECT_NAME}-ft
-            PRIVATE lodepng)
+            PRIVATE lodepng
+            PRIVATE ZLIB::ZLIB)
 
 if(ANDROID)
     target_link_libraries(${PROJECT_NAME}-ft PRIVATE freetype)
@@ -119,8 +128,3 @@ else()
     add_subdirectory(test)
 endif()
 
-if(DEFINED CMAKE_BUILD_TYPE AND CMAKE_BUILD_TYPE STREQUAL "Debug")
-    target_compile_definitions(${PROJECT_NAME}-top INTERFACE DEBUG)
-else()
-    target_compile_definitions(lodepng PUBLIC LODEPNG_NO_COMPILE_ERROR_TEXT)
-endif()

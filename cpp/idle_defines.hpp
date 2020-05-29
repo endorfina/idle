@@ -1,4 +1,4 @@
-﻿/*
+/*
     Copyright © 2020 endorfina <dev.endorfina@outlook.com>
 
     This file is part of Idle.
@@ -18,30 +18,33 @@
 */
 #pragma once
 
-#include "platform/pointer.hpp"
-#include "idle_defines.hpp"
+#include <math.hpp>
+#include "platform/opengl_core_adaptive.hpp"
+
+#define TYPE_REMOVE_CVR(x) std::remove_cv_t<std::remove_reference_t<decltype(x)>>
 
 namespace idle
 {
+using color_t = math::color<GLfloat>;
+using point_t = math::point2<GLfloat>;
+using point_3d_t = math::point3<GLfloat>;
+using mat4x4_t = math::matrix4x4<GLfloat, false>;
+using mat4x4_noopt_t = math::matrix4x4<GLfloat, true>;
+using rect_t = math::rect<GLfloat>;
 
-struct pointer_wrapper
-{
-    platform::pointer cursor;
-    bool single_press = false, double_tap = false;
-    float touch = 0.f;
+enum class text_align { near, center, far };
+
+constexpr unsigned application_frames_per_second = 60;
+
+constexpr float square_coordinates[8] = {
+    0, 0, 1, 0,
+    0, 1, 1, 1
 };
 
-struct pointer_keeper
+struct text_animation_data
 {
-    pointer_wrapper pointer;
-
-private:
-    int single_press_previous_state = 0, double_tap_timer = 0;
-
-public:
-    void clear();
-
-    void update(const platform::pointer& cursor, point_t translate_vec);
+    float scale, rotation;
 };
 
-}  // namepsace idle
+}  // namespace idle
+

@@ -108,7 +108,7 @@ unsigned shift_appendages(std::array<float, Size>& ray_array, Rand& rando)
         ray_array[elem >= Size - 2 ? elem - Size + 2 : elem + 2] += amp * .13f;
     }
 
-    return random_int{IDLE_APPLICATION_FPS * 3, IDLE_APPLICATION_FPS * 11}(rando);
+    return random_int{application_frames_per_second * 3, application_frames_per_second * 11}(rando);
 }
 
 }  // namespace
@@ -127,7 +127,7 @@ bool landing_room::step(graphics::core& gl)
             clicked_during_intro = true;
     }
 
-    thing.rotation += .01f / IDLE_APPLICATION_FPS;
+    thing.rotation += .01f / application_frames_per_second;
     if (thing.rotation > F_TAU)
         thing.rotation -= F_TAU;
 
@@ -138,7 +138,7 @@ bool landing_room::step(graphics::core& gl)
 
     for (unsigned i = 0; i < std::tuple_size<great_crimson_thing::arm_t>::value; ++i)
     {
-        thing.legs[1][i] += (thing.legs[0][i] - thing.legs[1][i]) / IDLE_APPLICATION_FPS * .3f;
+        thing.legs[1][i] += (thing.legs[0][i] - thing.legs[1][i]) / application_frames_per_second * .3f;
     }
 
     random_float dist_float2{-1.f, 1.f};

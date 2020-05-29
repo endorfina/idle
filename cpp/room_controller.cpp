@@ -34,7 +34,7 @@ auto wait_one_frame(std::chrono::steady_clock::time_point new_time)
 {
     using namespace std::chrono_literals;
     constexpr auto minimum_elapsed_duration = std::chrono::duration_cast<
-                        std::chrono::steady_clock::time_point::duration>(1.0s / IDLE_APPLICATION_FPS);
+                        std::chrono::steady_clock::time_point::duration>(1.0s / application_frames_per_second);
 
     new_time += minimum_elapsed_duration;
     std::this_thread::sleep_until(new_time);
@@ -127,7 +127,7 @@ void controller::draw_frame(const graphics::core& gl)
         gl.prog.text.use();
         gl.prog.text.set_color({1, 1, 1, .9f});
 
-        draw_text<idle::TextAlign::Center, idle::TextAlign::Center>(gl, *crash_haiku,
+        draw_text<text_align::center, text_align::center>(gl, *crash_haiku,
                 {gl.draw_size.x / 2.f, gl.draw_size.y / 2.f}, 32);
     }
     else
@@ -190,7 +190,7 @@ bool controller::execute_pending_room_change(graphics::core& gl, const std::chro
 
     using namespace std::chrono_literals;
     constexpr auto skip_two_beats = std::chrono::duration_cast<
-                        std::chrono::steady_clock::time_point::duration>(2.0s / IDLE_APPLICATION_FPS);
+                        std::chrono::steady_clock::time_point::duration>(2.0s / application_frames_per_second);
 
     if (!worker_thread && should_stay_awake())
         worker_thread.emplace(dance, std::ref(*this), std::ref(gl), clock + skip_two_beats);

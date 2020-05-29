@@ -127,11 +127,7 @@ bool application::execute_commands(const bool is_nested)
 
             if (!!resize_result)
             {
-                room_ctrl.resize({
-                    static_cast<float>(opengl.draw_size.x),
-                    static_cast<float>(opengl.draw_size.y)
-                });
-
+                room_ctrl.resize(math::point_cast<GLfloat>(opengl.draw_size));
                 earliest_available_resize = now + std::chrono::milliseconds(500);
             }
         }
@@ -205,7 +201,7 @@ auto wait_one_frame_with_skipping(std::chrono::steady_clock::time_point new_time
 {
     using namespace std::chrono_literals;
     constexpr auto minimum_elapsed_duration = std::chrono::duration_cast<
-                        std::chrono::steady_clock::time_point::duration>(1.0s / IDLE_APPLICATION_FPS);
+                        std::chrono::steady_clock::time_point::duration>(1.0s / idle::application_frames_per_second);
 
     if (std::chrono::steady_clock::now() - new_time < 1.0s)
     {
@@ -214,7 +210,7 @@ auto wait_one_frame_with_skipping(std::chrono::steady_clock::time_point new_time
     }
     else
     {
-        new_time += minimum_elapsed_duration * IDLE_APPLICATION_FPS;
+        new_time += minimum_elapsed_duration * idle::application_frames_per_second;
     }
     return new_time;
 }
@@ -263,14 +259,14 @@ void pause_menu::draw() const
     opengl.prog.text.use();
     opengl.prog.text.set_color({1, .733f, .796f, fadein_alpha});
 
-    idle::draw_text<idle::TextAlign::Center>(opengl, "paused",
+    idle::draw_text<idle::text_align::center>(opengl, "paused",
             {opengl.draw_size.x / 2.f, y_shift}, 64);
 
     if (fadein_alpha > .8f)
     {
         opengl.prog.text.set_color({1, .733f, .796f, (fadein_alpha - .8f) / .2f * (1 - glare_sqr * .5f)});
 
-        idle::draw_text<idle::TextAlign::Center>(opengl, "press to resume",
+        idle::draw_text<idle::text_align::center>(opengl, "press to resume",
                 {opengl.draw_size.x / 2.f, 80.f + y_shift}, 20);
     }
 }
@@ -396,7 +392,7 @@ int application::real_main()
 bool application::load()
 {
     using namespace std::chrono_literals;
-    constexpr auto minimum_elapsed = 1.0s / (IDLE_APPLICATION_FPS / 2 + 5);
+    constexpr auto minimum_elapsed = 1.0s / (idle::application_frames_per_second / 2 + 5);
 
     if (room_ctrl.get_crashed())
         return false;

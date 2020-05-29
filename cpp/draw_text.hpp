@@ -25,24 +25,24 @@ namespace idle
 
 namespace detail
 {
-template <TextAlign H, TextAlign V>
+template <text_align H, text_align V>
 point_t get_text_transform(const fonts::font_t& font, std::string_view str, point_t p, float a, const unsigned int limit)
 {
-    if constexpr (H == TextAlign::Near && V == TextAlign::Near)
+    if constexpr (H == text_align::near && V == text_align::near)
         return p;
     else
     {
         point_t fs = font.get_extent(str, a, limit);
-        if constexpr (H == TextAlign::Near)
+        if constexpr (H == text_align::near)
             fs.x = p.x;
-        else if constexpr (H == TextAlign::Center)
+        else if constexpr (H == text_align::center)
             fs.x = p.x - fs.x / 2.0f;
         else
             fs.x = p.x - fs.x;
 
-        if constexpr (V == TextAlign::Near)
+        if constexpr (V == text_align::near)
             fs.y = p.y;
-        else if constexpr (V == TextAlign::Center)
+        else if constexpr (V == text_align::center)
             fs.y = p.y - fs.y / 2.0f;
         else
             fs.y = p.y - fs.y;
@@ -53,7 +53,7 @@ point_t get_text_transform(const fonts::font_t& font, std::string_view str, poin
 
 }  // namespace detail
 
-template <TextAlign H = TextAlign::Near, TextAlign V = TextAlign::Near>
+template <text_align H = text_align::near, text_align V = text_align::near>
 void draw_text(const graphics::core& gl, const std::string_view& str, point_t p, float size, const unsigned int limit = static_cast<unsigned int>(-1))
 {
     gl.prog.text.set_view_transform(mat4x4_t::scale(size) * mat4x4_t::translate(detail::get_text_transform<H, V>(*gl.font, str, p, size, limit)));

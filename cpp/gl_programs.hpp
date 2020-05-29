@@ -18,33 +18,7 @@
 */
 #pragma once
 
-#include <math.hpp>
-#include "platform/opengl_core_adaptive.hpp"
-
-#define TYPE_REMOVE_CVR(x) std::remove_cv_t<std::remove_reference_t<decltype(x)>>
-
-namespace idle
-{
-using color_t = math::color<GLfloat>;
-using point_t = math::point2<GLfloat>;
-using point_3d_t = math::point3<GLfloat>;
-using mat4x4_t = math::matrix4x4<GLfloat, false>;
-using mat4x4_noopt_t = math::matrix4x4<GLfloat, true>;
-using rect_t = math::rect<GLfloat>;
-
-enum class TextAlign { Near, Center, Far };
-
-constexpr float square_coordinates[8] = {
-    0, 0, 1, 0,
-    0, 1, 1, 1
-};
-
-struct text_animation_data
-{
-    float scale, rotation;
-};
-
-}  // namespace idle
+#include "idle_defines.hpp"
 
 namespace graphics
 {
