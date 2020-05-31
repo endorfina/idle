@@ -290,7 +290,7 @@ bool core::resize(const buffer_size window_size)
     masked_size.y *= 4;
     masked_size.y /= 3;
 
-    render_buffer_masked.emplace(masked_size, render_quality);
+    render_buffer_masked = std::make_unique<render_buffer_t>(masked_size, render_quality);
 
     prog.render_blur.use();
     prog.render_blur.set_radius(1.f);
@@ -586,9 +586,9 @@ void core::copy_projection_matrix(const idle::mat4x4_t& projectionMatrix) const
     set_projection_matrix(prog.gradient, projectionMatrix);
 }
 
-void core::new_render_buffer(std::optional<render_buffer_t>& opt, const unsigned div) const
+std::unique_ptr<const render_buffer_t> core::new_render_buffer(const unsigned div) const
 {
-    opt.emplace(viewport_size / div, render_quality);
+    return std::make_unique<const render_buffer_t>(viewport_size / div, render_quality);
 }
 
 render_buffer_t::~render_buffer_t()

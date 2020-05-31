@@ -44,7 +44,7 @@ struct landing_room
 
     void on_resize(point_t);
 
-    bool step(graphics::core&);
+    bool step();
 
     void draw(const graphics::core&) const;
 };

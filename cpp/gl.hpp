@@ -19,6 +19,7 @@
 #pragma once
 
 #include <atomic>
+#include <memory>
 #include <optional>
 #include <math.hpp>
 #include <log.hpp>
@@ -134,7 +135,7 @@ struct core
 
     GLint render_quality = gl::LINEAR;
     std::optional<fonts::font_t> font;
-    std::optional<render_buffer_t> render_buffer_masked;
+    std::unique_ptr<const render_buffer_t> render_buffer_masked;
     buffer_size draw_size{0, 0}, screen_size{0, 0}, viewport_size{0, 0};
     math::point2<GLfloat> translate_vector;
 
@@ -154,7 +155,7 @@ struct core
 
     bool resize(buffer_size window_size);
 
-    void new_render_buffer(std::optional<render_buffer_t>& opt, unsigned divider = 1) const;
+    std::unique_ptr<const render_buffer_t> new_render_buffer(unsigned divider = 1) const;
 
     void clean();
 

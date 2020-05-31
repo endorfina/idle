@@ -42,9 +42,9 @@ auto wait_one_frame(std::chrono::steady_clock::time_point new_time)
 }
 
 
-void dance(controller& ctrl, graphics::core& gl, std::chrono::steady_clock::time_point step_time)
+void dance(controller& ctrl, std::chrono::steady_clock::time_point step_time)
 {
-    if (ctrl.get_crashed())
+    if (ctrl.haiku.has_crashed())
         return;
 
     LOGD("Dancer open for business");
@@ -52,7 +52,7 @@ void dance(controller& ctrl, graphics::core& gl, std::chrono::steady_clock::time
     while (ctrl.should_stay_awake())
     {
         step_time = wait_one_frame(step_time);
-        ctrl.do_step(gl);
+        ctrl.do_step();
     }
     LOGD("Dancer closed shop.");
 }
@@ -71,25 +71,30 @@ controller::~controller()
     join_worker();
 }
 
-void controller::signal_crash(std::string str)
+void crash_haiku::crash(std::string str)
 {
-    crash_haiku.emplace(std::move(str));
-    crashed = true;
+    error_string = std::move(str);
+    crashed.store(true, std::memory_order_release);
 }
 
-bool controller::get_crashed() const
+bool crash_haiku::has_crashed() const
 {
-    return crashed;
+    return crashed.load(std::memory_order_acquire);
 }
 
-void controller::awake(const bool state)
+const std::string& crash_haiku::get_string() const
 {
-    worker_active_flag.store(state, std::memory_order_relaxed);
+    return error_string;
+}
+
+void controller::sleep()
+{
+    worker_active_flag.store(false, std::memory_order_relaxed);
 }
 
 void controller::join_worker()
 {
-    awake(false);
+    sleep();
 
     if (worker_thread)
     {
@@ -105,40 +110,66 @@ bool controller::should_stay_awake() const
 
 void controller::resize(point_t size)
 {
-    std::visit([size](auto& room){
-        if constexpr (has_on_resize_method<TYPE_REMOVE_CVR(room)>::value)
-            room.on_resize(size);
-    }, current_variant);
-}
+    const std::lock_guard block_room_changes{mutability};
+    current_screen_size = size;
 
-void controller::do_step(graphics::core& gl)
-{
-    std::visit([&gl](auto& room) {
-        if constexpr (has_step_method<TYPE_REMOVE_CVR(room)>::value) {
-            room.step(gl);
+    std::visit([size](auto& room)
+    {
+        if constexpr (has_on_resize_method<TYPE_REMOVE_CVR(room)>::value)
+        {
+            room.on_resize(size);
         }
     }, current_variant);
 }
 
 void controller::draw_frame(const graphics::core& gl)
 {
-    if (crashed && crash_haiku)
+    if (haiku.has_crashed())
     {
         gl.prog.text.use();
         gl.prog.text.set_color({1, 1, 1, .9f});
 
-        draw_text<text_align::center, text_align::center>(gl, *crash_haiku,
-                {gl.draw_size.x / 2.f, gl.draw_size.y / 2.f}, 32);
+        draw_text<text_align::center, text_align::center>(gl, haiku.get_string(),
+                math::point_cast<GLfloat>(gl.draw_size) / 2.f, 32);
     }
     else
     {
         gl.prog.normal.use();
-        std::visit([&gl](auto& room){
+
+        const std::lock_guard block_room_changes{mutability};
+
+        std::visit([&gl](auto& room)
+        {
             if constexpr (has_draw_method<TYPE_REMOVE_CVR(room)>::value)
             {
                 room.draw(gl);
             }
         }, current_variant);
+    }
+}
+
+void controller::awaken(const std::chrono::steady_clock::time_point clock)
+{
+    using namespace std::chrono_literals;
+    constexpr auto skip_a_beat = std::chrono::duration_cast<
+                        std::chrono::steady_clock::time_point::duration>(1.5s / application_frames_per_second);
+
+    if (worker_thread)
+    {
+        sleep();
+        worker_thread->join();
+        worker_thread.reset();
+    }
+
+    worker_active_flag.store(true, std::memory_order_relaxed);
+    worker_thread.emplace(dance, std::ref(*this), clock + skip_a_beat);
+}
+
+void controller::default_room_if_none_set()
+{
+    if (const auto ptr = std::get_if<std::monostate>(&current_variant); ptr && !next_variant.rooms)
+    {
+        next_variant.rooms.emplace(door<landing_room>{});
     }
 }
 
@@ -157,52 +188,35 @@ constexpr char room_label<model_room>[] = "MODEL";
 
 }  // namespace
 
-bool controller::execute_pending_room_change(graphics::core& gl, const std::chrono::steady_clock::time_point& clock)
+void controller::do_step()
 {
+    std::visit([](auto& room) {
+        if constexpr (has_step_method<TYPE_REMOVE_CVR(room)>::value) {
+            room.step();
+        }
+    }, current_variant);
+
     if (next_variant.rooms)
     {
-        join_worker();
+        const std::lock_guard block_drawing_and_resizing{mutability};
 
         std::visit(
-            [&gl, this] (const auto& gate)
+            [this] (const auto& gate)
             {
                 using T = typename TYPE_REMOVE_CVR(gate)::opened_type;
                 LOGI("Switching context to: %s", room_label<T>);
 
-                if constexpr (std::is_constructible_v<T, graphics::core&>)
+                static_assert(std::is_constructible_v<T>);
+                gate.open(current_variant);
+
+                if constexpr (has_on_resize_method<T>::value)
                 {
-                    gate.open(current_variant, gl);
-                }
-                else
-                {
-                    static_assert(std::is_constructible_v<T>);
-                    gate.open(current_variant);
+                    std::get<T>(current_variant).on_resize(current_screen_size);
                 }
             },
             *next_variant.rooms);
 
         next_variant.rooms.reset();
-
-        resize(math::point_cast<float>(gl.draw_size));
-
-        awake(true);
-    }
-
-    using namespace std::chrono_literals;
-    constexpr auto skip_two_beats = std::chrono::duration_cast<
-                        std::chrono::steady_clock::time_point::duration>(2.0s / application_frames_per_second);
-
-    if (!worker_thread && should_stay_awake())
-        worker_thread.emplace(dance, std::ref(*this), std::ref(gl), clock + skip_two_beats);
-
-    return true;
-}
-
-void controller::default_room_if_none_set()
-{
-    if (const auto ptr = std::get_if<std::monostate>(&current_variant); ptr && !next_variant.rooms)
-    {
-        next_variant.rooms.emplace(door<landing_room>{});
     }
 }
 

@@ -24,7 +24,9 @@ namespace idle
 
 void pointer_keeper::clear()
 {
+    pointer.touch = 0.f;
     pointer.single_press = false;
+    pointer.double_tap = false;
 }
 
 void pointer_keeper::update(const platform::pointer& cursor, const point_t translate_vec)

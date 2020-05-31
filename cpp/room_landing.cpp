@@ -113,7 +113,7 @@ unsigned shift_appendages(std::array<float, Size>& ray_array, Rand& rando)
 
 }  // namespace
 
-bool landing_room::step(graphics::core& gl)
+bool landing_room::step()
 {
     using random_float = std::uniform_real_distribution<float>;
 

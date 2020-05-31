@@ -37,6 +37,7 @@ struct context
 
     data_t data;
     pointer cursor;
+    bool cursor_update = false;
     std::optional<resize_request_t> resize_request;
     command_queue_t commands;
 

@@ -170,6 +170,8 @@ int32_t android_handle_input(android_app * app, AInputEvent* event)
             win.cursor.pressed = false;
             break;
         }
+
+        win.cursor_update = true;
         break;
 
     case AINPUT_EVENT_TYPE_KEY:

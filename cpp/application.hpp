@@ -28,11 +28,13 @@ namespace isolation
 
 struct pause_menu
 {
-    std::optional<graphics::render_buffer_t> buffers[2];
+    std::unique_ptr<const graphics::render_buffer_t> buffers[2];
     float fadein_alpha = 0, shift = 0;
 
+    static constexpr unsigned blur_downscale = 4;
+
+    pause_menu();
     void draw() const;
-    void init();
 };
 
 struct application
@@ -43,7 +45,7 @@ private:
     std::chrono::steady_clock::time_point clock = std::chrono::steady_clock::now();
 
 public:
-    std::unique_ptr<pause_menu> pause;
+    std::optional<pause_menu> pause;
 
     ::platform::context window;
 

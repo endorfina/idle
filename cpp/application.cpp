@@ -101,15 +101,21 @@ bool application::execute_commands(const bool is_nested)
 
             case ::platform::command::PausePressed:
                 LOGI(log_prefix, "PausePressed");
-                room_ctrl.awake(false);
+                room_ctrl.sleep();
                 if (!pause)
-                    pause = std::make_unique<pause_menu>();
+                    pause.emplace();
                 break;
             }
 
         window.commands.clear();
 
         if (perform_load && !opengl.setup_graphics()) return false;
+    }
+
+    if (window.cursor_update)
+    {
+        room_ctrl.pointer.update(window.cursor, opengl.translate_vector);
+        window.cursor_update = false;
     }
 
     if (window.resize_request)
@@ -271,36 +277,34 @@ void pause_menu::draw() const
     }
 }
 
-void pause_menu::init()
+pause_menu::pause_menu()
+    : buffers
+    {
+        opengl.new_render_buffer(),
+        opengl.new_render_buffer(blur_downscale)
+    }
 {
-    constexpr unsigned downscale = 4;
-    std::array<std::optional<graphics::render_buffer_t>, 2> intermediate_buffer;
-
-    intermediate_buffer[0].emplace(opengl.render_buffer_masked->internal_size, opengl.render_quality);
-
-    opengl.new_render_buffer(buffers[0]);
-    opengl.new_render_buffer(buffers[1], downscale);
-    opengl.new_render_buffer(intermediate_buffer[1], downscale);
-
-    const auto def = setup_drawing_buffer_frame(*intermediate_buffer[0], platform::background);
+    const graphics::render_buffer_t intermediate_buffer(opengl.render_buffer_masked->internal_size, opengl.render_quality);
+    const auto intermediate_masked_buffer = opengl.new_render_buffer(blur_downscale);
+    const auto def = setup_drawing_buffer_frame(intermediate_buffer, platform::background);
 
     room_ctrl.draw_frame(opengl);
 
     setup_unmasked_buffer_frame(*buffers[0], platform::background);
-    opengl.prog.render_masked.draw_buffer(*intermediate_buffer[0]);
+    opengl.prog.render_masked.draw_buffer(intermediate_buffer);
 
     opengl.prog.render_blur.use();
     opengl.prog.render_blur.set_radius(2);
     opengl.prog.render_blur.set_direction(0, 1);
 
-    setup_unmasked_buffer_frame(*intermediate_buffer[1], graphics::black);
+    setup_unmasked_buffer_frame(*intermediate_masked_buffer, graphics::black);
     opengl.prog.render_blur.draw_buffer(*buffers[0]);
 
     opengl.prog.render_blur.use();
     opengl.prog.render_blur.set_direction(1, 0);
 
     setup_unmasked_buffer_frame(*buffers[1], graphics::black);
-    opengl.prog.render_blur.draw_buffer(*intermediate_buffer[1]);
+    opengl.prog.render_blur.draw_buffer(*intermediate_masked_buffer);
 
     gl::BindFramebuffer(gl::FRAMEBUFFER, def);
 }
@@ -314,11 +318,6 @@ void application::draw()
     }
     else if (pause)
     {
-        if (!pause->buffers[1])
-        {
-            pause->init();
-        }
-
         render_guard rg;
         pause->draw();
     }
@@ -347,7 +346,7 @@ int application::real_main()
     PRINT_SIZE(idle::mat4x4_t);
     PRINT_SIZE(std::chrono::steady_clock::time_point);
 
-    while (app.execute_commands(false) && room_ctrl.execute_pending_room_change(opengl, app.clock))
+    while (app.execute_commands(false))
     {
         if (app.pause)
         {
@@ -360,7 +359,7 @@ int application::real_main()
                 {
                     app.pause.reset();
                     room_ctrl.pointer.clear();
-                    room_ctrl.awake(true);
+                    room_ctrl.awaken(app.clock);
                     continue;
                 }
             }
@@ -382,8 +381,6 @@ int application::real_main()
             idle::image_t::load_topmost_queued_picture();
         }
 
-        room_ctrl.pointer.update(app.window.cursor, opengl.translate_vector);
-
         app.clock = wait_one_frame_with_skipping(app.clock);
     }
     return 0;
@@ -394,7 +391,9 @@ bool application::load()
     using namespace std::chrono_literals;
     constexpr auto minimum_elapsed = 1.0s / (idle::application_frames_per_second / 2 + 5);
 
-    if (room_ctrl.get_crashed())
+    room_ctrl.sleep();
+
+    if (room_ctrl.haiku.has_crashed())
         return false;
 
     LOGI("Asset refresh requested");
@@ -403,8 +402,6 @@ bool application::load()
         idle::image_t::load_from_assets_immediate("path4368.png"),
         idle::image_t::load_from_assets_immediate("space-1.png")
     };
-
-    room_ctrl.join_worker();
 
     std::chrono::time_point<std::chrono::steady_clock> lt = std::chrono::steady_clock::now();
     std::promise<bool> loader_callback;
@@ -489,7 +486,9 @@ bool application::load()
     }
 #endif
 
+    room_ctrl.join_worker();
     room_ctrl.default_room_if_none_set();
+    room_ctrl.awaken(clock);
 
     return loader_result.get();
 }
