@@ -22,7 +22,7 @@
 #include "gl.hpp"
 #include "gui.hpp"
 #include "draw_text.hpp"
-#include "pointer.hpp"
+#include "pointer_wrapper.hpp"
 
 namespace idle
 {

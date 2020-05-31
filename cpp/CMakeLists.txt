@@ -19,7 +19,6 @@ endif()
 
 set(${PROJECT_NAME}-files
         spinlock.cpp
-        scoped_thread.cpp
         drawable.cpp
         crash_handler.cpp
         room_service.cpp
