@@ -69,10 +69,19 @@
                     ((void)std::putc('\n', stdout))
 #endif
 
+#if LOG_LEVEL > 4
+#define LOGDD(...) ((void)std::fputs("  ", stdout));\
+                    ((void)std::fprintf(stdout, __VA_ARGS__));\
+                    ((void)std::putc('\n', stdout))
+#endif
+
 #endif  // __ANDROID__
 
 #endif  // LOG_LEVEL > 0
 
+#ifndef LOGDD
+#define LOGDD(...) ((void)0)
+#endif
 #ifndef LOGD
 #define LOGD(...) ((void)0)
 #endif

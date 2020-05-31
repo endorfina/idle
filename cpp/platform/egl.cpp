@@ -237,7 +237,7 @@ context::context()
     assert(asset::android_activity);
     auto& egl = egl_display::cast(data);
 
-    LOGD("context::context");
+    LOGDD("context::context");
 
     egl.android = asset::android_activity;
     egl.android->onAppCmd = android_handle_command;
@@ -281,7 +281,7 @@ void context::event_loop_back(bool block_if_possible)
 
 context::~context()
 {
-    LOGD("context::~context");
+    LOGDD("context::~context");
     terminate_display();
 }
 

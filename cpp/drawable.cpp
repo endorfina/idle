@@ -293,7 +293,7 @@ void image_t::load_topmost_queued_picture()
             {
                 auto t = std::move(load_queue.back());
                 load_queue.pop_back();
-                LOGD("Rendering topmost queued pixel data (%i x %i)", t.width, t.height);
+                LOGDD("Rendering topmost queued pixel data (%i x %i)", t.width, t.height);
                 return { std::move(t) };
             }
             return {};

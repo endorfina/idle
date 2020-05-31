@@ -593,7 +593,7 @@ std::unique_ptr<const render_buffer_t> core::new_render_buffer(const unsigned di
 
 render_buffer_t::~render_buffer_t()
 {
-    LOGD("Destroying fr%i/t%i/d%i", buffer_frame, texture, buffer_depth);
+    LOGDD("Destroying fr%i/t%i/d%i", buffer_frame, texture, buffer_depth);
     gl::DeleteFramebuffers(1, &buffer_frame);
     gl::DeleteTextures(1, &texture);
     gl::DeleteRenderbuffers(1, &buffer_depth);
@@ -618,7 +618,7 @@ render_buffer_t::render_buffer_t(const buffer_size tex_size, const GLint quality
     texture_w = static_cast<GLfloat>(tex_size.x) / static_cast<GLfloat>(real_size.x);
     texture_h = static_cast<GLfloat>(tex_size.y) / static_cast<GLfloat>(real_size.y);
 
-    LOGD("Creating fr%i/t%i/d%i, input{%d, %d}, tex{%.3f, %.3f}, real{%d, %d} (at least ~%.1fMB)",
+    LOGDD("Creating fr%i/t%i/d%i, input{%d, %d}, tex{%.3f, %.3f}, real{%d, %d} (at least ~%.1fMB)",
             buffer_frame, texture, buffer_depth, tex_size.x, tex_size.y, texture_w, texture_h, real_size.x, real_size.y,
             real_size.x * real_size.y * sizeof(idle::color_t) / math::sqr<float>(1024) / 8.f);
 
@@ -672,7 +672,7 @@ unique_texture::~unique_texture()
 {
     if (value != GLuint(-1))
     {
-        LOGD("Destroying unique texture #%u", value);
+        LOGDD("Destroying unique texture #%u", value);
         gl::DeleteTextures(1, &value);
     }
 }

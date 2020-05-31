@@ -344,7 +344,6 @@ int application::real_main()
     PRINT_SIZE(platform::context);
     PRINT_SIZE(idle::controller);
     PRINT_SIZE(idle::mat4x4_t);
-    PRINT_SIZE(std::chrono::steady_clock::time_point);
 
     while (app.execute_commands(false))
     {
@@ -486,8 +485,7 @@ bool application::load()
     }
 #endif
 
-    room_ctrl.join_worker();
-    room_ctrl.default_room_if_none_set();
+    room_ctrl.clear_monostate();
     room_ctrl.awaken(clock);
 
     return loader_result.get();

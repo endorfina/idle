@@ -42,21 +42,6 @@ auto wait_one_frame(std::chrono::steady_clock::time_point new_time)
 }
 
 
-void dance(controller& ctrl, std::chrono::steady_clock::time_point step_time)
-{
-    if (ctrl.haiku.has_crashed())
-        return;
-
-    LOGD("Dancer open for business");
-
-    while (ctrl.should_stay_awake())
-    {
-        step_time = wait_one_frame(step_time);
-        ctrl.do_step();
-    }
-    LOGD("Dancer closed shop.");
-}
-
 TEMPLATE_CHECK_METHOD(on_resize);
 
 TEMPLATE_CHECK_METHOD(step);
@@ -64,12 +49,6 @@ TEMPLATE_CHECK_METHOD(step);
 TEMPLATE_CHECK_METHOD(draw);
 
 }  // namespace
-
-controller::~controller()
-{
-    LOGD("controller::~controller");
-    join_worker();
-}
 
 void crash_haiku::crash(std::string str)
 {
@@ -87,14 +66,14 @@ const std::string& crash_haiku::get_string() const
     return error_string;
 }
 
-void controller::sleep()
+void room_service::set_active(const bool flag)
 {
-    worker_active_flag.store(false, std::memory_order_relaxed);
+    worker_active_flag.store(flag, std::memory_order_relaxed);
 }
 
-void controller::join_worker()
+void room_service::stop()
 {
-    sleep();
+    set_active(false);
 
     if (worker_thread)
     {
@@ -103,9 +82,19 @@ void controller::join_worker()
     }
 }
 
-bool controller::should_stay_awake() const
+bool room_service::is_active() const
 {
     return worker_active_flag.load(std::memory_order_relaxed);
+}
+
+room_service::~room_service()
+{
+    stop();
+}
+
+void controller::sleep()
+{
+    worker.set_active(false);
 }
 
 void controller::resize(point_t size)
@@ -154,19 +143,28 @@ void controller::awaken(const std::chrono::steady_clock::time_point clock)
     constexpr auto skip_a_beat = std::chrono::duration_cast<
                         std::chrono::steady_clock::time_point::duration>(1.5s / application_frames_per_second);
 
-    if (worker_thread)
+    if (!haiku.has_crashed())
     {
-        sleep();
-        worker_thread->join();
-        worker_thread.reset();
-    }
+        worker.start([this](std::chrono::steady_clock::time_point step)
+            {
+                LOGD("Room service [🈺]");
 
-    worker_active_flag.store(true, std::memory_order_relaxed);
-    worker_thread.emplace(dance, std::ref(*this), clock + skip_a_beat);
+                while (worker.is_active())
+                {
+                    step = wait_one_frame(step);
+                    do_step();
+                }
+
+                LOGD("Room service [💤]");
+            },
+            clock + skip_a_beat);
+    }
 }
 
-void controller::default_room_if_none_set()
+void controller::clear_monostate()
 {
+    worker.stop();
+
     if (const auto ptr = std::get_if<std::monostate>(&current_variant); ptr && !next_variant.rooms)
     {
         next_variant.rooms.emplace(door<landing_room>{});

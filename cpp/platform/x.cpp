@@ -83,7 +83,7 @@ context::context()
 {
     auto& x = x11_display::cast(data);
 
-    LOGD("context::context");
+    LOGDD("context::context");
 
     x.display = nullptr;
 
@@ -312,7 +312,7 @@ void context::event_loop_back(bool)
 
 context::~context()
 {
-    LOGD("context::~context");
+    LOGDD("context::~context");
     terminate_display();
 }
 

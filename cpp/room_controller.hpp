@@ -69,12 +69,34 @@ public:
     void crash(std::string haiku);
 };
 
+class room_service
+{
+    std::atomic_bool worker_active_flag{false};
+    std::optional<std::thread> worker_thread;
+
+public:
+    template<typename...Vars>
+    void start(Vars...vars)
+    {
+        stop();
+        set_active(true);
+        worker_thread.emplace(std::forward<Vars>(vars)...);
+    }
+
+    void set_active(bool flag);
+
+    void stop();
+
+    bool is_active() const;
+
+    ~room_service();
+};
+
 class controller
 {
     hotel<room> next_variant;
     room current_variant;
-    std::atomic_bool worker_active_flag{false};
-    std::optional<std::thread> worker_thread;
+    room_service worker;
     point_t current_screen_size;
     std::mutex mutability;
 
@@ -82,15 +104,11 @@ public:
     pointer_keeper pointer;
     crash_haiku haiku;
 
-    ~controller();
-
     bool should_stay_awake() const;
 
     void sleep();
 
     void awaken(std::chrono::steady_clock::time_point step_time);
-
-    void join_worker();
 
     void resize(point_t size);
 
@@ -102,7 +120,7 @@ public:
         next_variant.rooms.emplace(door<Room>{});
     }
 
-    void default_room_if_none_set();
+    void clear_monostate();
 
     void do_step();
 };
