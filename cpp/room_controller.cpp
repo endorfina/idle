@@ -50,47 +50,6 @@ TEMPLATE_CHECK_METHOD(draw);
 
 }  // namespace
 
-void crash_haiku::crash(std::string str)
-{
-    error_string = std::move(str);
-    crashed.store(true, std::memory_order_release);
-}
-
-bool crash_haiku::has_crashed() const
-{
-    return crashed.load(std::memory_order_acquire);
-}
-
-const std::string& crash_haiku::get_string() const
-{
-    return error_string;
-}
-
-void room_service::set_active(const bool flag)
-{
-    worker_active_flag.store(flag, std::memory_order_relaxed);
-}
-
-void room_service::stop()
-{
-    set_active(false);
-
-    if (worker_thread)
-    {
-        worker_thread->join();
-        worker_thread.reset();
-    }
-}
-
-bool room_service::is_active() const
-{
-    return worker_active_flag.load(std::memory_order_relaxed);
-}
-
-room_service::~room_service()
-{
-    stop();
-}
 
 void controller::sleep()
 {

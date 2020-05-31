@@ -21,12 +21,14 @@ set(${PROJECT_NAME}-files
         spinlock.cpp
         scoped_thread.cpp
         drawable.cpp
+        crash_handler.cpp
+        room_service.cpp
         room_controller.cpp
         room_landing.cpp
         lodge.cpp
         gl.cpp
         fonts.cpp
-        pointer.cpp
+        pointer_wrapper.cpp
         application.cpp
         main_wrapper.cpp)
 

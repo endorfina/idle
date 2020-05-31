@@ -28,7 +28,8 @@
 
 #include "gl.hpp"
 #include "room_variant.hpp"
-#include "pointer.hpp"
+#include "crash_handler.hpp"
+#include "room_service.hpp"
 
 namespace idle
 {
@@ -56,42 +57,6 @@ struct hotel<std::variant<SkipMonostate, Rooms...>>
     std::optional<std::variant<door<Rooms>...>> rooms;
 };
 
-class crash_haiku
-{
-    std::string error_string;
-    std::atomic_bool crashed{false};
-
-public:
-    const std::string& get_string() const;
-
-    bool has_crashed() const;
-
-    void crash(std::string haiku);
-};
-
-class room_service
-{
-    std::atomic_bool worker_active_flag{false};
-    std::optional<std::thread> worker_thread;
-
-public:
-    template<typename...Vars>
-    void start(Vars...vars)
-    {
-        stop();
-        set_active(true);
-        worker_thread.emplace(std::forward<Vars>(vars)...);
-    }
-
-    void set_active(bool flag);
-
-    void stop();
-
-    bool is_active() const;
-
-    ~room_service();
-};
-
 class controller
 {
     hotel<room> next_variant;
@@ -102,8 +67,7 @@ class controller
 
 public:
     std::atomic<platform::pointer> cached_cursor;
-    pointer_keeper pointer;
-    crash_haiku haiku;
+    crash_handler haiku;
 
     bool should_stay_awake() const;
 

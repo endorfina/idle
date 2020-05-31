@@ -17,7 +17,7 @@
     along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "pointer.hpp"
+#include "pointer_wrapper.hpp"
 
 namespace idle
 {
