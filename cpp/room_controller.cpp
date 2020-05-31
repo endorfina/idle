@@ -149,10 +149,13 @@ void controller::awaken(const std::chrono::steady_clock::time_point clock)
             {
                 LOGD("Room service [🈺]");
 
+                pointer_keeper pointer;
+
                 while (worker.is_active())
                 {
                     step = wait_one_frame(step);
-                    do_step();
+                    do_step(pointer.get());
+                    pointer.advance(cached_cursor.load(std::memory_order_relaxed));
                 }
 
                 LOGD("Room service [💤]");
@@ -186,11 +189,11 @@ constexpr char room_label<model_room>[] = "MODEL";
 
 }  // namespace
 
-void controller::do_step()
+void controller::do_step(const pointer_wrapper& cur)
 {
-    std::visit([](auto& room) {
+    std::visit([&cur](auto& room) {
         if constexpr (has_step_method<TYPE_REMOVE_CVR(room)>::value) {
-            room.step();
+            room.step(cur);
         }
     }, current_variant);
 

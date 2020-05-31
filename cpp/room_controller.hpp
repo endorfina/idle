@@ -101,6 +101,7 @@ class controller
     std::mutex mutability;
 
 public:
+    std::atomic<platform::pointer> cached_cursor;
     pointer_keeper pointer;
     crash_haiku haiku;
 
@@ -122,7 +123,7 @@ public:
 
     void clear_monostate();
 
-    void do_step();
+    void do_step(const pointer_wrapper& cursor);
 };
 
 }  // namespace idle

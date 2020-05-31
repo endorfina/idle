@@ -114,7 +114,7 @@ bool application::execute_commands(const bool is_nested)
 
     if (window.cursor_update)
     {
-        room_ctrl.pointer.update(window.cursor, opengl.translate_vector);
+        room_ctrl.cached_cursor.store({window.cursor.pos * opengl.translate_vector, window.cursor.pressed}, std::memory_order_relaxed);
         window.cursor_update = false;
     }
 
@@ -349,15 +349,13 @@ int application::real_main()
     {
         if (app.pause)
         {
-            const auto& pointer = room_ctrl.pointer.pointer;
-            if (pointer.single_press)
+            if (app.window.cursor.pressed)
             {
-                const auto p = pointer.cursor.pos;
+                const auto p = app.window.cursor.pos * opengl.translate_vector;
                 if (fabsf(p.x - opengl.draw_size.x / 2) < 150.f
                         && fabsf(p.y - (opengl.draw_size.y / 2 + 30.f)) < 60.f)
                 {
                     app.pause.reset();
-                    room_ctrl.pointer.clear();
                     room_ctrl.awaken(app.clock);
                     continue;
                 }

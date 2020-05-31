@@ -22,17 +22,9 @@
 namespace idle
 {
 
-void pointer_keeper::clear()
+void pointer_keeper::advance(const platform::pointer& cur)
 {
-    pointer.touch = 0.f;
-    pointer.single_press = false;
-    pointer.double_tap = false;
-}
-
-void pointer_keeper::update(const platform::pointer& cursor, const point_t translate_vec)
-{
-    pointer.cursor = cursor;
-    pointer.cursor.pos *= translate_vec;
+    pointer.cursor = cur;
 
     if (pointer.cursor.pressed)
     {
@@ -62,6 +54,11 @@ void pointer_keeper::update(const platform::pointer& cursor, const point_t trans
 
     if (double_tap_timer > 0)
         --double_tap_timer;
+}
+
+const pointer_wrapper& pointer_keeper::get() const
+{
+    return pointer;
 }
 
 }  // namespace idle

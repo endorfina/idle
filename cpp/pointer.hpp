@@ -39,9 +39,9 @@ private:
     int single_press_previous_state = 0, double_tap_timer = 0;
 
 public:
-    void clear();
+    void advance(const platform::pointer& cur);
 
-    void update(const platform::pointer& cursor, point_t translate_vec);
+    const pointer_wrapper& get() const;
 };
 
 }  // namepsace idle

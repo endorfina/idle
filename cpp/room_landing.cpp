@@ -113,17 +113,15 @@ unsigned shift_appendages(std::array<float, Size>& ray_array, Rand& rando)
 
 }  // namespace
 
-bool landing_room::step()
+bool landing_room::step(const pointer_wrapper& pointer)
 {
     using random_float = std::uniform_real_distribution<float>;
-
-    const auto pointer = gl.pointer.load(std::memory_order_acquire);
 
     if (thing.alpha < 1.f)
     {
         thing.alpha = std::min<float>(thing.alpha + (clicked_during_intro ? .0091f : .00052f), 1.f);
 
-        if (pointer.pressed)
+        if (pointer.cursor.pressed)
             clicked_during_intro = true;
     }
 

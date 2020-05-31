@@ -22,6 +22,7 @@
 #include "gl.hpp"
 #include "gui.hpp"
 #include "draw_text.hpp"
+#include "pointer.hpp"
 
 namespace idle
 {
@@ -44,7 +45,7 @@ struct landing_room
 
     void on_resize(point_t);
 
-    bool step();
+    bool step(const pointer_wrapper& cursor);
 
     void draw(const graphics::core&) const;
 };
