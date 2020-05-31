@@ -4,20 +4,19 @@ set(IDLE_TEST_UNITS "")
 
 macro(new_test testname filelist)
     add_executable(${IDLE_TEST}-${testname} EXCLUDE_FROM_ALL ${filelist})
-    set_target_properties(${IDLE_TEST}-${testname} PROPERTIES COMPILE_FLAGS "-fexceptions")
-
     list(APPEND IDLE_TEST_UNITS "${testname}")
 endmacro()
 
 new_test(glass glass.cpp)
 
 add_library(${IDLE_TEST}-main STATIC EXCLUDE_FROM_ALL "interface.cpp")
-target_include_directories(${IDLE_TEST}-main INTERFACE "${PROJECT_SOURCE_DIR}" INTERFACE "${PROJECT_SOURCE_DIR}/include")
-set_target_properties(${IDLE_TEST}-main PROPERTIES COMPILE_FLAGS "-fexceptions")
+target_include_directories(${IDLE_TEST}-main INTERFACE "${PROJECT_SOURCE_DIR}")
+target_compile_options(${IDLE_TEST}-main PUBLIC "-fexceptions")
+target_link_libraries(${IDLE_TEST}-main PUBLIC ${PROJECT_NAME}-top)
 
 foreach(UT IN LISTS IDLE_TEST_UNITS)
-    target_link_libraries(${IDLE_TEST}-${UT} ${IDLE_TEST}-main)
-    set(TEST_BINS ${TEST_BINS} ${IDLE_TEST}-${UT})
+    target_link_libraries(${IDLE_TEST}-${UT} PRIVATE ${IDLE_TEST}-main)
+    list(APPEND TEST_BINS ${IDLE_TEST}-${UT})
 
     add_test(
         NAME    ${IDLE_TEST}-${UT}
