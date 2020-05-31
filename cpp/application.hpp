@@ -31,9 +31,7 @@ struct pause_menu
     std::unique_ptr<const graphics::render_buffer_t> buffers[2];
     float fadein_alpha = 0, shift = 0;
 
-    static constexpr unsigned blur_downscale = 4;
-
-    pause_menu();
+    pause_menu(unsigned blur_downscale);
     void draw() const;
 };
 

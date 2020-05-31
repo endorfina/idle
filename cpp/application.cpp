@@ -103,7 +103,7 @@ bool application::execute_commands(const bool is_nested)
                 LOGI(log_prefix, "PausePressed");
                 room_ctrl.sleep();
                 if (!pause)
-                    pause.emplace();
+                    pause.emplace(4);
                 break;
             }
 
@@ -277,7 +277,7 @@ void pause_menu::draw() const
     }
 }
 
-pause_menu::pause_menu()
+pause_menu::pause_menu(const unsigned blur_downscale)
     : buffers
     {
         opengl.new_render_buffer(),
