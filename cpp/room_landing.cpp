@@ -113,7 +113,7 @@ unsigned shift_appendages(std::array<float, Size>& ray_array, Rand& rando)
 
 }  // namespace
 
-bool landing_room::step(const pointer_wrapper& pointer)
+std::optional<keyring::variant> landing_room::step(const pointer_wrapper& pointer)
 {
     using random_float = std::uniform_real_distribution<float>;
 
@@ -121,7 +121,7 @@ bool landing_room::step(const pointer_wrapper& pointer)
     {
         thing.alpha = std::min<float>(thing.alpha + (clicked_during_intro ? .0091f : .00052f), 1.f);
 
-        if (pointer.cursor.pressed)
+        if (pointer.single_press)
             clicked_during_intro = true;
     }
 
@@ -142,7 +142,15 @@ bool landing_room::step(const pointer_wrapper& pointer)
     random_float dist_float2{-1.f, 1.f};
     std::generate(noise_seed.begin(), noise_seed.end(), [this, &dist_float2](){ return dist_float2(fast_random_device); });
 
-    return true;
+    if (pointer.single_press)
+    {
+        if (auto target = gui.click<keyring::variant>(pointer.cursor.pos))
+        {
+            return { std::move(*target) };
+        }
+    }
+
+    return {};
 }
 
 void landing_room::draw(const graphics::core& gl) const
@@ -222,6 +230,12 @@ void landing_room::draw(const graphics::core& gl) const
     gl::DrawArrays(gl::TRIANGLE_FAN, 0, array_len);
 
     // TODO: Use a picture as the title
+
+    gl.prog.fill.use();
+    gl.prog.fill.set_color({.1f, 0, .2f, .5f});
+    gl.prog.text.use();
+    gl.prog.text.set_color({1, 1, 1, 1});
+    gui.draw(gl);
 
     gl.view_mask();
 

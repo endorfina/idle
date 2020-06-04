@@ -48,6 +48,12 @@ TEMPLATE_CHECK_METHOD(step);
 
 TEMPLATE_CHECK_METHOD(draw);
 
+template<typename T>
+struct is_hotel_room : std::false_type {};
+
+template<typename T>
+struct is_hotel_room<keyring::somewhere_else<T>> : std::true_type {};
+
 }  // namespace
 
 
@@ -101,6 +107,12 @@ void controller::awaken(const std::chrono::steady_clock::time_point clock)
     using namespace std::chrono_literals;
     constexpr auto skip_a_beat = std::chrono::duration_cast<
                         std::chrono::steady_clock::time_point::duration>(1.5s / application_frames_per_second);
+    worker.stop();
+
+    if (const auto ptr = std::get_if<std::monostate>(&current_variant); ptr && !next_variant.rooms)
+    {
+        next_variant.rooms.emplace(door<landing_room>{});
+    }
 
     if (!haiku.has_crashed())
     {
@@ -113,23 +125,31 @@ void controller::awaken(const std::chrono::steady_clock::time_point clock)
                 while (worker.is_active())
                 {
                     step = wait_one_frame(step);
-                    do_step(pointer.get());
+
+                    if (const auto maybe_an_action = do_step(pointer.get()))
+                    {
+                        std::visit([this](auto& action)
+                            {
+                                using type = TYPE_REMOVE_CVR(action);
+
+                                if constexpr (std::is_same_v<type, std::string>)
+                                {
+                                    sleep();
+                                    haiku.crash(std::move(action));
+                                }
+                                else if constexpr (is_hotel_room<type>::value)
+                                {
+                                    next_variant.rooms.emplace(door<typename type::opened_type>{});
+                                }
+                            },
+                            *maybe_an_action);
+                    }
                     pointer.advance(cached_cursor.load(std::memory_order_relaxed));
                 }
 
                 LOGD("Room service [💤]");
             },
             clock + skip_a_beat);
-    }
-}
-
-void controller::clear_monostate()
-{
-    worker.stop();
-
-    if (const auto ptr = std::get_if<std::monostate>(&current_variant); ptr && !next_variant.rooms)
-    {
-        next_variant.rooms.emplace(door<landing_room>{});
     }
 }
 
@@ -141,27 +161,20 @@ constexpr char room_label[] = "UNNAMED";
 template<>
 constexpr char room_label<landing_room>[] = "LANDING";
 
-#ifdef COMPILE_GALLERY
+#ifdef IDLE_COMPILE_GALLERY
 template<>
 constexpr char room_label<model_room>[] = "MODEL";
 #endif
 
 }  // namespace
 
-void controller::do_step(const pointer_wrapper& cur)
+std::optional<keyring::variant> controller::do_step(const pointer_wrapper& cur)
 {
-    std::visit([&cur](auto& room) {
-        if constexpr (has_step_method<TYPE_REMOVE_CVR(room)>::value) {
-            room.step(cur);
-        }
-    }, current_variant);
-
     if (next_variant.rooms)
     {
         const std::lock_guard block_drawing_and_resizing{mutability};
 
-        std::visit(
-            [this] (const auto& gate)
+        std::visit([this] (const auto& gate)
             {
                 using T = typename TYPE_REMOVE_CVR(gate)::opened_type;
                 LOGI("Switching context to: %s", room_label<T>);
@@ -177,7 +190,21 @@ void controller::do_step(const pointer_wrapper& cur)
             *next_variant.rooms);
 
         next_variant.rooms.reset();
+        return {};
     }
+
+    return std::visit([&cur] (auto& room) -> std::optional<keyring::variant>
+        {
+            if constexpr (has_step_method<TYPE_REMOVE_CVR(room)>::value)
+            {
+                return room.step(cur);
+            }
+            else
+            {
+                return {};
+            }
+        },
+        current_variant);
 }
 
 }  // namespace idle

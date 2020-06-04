@@ -85,9 +85,7 @@ public:
         next_variant.rooms.emplace(door<Room>{});
     }
 
-    void clear_monostate();
-
-    void do_step(const pointer_wrapper& cursor);
+    std::optional<keyring::variant> do_step(const pointer_wrapper& cursor);
 };
 
 }  // namespace idle

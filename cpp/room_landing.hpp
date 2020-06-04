@@ -19,10 +19,12 @@
 #pragma once
 #include <array>
 #include <random>
+#include <optional>
 #include "gl.hpp"
 #include "gui.hpp"
 #include "draw_text.hpp"
 #include "pointer_wrapper.hpp"
+#include "room_keys.hpp"
 
 namespace idle
 {
@@ -36,8 +38,32 @@ struct great_crimson_thing
     std::array<arm_t, 2> legs;
 };
 
+template<int X, int Y, unsigned width>
+struct landing_button : gui::shapes::button<gui::positions::from_center<X, Y>, width, 28>
+{
+    void draw_foreground(const graphics::core& gl) const
+    {
+        gl.prog.text.use();
+        draw_text<text_align::center, text_align::center>(gl, "???", this->pos, 20);
+    }
+
+#ifdef IDLE_COMPILE_GALLERY
+    std::optional<keyring::variant> trigger() const
+    {
+        return { keyring::somewhere_else<model_room>{} };
+    }
+#endif
+};
+
+
 struct landing_room
 {
+    using gui_t = gui::interface
+        <
+            landing_button<0, 20, 120>
+        >;
+    gui_t gui;
+
     std::minstd_rand fast_random_device;
     std::array<float, 2> noise_seed;
     bool clicked_during_intro = false;
@@ -45,7 +71,7 @@ struct landing_room
 
     void on_resize(point_t);
 
-    bool step(const pointer_wrapper& cursor);
+    std::optional<keyring::variant> step(const pointer_wrapper& cursor);
 
     void draw(const graphics::core&) const;
 };

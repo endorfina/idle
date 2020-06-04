@@ -1,4 +1,4 @@
-﻿/*
+/*
     Copyright © 2020 endorfina <dev.endorfina@outlook.com>
 
     This file is part of Idle.
@@ -16,15 +16,39 @@
     You should have received a copy of the GNU General Public License
     along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
+#pragma once
 
-#include "room_model.hpp"
-
-#ifdef IDLE_COMPILE_GALLERY
+// #include <math.hpp>
+#include <variant>
+#include <string>
 
 namespace idle
 {
 
-}  // namespace idle
+struct landing_room;
 
-#endif  // IDLE_COMPILE_GALLERY
+#ifdef IDLE_COMPILE_GALLERY
+struct model_room;
+#endif
+
+namespace keyring
+{
+
+template<class T>
+struct somewhere_else
+{
+    using opened_type = T;
+};
+
+using variant = std::variant<
+        somewhere_else<landing_room>,
+#ifdef IDLE_COMPILE_GALLERY
+        somewhere_else<model_room>,
+#endif
+        std::string
+    >;
+
+}  // namespace keyring
+
+}  // namespace idle
 

@@ -352,6 +352,8 @@ int application::real_main()
             if (app.window.cursor.pressed)
             {
                 const auto p = app.window.cursor.pos * opengl.translate_vector;
+                app.window.cursor.pressed = false;
+
                 if (fabsf(p.x - opengl.draw_size.x / 2) < 150.f
                         && fabsf(p.y - (opengl.draw_size.y / 2 + 30.f)) < 60.f)
                 {
@@ -483,7 +485,6 @@ bool application::load()
     }
 #endif
 
-    room_ctrl.clear_monostate();
     room_ctrl.awaken(clock);
 
     return loader_result.get();

@@ -21,6 +21,7 @@
 #include <tuple>
 #include <utility>
 #include <variant>
+#include <optional>
 #include "gl.hpp"
 #include "drawable.hpp"
 
@@ -31,28 +32,35 @@ namespace idle::gui
 namespace internal
 {
 
-TEMPLATE_CHECK_METHOD(draw_bg);
+TEMPLATE_CHECK_METHOD(draw_background);
+TEMPLATE_CHECK_METHOD(draw_foreground);
 
-template<std::size_t I = 0, typename... Tp>
-inline std::enable_if_t<I < sizeof...(Tp), void>
-elem_draw(const graphics::core& gl, const std::tuple<Tp...>& tuple)
+template<std::size_t I = 0, typename Tuple, typename...Vars>
+void elem_draw(const Tuple& tuple, const Vars&...vars)
 {
-    if constexpr (has_draw_bg_method<typename std::tuple_element<I, std::tuple<Tp...>>::type>::value)
+    constexpr auto tuple_size = std::tuple_size<Tuple>::value;
+    using tuple_elem_type = typename std::tuple_element<I, Tuple>::type;
+
+    if constexpr (has_draw_background_method<tuple_elem_type>::value)
     {
-        std::get<I>(tuple).draw_bg(gl);
+        std::get<I>(tuple).draw_background(vars...);
     }
-    std::get<I>(tuple).draw(gl);
-    if constexpr (I + 1 < sizeof...(Tp))
+
+    if constexpr (has_draw_foreground_method<tuple_elem_type>::value)
     {
-        elem_draw<I + 1, Tp...>(gl, tuple);
+        std::get<I>(tuple).draw_foreground(vars...);
+    }
+
+    if constexpr (I + 1 < tuple_size)
+    {
+        elem_draw<I + 1, Tuple, Vars...>(tuple, vars...);
     }
 }
 
 TEMPLATE_CHECK_METHOD(position_on);
 
 template<std::size_t I = 0, typename... Tp>
-inline std::enable_if_t<I < sizeof...(Tp), void>
-elem_update_position(point_t screen_size, std::tuple<Tp...>& tuple)
+void elem_update_position(point_t screen_size, std::tuple<Tp...>& tuple)
 {
     if constexpr (has_position_on_method<typename std::tuple_element<I, std::tuple<Tp...>>::type>::value)
     {
@@ -66,21 +74,27 @@ elem_update_position(point_t screen_size, std::tuple<Tp...>& tuple)
 
 TEMPLATE_CHECK_METHOD(trigger);
 
-template<class T, std::size_t I = 0, typename... Tp>
-inline std::enable_if_t<I < sizeof...(Tp), void>
-elem_trigger(T& meta, point_t pointer, std::tuple<Tp...>& tuple)
+template<std::size_t I = 0, typename Ret, typename Tuple, typename...Vars>
+std::optional<Ret> elem_trigger(const point_t pointer, Tuple& tuple, Vars&...vars)
 {
-    if constexpr (has_trigger_method<typename std::tuple_element<sizeof...(Tp) - I - 1, std::tuple<Tp...>>::type>::value)
+    constexpr auto tuple_size = std::tuple_size<Tuple>::value;
+    constexpr auto elem_id = tuple_size - I - 1;
+
+    if constexpr (has_trigger_method<typename std::tuple_element<elem_id, Tuple>::type>::value)
     {
-        if (std::get<sizeof...(Tp) - I - 1>(tuple).is_touching(pointer))
+        if (std::get<elem_id>(tuple).is_touching(pointer))
         {
-            std::get<sizeof...(Tp) - I - 1>(tuple).trigger(meta);
-            return;
+            return { std::get<elem_id>(tuple).trigger(vars...) };
         }
     }
-    if constexpr (I + 1 < sizeof...(Tp))
+
+    if constexpr (I + 1 < tuple_size)
     {
-        elem_trigger<T, I + 1, Tp...>(meta, pointer, tuple);
+        return elem_trigger<I + 1, Ret, Tuple, Vars...>(pointer, tuple, vars...);
+    }
+    else
+    {
+        return {};
     }
 }
 
@@ -142,7 +156,7 @@ struct rectangle
             && pos.y <= (this->pos.y + Height);
     }
 
-    void draw_bg(const graphics::core& gl) const
+    void draw_background(const graphics::core& gl) const
     {
         gl.prog.fill.use();
         gl.prog.fill.set_transform(mat4x4_t::scale(Width, Height) * mat4x4_t::translate(this->pos));
@@ -186,26 +200,25 @@ struct button : Pos
 {
     static_assert(Width > Height);
 
-    bool is_touching(point_t pos) const
+    bool is_touching(point_t pt) const
     {
-        const auto diff = pos - this->pos;
+        const auto diff = pt - this->pos;
 
-        if (const auto xabs = math::ce::abs(diff.x);
-                        xabs <= (Width - Height) / 2)
+        if (const auto x_abs = math::ce::abs(diff.x);
+                        x_abs <= (Width - Height) / 2)
         {
             return math::ce::abs(diff.y) <= Height / 2;
         }
-        else if (xabs < Width / 2)
+        else if (x_abs <= Width / 2)
         {
-            const point_t new_pos{
-                this->pos.x + (Width - Height) / (diff.x > 0 ? -2 : 2),
-                this->pos.y };
-            return (pos ^ new_pos) <= Height / 2.f;
+            const auto x_shift = (Width - Height) / (diff.x > 0 ? -2.f : 2.f);
+            const auto radius = std::hypotf(diff.x + x_shift, diff.y);
+            return radius <= (Height / 2.f);
         }
         return false;
     }
 
-    void draw_bg(const graphics::core& gl) const
+    void draw_background(const graphics::core& gl) const
     {
         constexpr auto fan = []
         {
@@ -253,15 +266,16 @@ public:
         internal::elem_update_position(size, tuple_array);
     }
 
-    void draw(const graphics::core& gl) const
+    template<typename...Vars>
+    void draw(const Vars&...vars) const
     {
-        internal::elem_draw(gl, tuple_array);
+        internal::elem_draw<0, tuple_t, Vars...>(tuple_array, vars...);
     }
 
-    template<class T>
-    void click(T& meta, point_t pos)
+    template<typename Ret, typename...Vars>
+    std::optional<Ret> click(point_t pos, Vars&...vars)
     {
-        internal::elem_trigger<T, 0, Types...>(meta, pos, tuple_array);
+        return internal::elem_trigger<0, Ret, tuple_t, Vars...>(pos, tuple_array, vars...);
     }
 };
 

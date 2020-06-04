@@ -54,16 +54,15 @@ point_t get_text_transform(const fonts::font_t& font, std::string_view str, poin
 }  // namespace detail
 
 template <text_align H = text_align::near, text_align V = text_align::near>
-void draw_text(const graphics::core& gl, const std::string_view& str, point_t p, float size, const unsigned int limit = static_cast<unsigned int>(-1))
+void draw_text(const graphics::core& gl,
+        const std::string_view str,
+        const point_t p,
+        const float size,
+        const unsigned int limit = static_cast<unsigned int>(-1))
 {
-    gl.prog.text.set_view_transform(mat4x4_t::scale(size) * mat4x4_t::translate(detail::get_text_transform<H, V>(*gl.font, str, p, size, limit)));
+    const auto translate = detail::get_text_transform<H, V>(*gl.font, str, p, size, limit);
+    gl.prog.text.set_view_transform(mat4x4_t::scale(size) * mat4x4_t::translate(translate));
     gl.font->draw(gl.prog.text, str, limit);
 }
-
-// void draw_text_animation1(const graphics::core& gl, const std::string_view& msg, float x, float y, float size, const color_t &col, const idle::text_animation_data* anim, const unsigned start, const unsigned end)
-// {
-//     gl.prog.text.set_view_transform(mat4x4_t::scale(size) * mat4x4_t::translate(x, y));
-//     gl.font->draw_custom_animation(gl.prog.text, msg, col, anim, start, end);
-// }
 
 }  // namespace idle
