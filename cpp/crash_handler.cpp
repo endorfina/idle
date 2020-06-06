@@ -22,9 +22,9 @@
 namespace idle
 {
 
-void crash_handler::crash(std::string str)
+void crash_handler::crash(std::string_view str)
 {
-    error_string = std::move(str);
+    error_string = str;
     crashed.store(true, std::memory_order_release);
 }
 
@@ -33,7 +33,7 @@ bool crash_handler::has_crashed() const
     return crashed.load(std::memory_order_acquire);
 }
 
-const std::string& crash_handler::get_string() const
+std::string_view crash_handler::get_string() const
 {
     return error_string;
 }

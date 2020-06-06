@@ -144,10 +144,7 @@ std::optional<keyring::variant> landing_room::step(const pointer_wrapper& pointe
 
     if (pointer.single_press)
     {
-        if (auto target = gui.click<keyring::variant>(pointer.cursor.pos))
-        {
-            return { std::move(*target) };
-        }
+        idle_try(gui.click<keyring::variant>(pointer.cursor.pos))
     }
 
     return {};

@@ -18,7 +18,7 @@
 */
 #pragma once
 
-#include <string>
+#include <string_view>
 #include <atomic>
 
 namespace idle
@@ -26,15 +26,15 @@ namespace idle
 
 class crash_handler
 {
-    std::string error_string;
+    std::string_view error_string;
     std::atomic_bool crashed{false};
 
 public:
-    const std::string& get_string() const;
+    std::string_view get_string() const;
 
     bool has_crashed() const;
 
-    void crash(std::string haiku);
+    void crash(std::string_view haiku);
 };
 
 }  // namespace idle

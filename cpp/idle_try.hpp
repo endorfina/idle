@@ -17,33 +17,23 @@
     along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
 #pragma once
+#include <utility>
+#include <type_traits>
+#include <optional>
 
-#include <math.hpp>
-#include "platform/opengl_core_adaptive.hpp"
-#include "idle_try.hpp"
-
-namespace idle
+namespace idle::meta
 {
-using color_t = math::color<GLfloat>;
-using point_t = math::point2<GLfloat>;
-using point_3d_t = math::point3<GLfloat>;
-using mat4x4_t = math::matrix4x4<GLfloat, false>;
-using mat4x4_noopt_t = math::matrix4x4<GLfloat, true>;
-using rect_t = math::rect<GLfloat>;
 
-enum class text_align { near, center, far };
+template<typename T>
+struct is_optional : std::false_type {};
 
-constexpr unsigned application_frames_per_second = 60;
+template<typename T>
+struct is_optional<std::optional<T>> : std::true_type {};
 
-constexpr float square_coordinates[8] = {
-    0, 0, 1, 0,
-    0, 1, 1, 1
-};
+}  // namespace idle::meta
 
-struct text_animation_data
-{
-    float scale, rotation;
-};
+#define idle_remove_cvr(x) std::remove_cv_t<std::remove_reference_t<decltype(x)>>
 
-}  // namespace idle
+#define idle_try(optional) static_assert(::idle::meta::is_optional<idle_remove_cvr(optional)>::value, "idle_try requires std::optional"); \
+    if (auto try_result = (optional)) { return { std::move(*try_result) }; }
 

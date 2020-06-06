@@ -69,7 +69,7 @@ void controller::resize(point_t size)
 
     std::visit([size](auto& room)
     {
-        if constexpr (has_on_resize_method<TYPE_REMOVE_CVR(room)>::value)
+        if constexpr (has_on_resize_method<idle_remove_cvr(room)>::value)
         {
             room.on_resize(size);
         }
@@ -94,7 +94,7 @@ void controller::draw_frame(const graphics::core& gl)
 
         std::visit([&gl](auto& room)
         {
-            if constexpr (has_draw_method<TYPE_REMOVE_CVR(room)>::value)
+            if constexpr (has_draw_method<idle_remove_cvr(room)>::value)
             {
                 room.draw(gl);
             }
@@ -126,23 +126,23 @@ void controller::awaken(const std::chrono::steady_clock::time_point clock)
                 {
                     step = wait_one_frame(step);
 
-                    if (const auto maybe_an_action = do_step(pointer.get()))
+                    if (const auto maybe_action = do_step(pointer.get()))
                     {
                         std::visit([this](auto& action)
                             {
-                                using type = TYPE_REMOVE_CVR(action);
+                                using type = idle_remove_cvr(action);
 
-                                if constexpr (std::is_same_v<type, std::string>)
+                                if constexpr (std::is_same_v<type, std::string_view>)
                                 {
                                     sleep();
-                                    haiku.crash(std::move(action));
+                                    haiku.crash(action);
                                 }
                                 else if constexpr (is_hotel_room<type>::value)
                                 {
                                     next_variant.rooms.emplace(door<typename type::opened_type>{});
                                 }
                             },
-                            *maybe_an_action);
+                            *maybe_action);
                     }
                     pointer.advance(cached_cursor.load(std::memory_order_relaxed));
                 }
@@ -176,7 +176,7 @@ std::optional<keyring::variant> controller::do_step(const pointer_wrapper& cur)
 
         std::visit([this] (const auto& gate)
             {
-                using T = typename TYPE_REMOVE_CVR(gate)::opened_type;
+                using T = typename idle_remove_cvr(gate)::opened_type;
                 LOGI("Switching context to: %s", room_label<T>);
 
                 static_assert(std::is_constructible_v<T>);
@@ -195,7 +195,7 @@ std::optional<keyring::variant> controller::do_step(const pointer_wrapper& cur)
 
     return std::visit([&cur] (auto& room) -> std::optional<keyring::variant>
         {
-            if constexpr (has_step_method<TYPE_REMOVE_CVR(room)>::value)
+            if constexpr (has_step_method<idle_remove_cvr(room)>::value)
             {
                 return room.step(cur);
             }

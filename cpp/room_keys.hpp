@@ -20,7 +20,8 @@
 
 // #include <math.hpp>
 #include <variant>
-#include <string>
+#include <string_view>
+#include "idle_try.hpp"
 
 namespace idle
 {
@@ -45,7 +46,7 @@ using variant = std::variant<
 #ifdef IDLE_COMPILE_GALLERY
         somewhere_else<model_room>,
 #endif
-        std::string
+        std::string_view
     >;
 
 }  // namespace keyring
