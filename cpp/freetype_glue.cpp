@@ -37,12 +37,6 @@ namespace
 {
 using font_face_t = std::unique_ptr<std::remove_pointer_t<FT_Face>, decltype(&FT_Done_Face)>;
 
-constexpr bool is_ok_for_texture(const FT_ULong c)
-{
-    return (c >= 0x20 && c < 0x17f) || (c >= 0x20b && c < 0x370) || (c > 0x390 && c <= 0x3fc);
-}
-
-
 struct glyph_view
 {
     FT_Face face;
@@ -92,14 +86,16 @@ struct glyph_view
     }
 };
 
-std::optional<ft_data_t> create_font(const font_face_t freetype_font_face, const unsigned resolution)
+
+
+std::optional<ft_data_t> create_font(const font_face_t freetype_font_face, const unsigned resolution, bool (* filter_function)(unsigned long))
 {
-    const auto filtered_chars = [ft = freetype_font_face.get()]()
+    const auto filtered_chars = [&filter_function, ft = freetype_font_face.get()]()
     {
         std::vector<glyph_view::position> out;
         for (const auto it : glyph_view{ ft })
         {
-            if (is_ok_for_texture(it.code))
+            if (filter_function(it.code))
                 out.push_back(it);
         }
         return out;
@@ -179,7 +175,7 @@ bool library_loaded = false;
 }  // namespace
 
 
-std::optional<ft_data_t> freetype_glue::operator()(const std::string_view &memory, const texture_quality resolution) const
+std::optional<ft_data_t> freetype_glue::operator()(bool (* filter_function)(unsigned long), const std::string_view &memory, const texture_quality resolution) const
 {
     if (!library_loaded) return {};
 
@@ -189,7 +185,7 @@ std::optional<ft_data_t> freetype_glue::operator()(const std::string_view &memor
                 reinterpret_cast<const FT_Byte *>(memory.data()),
                 static_cast<FT_Long>(memory.size()), 0, &ff))
     {
-        return create_font({ ff, FT_Done_Face }, static_cast<unsigned>(resolution));
+        return create_font({ ff, FT_Done_Face }, static_cast<unsigned>(resolution), filter_function);
     }
 
     LOGE("Error loading font face");

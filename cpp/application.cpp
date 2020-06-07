@@ -387,6 +387,22 @@ int application::real_main()
     return 0;
 }
 
+namespace
+{
+
+constexpr bool ext_ascii_plus_math(const unsigned long c)
+{
+    return (c >= 0x20 && c < 0x17f) || (c >= 0x20b && c < 0x370) || (c > 0x390 && c <= 0x3fc);
+}
+
+constexpr bool ext_ascii(const unsigned long c)
+{
+    return (c >= 0x20 && c < 0x17f);
+}
+
+}  // namespace
+
+
 bool application::load()
 {
     using namespace std::chrono_literals;
@@ -415,7 +431,8 @@ bool application::load()
 
                 if (const auto fontfile = platform::asset::hold(idle::config::font_asset))
                 {
-                    if (auto opt = fonts::freetype_glue{}(fontfile.view(), fonts::texture_quality::ok))
+                    const fonts::freetype_glue freetype;
+                    if (auto opt = freetype(ext_ascii_plus_math, fontfile.view(), fonts::texture_quality::ok))
                     {
                         LOGD("Font acquired!");
 
