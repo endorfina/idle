@@ -21,9 +21,9 @@ set(${PROJECT_NAME}-files
         spinlock.cpp
         drawable.cpp
         crash_handler.cpp
-        room_service.cpp
+        hotel/service.cpp
+        hotel/room_landing.cpp
         room_controller.cpp
-        room_landing.cpp
         lodge.cpp
         gl.cpp
         fonts.cpp
@@ -85,7 +85,7 @@ add_dependencies(${PROJECT_NAME}-obj ${PROJECT_NAME}-generate-sh)
 target_include_directories(${PROJECT_NAME}-obj PRIVATE "${CMAKE_BINARY_DIR}/${PROJECT_NAME}-include")
 
 if(COMPILE_GALLERY)
-    list(APPEND ${PROJECT_NAME}-files room_model.cpp)
+    list(APPEND ${PROJECT_NAME}-files hotel/room_model.cpp)
     target_compile_definitions(${PROJECT_NAME}-obj PRIVATE IDLE_COMPILE_GALLERY)
 endif()
 

@@ -20,13 +20,13 @@
 #include <array>
 #include <random>
 #include <optional>
-#include "gl.hpp"
+#include <idle/gl.hpp>
+#include <idle/draw_text.hpp>
+#include <idle/pointer_wrapper.hpp>
 #include "gui.hpp"
-#include "draw_text.hpp"
-#include "pointer_wrapper.hpp"
-#include "room_keys.hpp"
+#include "keys.hpp"
 
-namespace idle
+namespace idle::hotel::landing
 {
 
 struct great_crimson_thing
@@ -50,13 +50,13 @@ struct landing_button : gui::shapes::button<gui::positions::from_center<X, Y>, w
 #ifdef IDLE_COMPILE_GALLERY
     std::optional<keyring::variant> trigger() const
     {
-        return { keyring::somewhere_else<model_room>{} };
+        return { keyring::somewhere_else<hotel::model::room>{} };
     }
 #endif
 };
 
 
-struct landing_room
+struct room
 {
     using gui_t = gui::interface
         <
@@ -76,4 +76,4 @@ struct landing_room
     void draw(const graphics::core&) const;
 };
 
-}
+}  // namespace idle::hotel::landing

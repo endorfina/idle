@@ -18,19 +18,44 @@
 */
 #pragma once
 
-#include "gl.hpp"
+// #include <math.hpp>
+#include <variant>
+#include <string_view>
+#include <idle/idle_try.hpp>
+
+namespace idle::hotel
+{
+
+namespace landing
+{
+struct room;
+}
 
 #ifdef IDLE_COMPILE_GALLERY
-#include "gui.hpp"
-#include "draw_text.hpp"
+namespace model
+{
+struct room;
+}
+#endif
 
-namespace idle
+namespace keyring
 {
 
-struct model_room
+template<class T>
+struct somewhere_else
 {
+    using opened_type = T;
 };
 
-}
-#endif  // IDLE_COMPILE_GALLERY
+using variant = std::variant<
+        somewhere_else<landing::room>,
+#ifdef IDLE_COMPILE_GALLERY
+        somewhere_else<model::room>,
+#endif
+        std::string_view
+    >;
+
+}  // namespace keyring
+
+}  // namespace idle::hotel
 

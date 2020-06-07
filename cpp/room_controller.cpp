@@ -20,7 +20,6 @@
 #include <chrono>
 #include <log.hpp>
 
-#include "room_variant.hpp"
 #include "room_controller.hpp"
 #include "draw_text.hpp"
 
@@ -52,7 +51,7 @@ template<typename T>
 struct is_hotel_room : std::false_type {};
 
 template<typename T>
-struct is_hotel_room<keyring::somewhere_else<T>> : std::true_type {};
+struct is_hotel_room<hotel::keyring::somewhere_else<T>> : std::true_type {};
 
 }  // namespace
 
@@ -111,7 +110,7 @@ void controller::awaken(const std::chrono::steady_clock::time_point clock)
 
     if (const auto ptr = std::get_if<std::monostate>(&current_variant); ptr && !next_variant.rooms)
     {
-        next_variant.rooms.emplace(door<landing_room>{});
+        next_variant.rooms.emplace(door<hotel::landing::room>{});
     }
 
     if (!haiku.has_crashed())
@@ -159,16 +158,16 @@ template<typename T>
 constexpr char room_label[] = "UNNAMED";
 
 template<>
-constexpr char room_label<landing_room>[] = "LANDING";
+constexpr char room_label<hotel::landing::room>[] = "LANDING";
 
 #ifdef IDLE_COMPILE_GALLERY
 template<>
-constexpr char room_label<model_room>[] = "MODEL";
+constexpr char room_label<hotel::model::room>[] = "MODEL";
 #endif
 
 }  // namespace
 
-std::optional<keyring::variant> controller::do_step(const pointer_wrapper& cur)
+std::optional<hotel::keyring::variant> controller::do_step(const pointer_wrapper& cur)
 {
     if (next_variant.rooms)
     {
@@ -193,7 +192,7 @@ std::optional<keyring::variant> controller::do_step(const pointer_wrapper& cur)
         return {};
     }
 
-    return std::visit([&cur] (auto& room) -> std::optional<keyring::variant>
+    return std::visit([&cur] (auto& room) -> std::optional<hotel::keyring::variant>
         {
             if constexpr (has_step_method<idle_remove_cvr(room)>::value)
             {

@@ -1,4 +1,4 @@
-/*
+﻿/*
     Copyright © 2020 endorfina <dev.endorfina@outlook.com>
 
     This file is part of Idle.
@@ -18,38 +18,34 @@
 */
 #pragma once
 
-// #include <math.hpp>
-#include <variant>
-#include <string_view>
-#include "idle_try.hpp"
+#include <atomic>
+#include <optional>
+#include <thread>
 
-namespace idle
+namespace idle::hotel
 {
 
-struct landing_room;
-
-#ifdef IDLE_COMPILE_GALLERY
-struct model_room;
-#endif
-
-namespace keyring
+class room_service
 {
+    std::atomic_bool worker_active_flag{false};
+    std::optional<std::thread> worker_thread;
 
-template<class T>
-struct somewhere_else
-{
-    using opened_type = T;
+public:
+    template<typename...Vars>
+    void start(Vars...vars)
+    {
+        stop();
+        set_active(true);
+        worker_thread.emplace(std::forward<Vars>(vars)...);
+    }
+
+    void set_active(bool flag);
+
+    void stop();
+
+    bool is_active() const;
+
+    ~room_service();
 };
 
-using variant = std::variant<
-        somewhere_else<landing_room>,
-#ifdef IDLE_COMPILE_GALLERY
-        somewhere_else<model_room>,
-#endif
-        std::string_view
-    >;
-
-}  // namespace keyring
-
-}  // namespace idle
-
+}  // namespace idle::hotel

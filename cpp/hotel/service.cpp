@@ -1,4 +1,4 @@
-/*
+﻿/*
     Copyright © 2020 endorfina <dev.endorfina@outlook.com>
 
     This file is part of Idle.
@@ -16,24 +16,37 @@
     You should have received a copy of the GNU General Public License
     along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
-#pragma once
-#include <variant>
 
-class overlay;
+#include "service.hpp"
 
-#include "room_landing.hpp"
-// #include "room_red.hpp"
-#include "room_model.hpp"
-
-namespace idle
+namespace idle::hotel
 {
-using room = std::variant<
-    std::monostate,
-#ifdef IDLE_COMPILE_GALLERY
-    model_room,
-#endif  // IDLE_COMPILE_GALLERY
-    landing_room
-    // red_room
->;
 
+void room_service::set_active(const bool flag)
+{
+    worker_active_flag.store(flag, std::memory_order_relaxed);
 }
+
+void room_service::stop()
+{
+    set_active(false);
+
+    if (worker_thread)
+    {
+        worker_thread->join();
+        worker_thread.reset();
+    }
+}
+
+bool room_service::is_active() const
+{
+    return worker_active_flag.load(std::memory_order_relaxed);
+}
+
+room_service::~room_service()
+{
+    stop();
+}
+
+}  // namespace idle::hotel
+

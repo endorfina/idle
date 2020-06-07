@@ -1,4 +1,4 @@
-﻿/*
+/*
     Copyright © 2020 endorfina <dev.endorfina@outlook.com>
 
     This file is part of Idle.
@@ -18,34 +18,20 @@
 */
 #pragma once
 
-#include <atomic>
-#include <optional>
-#include <thread>
+#include <idle/gl.hpp>
 
-namespace idle
+#ifdef IDLE_COMPILE_GALLERY
+#include "gui.hpp"
+#include <idle/draw_text.hpp>
+
+namespace idle::hotel::model
 {
 
-class room_service
+struct room
 {
-    std::atomic_bool worker_active_flag{false};
-    std::optional<std::thread> worker_thread;
-
-public:
-    template<typename...Vars>
-    void start(Vars...vars)
-    {
-        stop();
-        set_active(true);
-        worker_thread.emplace(std::forward<Vars>(vars)...);
-    }
-
-    void set_active(bool flag);
-
-    void stop();
-
-    bool is_active() const;
-
-    ~room_service();
 };
 
-}  // namespace idle
+}  // namespace idle::hotel::model
+
+#endif  // IDLE_COMPILE_GALLERY
+

@@ -1,4 +1,4 @@
-﻿/*
+/*
     Copyright © 2020 endorfina <dev.endorfina@outlook.com>
 
     This file is part of Idle.
@@ -16,15 +16,22 @@
     You should have received a copy of the GNU General Public License
     along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
+#pragma once
+#include <variant>
 
+#include "room_landing.hpp"
+// #include "room_red.hpp"
 #include "room_model.hpp"
 
-#ifdef IDLE_COMPILE_GALLERY
-
-namespace idle
+namespace idle::hotel
 {
-
-}  // namespace idle
-
+using rooms = std::variant<
+    std::monostate,
+#ifdef IDLE_COMPILE_GALLERY
+    model::room,
 #endif  // IDLE_COMPILE_GALLERY
+    landing::room
+    // red_room
+>;
 
+}

@@ -22,7 +22,6 @@
 #include "application.hpp"
 #include "drawable.hpp"
 #include "draw_text.hpp"
-#include "room_variant.hpp"
 #include "room_controller.hpp"
 #include "lodge.hpp"
 #include "freetype_glue.hpp"

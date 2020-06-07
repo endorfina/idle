@@ -19,13 +19,12 @@
 
 #include <cmath>
 #include <random>
-#include "room_landing.hpp"
-#include "gl.hpp"
-#include "drawable.hpp"
-#include "draw_text.hpp"
-#include "hsv.hpp"
+#include <idle/drawable.hpp>
+#include <idle/hsv.hpp>
 
-namespace idle
+#include "room_landing.hpp"
+
+namespace idle::hotel::landing
 {
 namespace
 {
@@ -113,17 +112,9 @@ unsigned shift_appendages(std::array<float, Size>& ray_array, Rand& rando)
 
 }  // namespace
 
-std::optional<keyring::variant> landing_room::step(const pointer_wrapper& pointer)
+std::optional<keyring::variant> room::step(const pointer_wrapper& pointer)
 {
     using random_float = std::uniform_real_distribution<float>;
-
-    if (thing.alpha < 1.f)
-    {
-        thing.alpha = std::min<float>(thing.alpha + (clicked_during_intro ? .0091f : .00052f), 1.f);
-
-        if (pointer.single_press)
-            clicked_during_intro = true;
-    }
 
     thing.rotation += .01f / application_frames_per_second;
     if (thing.rotation > F_TAU)
@@ -142,7 +133,14 @@ std::optional<keyring::variant> landing_room::step(const pointer_wrapper& pointe
     random_float dist_float2{-1.f, 1.f};
     std::generate(noise_seed.begin(), noise_seed.end(), [this, &dist_float2](){ return dist_float2(fast_random_device); });
 
-    if (pointer.single_press)
+    if (thing.alpha < 1.f)
+    {
+        thing.alpha = std::min<float>(thing.alpha + (clicked_during_intro ? .0091f : .00052f), 1.f);
+
+        if (pointer.single_press)
+            clicked_during_intro = true;
+    }
+    else if (pointer.single_press)
     {
         idle_try(gui.click<keyring::variant>(pointer.cursor.pos))
     }
@@ -150,7 +148,7 @@ std::optional<keyring::variant> landing_room::step(const pointer_wrapper& pointe
     return {};
 }
 
-void landing_room::draw(const graphics::core& gl) const
+void room::draw(const graphics::core& gl) const
 {
     const auto alpha_sine = std::sin(thing.alpha * F_TAU_4);
     gl.prog.fill.use();
@@ -228,11 +226,15 @@ void landing_room::draw(const graphics::core& gl) const
 
     // TODO: Use a picture as the title
 
-    gl.prog.fill.use();
-    gl.prog.fill.set_color({.1f, 0, .2f, .5f});
-    gl.prog.text.use();
-    gl.prog.text.set_color({1, 1, 1, 1});
-    gui.draw(gl);
+    if (alpha_sine > .95f)
+    {
+        const float gui_alpha = 20.f * (alpha_sine - .95f);
+        gl.prog.fill.use();
+        gl.prog.fill.set_color({.33f, 0, 0, gui_alpha / 2});
+        gl.prog.text.use();
+        gl.prog.text.set_color({0, 0, 0, gui_alpha});
+        gui.draw(gl);
+    }
 
     gl.view_mask();
 
@@ -245,10 +247,10 @@ void landing_room::draw(const graphics::core& gl) const
     gl.view_normal();
 }
 
-void landing_room::on_resize(point_t screen_size)
+void room::on_resize(point_t screen_size)
 {
     gui.resize(screen_size);
 }
 
-}  // namespace idle
+}  // namespace idle::hotel::landing
 

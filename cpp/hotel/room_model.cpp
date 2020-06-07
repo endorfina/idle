@@ -17,36 +17,14 @@
     along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "room_service.hpp"
+#include "room_model.hpp"
 
-namespace idle
+#ifdef IDLE_COMPILE_GALLERY
+
+namespace idle::hotel::model
 {
 
-void room_service::set_active(const bool flag)
-{
-    worker_active_flag.store(flag, std::memory_order_relaxed);
-}
+}  // namespace idle::hotel::model
 
-void room_service::stop()
-{
-    set_active(false);
-
-    if (worker_thread)
-    {
-        worker_thread->join();
-        worker_thread.reset();
-    }
-}
-
-bool room_service::is_active() const
-{
-    return worker_active_flag.load(std::memory_order_relaxed);
-}
-
-room_service::~room_service()
-{
-    stop();
-}
-
-}  // namespace idle
+#endif  // IDLE_COMPILE_GALLERY
 

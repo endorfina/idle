@@ -22,8 +22,8 @@
 #include <utility>
 #include <variant>
 #include <optional>
-#include "gl.hpp"
-#include "drawable.hpp"
+#include <idle/gl.hpp>
+#include <idle/drawable.hpp>
 
 
 namespace idle::gui

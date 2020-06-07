@@ -27,9 +27,9 @@
 #include <mutex>
 
 #include "gl.hpp"
-#include "room_variant.hpp"
+#include "hotel/variant.hpp"
+#include "hotel/service.hpp"
 #include "crash_handler.hpp"
-#include "room_service.hpp"
 
 namespace idle
 {
@@ -47,21 +47,21 @@ struct door
 };
 
 template<typename SkipMonostate>
-struct hotel
+struct hotel_manager
 {
 };
 
 template<typename SkipMonostate, typename...Rooms>
-struct hotel<std::variant<SkipMonostate, Rooms...>>
+struct hotel_manager<std::variant<SkipMonostate, Rooms...>>
 {
     std::optional<std::variant<door<Rooms>...>> rooms;
 };
 
 class controller
 {
-    hotel<room> next_variant;
-    room current_variant;
-    room_service worker;
+    hotel_manager<hotel::rooms> next_variant;
+    hotel::rooms current_variant;
+    hotel::room_service worker;
     point_t current_screen_size;
     std::mutex mutability;
 
@@ -85,7 +85,7 @@ public:
         next_variant.rooms.emplace(door<Room>{});
     }
 
-    std::optional<keyring::variant> do_step(const pointer_wrapper& cursor);
+    std::optional<hotel::keyring::variant> do_step(const pointer_wrapper& cursor);
 };
 
 }  // namespace idle
