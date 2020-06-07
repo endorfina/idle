@@ -79,12 +79,6 @@ public:
 
     void draw_frame(const graphics::core& gl);
 
-    template<typename Room>
-    void change_room()
-    {
-        next_variant.rooms.emplace(door<Room>{});
-    }
-
     std::optional<hotel::keyring::variant> do_step(const pointer_wrapper& cursor);
 };
 
