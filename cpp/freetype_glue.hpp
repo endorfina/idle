@@ -34,7 +34,7 @@ enum class texture_quality : unsigned
 
 struct freetype_glue
 {
-    std::optional<ft_data_t> operator()(const std::string_view &memory, texture_quality resolution) const;
+    std::optional<ft_data_t> operator()(bool (* filter_function)(unsigned long), const std::string_view &memory, texture_quality resolution) const;
 
     freetype_glue();
     ~freetype_glue();

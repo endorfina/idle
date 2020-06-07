@@ -17,12 +17,22 @@
     along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <idle/drawable.hpp>
 #include "room_model.hpp"
 
 #ifdef IDLE_COMPILE_GALLERY
 
 namespace idle::hotel::model
 {
+
+void room::draw(const graphics::core& gl) const
+{
+    gl.prog.fill.use();
+    gl.prog.fill.set_identity();
+    gl.prog.fill.set_view_identity();
+    gl.prog.fill.set_color({0,0,0});
+    fill_screen(gl, gl.prog.fill);
+}
 
 }  // namespace idle::hotel::model
 

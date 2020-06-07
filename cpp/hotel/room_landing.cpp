@@ -138,11 +138,25 @@ std::optional<keyring::variant> room::step(const pointer_wrapper& pointer)
         thing.alpha = std::min<float>(thing.alpha + (clicked_during_intro ? .0091f : .00052f), 1.f);
 
         if (pointer.single_press)
+        {
             clicked_during_intro = true;
+
+            if (thing.alpha > .98f)
+                destination = gui.click<keyring::variant>(pointer.cursor.pos);
+        }
+    }
+    else if (destination)
+    {
+        thing.alpha = std::min<float>(thing.alpha + .0031f, 2.f);
+
+        if (thing.alpha >= 2.f)
+        {
+            idle_try(std::move(destination))
+        }
     }
     else if (pointer.single_press)
     {
-        idle_try(gui.click<keyring::variant>(pointer.cursor.pos))
+        destination = gui.click<keyring::variant>(pointer.cursor.pos);
     }
 
     return {};
@@ -225,10 +239,13 @@ void room::draw(const graphics::core& gl) const
     gl::DrawArrays(gl::TRIANGLE_FAN, 0, array_len);
 
     // TODO: Use a picture as the title
+    // UPDATE: lmao, let's see about that!
+
+    const auto fadeout_alpha_sine = std::sin(std::max<float>(thing.alpha + 1.f, 2.f) * F_TAU_4) + 1.f;
 
     if (alpha_sine > .95f)
     {
-        const float gui_alpha = 20.f * (alpha_sine - .95f);
+        const float gui_alpha = 20.f * (alpha_sine - .95f) * math::sqr(fadeout_alpha_sine);
         gl.prog.fill.use();
         gl.prog.fill.set_color({.33f, 0, 0, gui_alpha / 2});
         gl.prog.text.use();
@@ -242,7 +259,7 @@ void room::draw(const graphics::core& gl) const
             math::point_cast<float>(gl.draw_size),
             *reinterpret_cast<const point_t*>(noise_seed.data()),
             alpha_sine,
-            1);
+            fadeout_alpha_sine);
 
     gl.view_normal();
 }

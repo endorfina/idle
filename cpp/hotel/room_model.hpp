@@ -29,6 +29,7 @@ namespace idle::hotel::model
 
 struct room
 {
+    void draw(const graphics::core& gl) const;
 };
 
 }  // namespace idle::hotel::model

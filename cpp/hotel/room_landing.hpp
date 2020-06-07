@@ -67,6 +67,7 @@ struct room
     std::minstd_rand fast_random_device{ std::random_device{}() };
     std::array<float, 2> noise_seed;
     bool clicked_during_intro = false;
+    std::optional<keyring::variant> destination;
     great_crimson_thing thing;
 
     void on_resize(point_t);
