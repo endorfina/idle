@@ -23,7 +23,7 @@
 #include "gl.hpp"
 #include "platform/context.hpp"
 
-namespace isolation
+namespace outside
 {
 
 struct pause_menu
@@ -32,6 +32,7 @@ struct pause_menu
     float fadein_alpha = 0, shift = 0;
 
     pause_menu(unsigned blur_downscale);
+
     void draw() const;
 };
 
@@ -48,6 +49,8 @@ public:
     ::platform::context window;
 
 private:
+    application() = default;
+
     bool execute_commands(bool nested);
 
 public:
@@ -58,4 +61,4 @@ public:
     void draw();
 };
 
-}  // namespace isolation
+}  // namespace outside

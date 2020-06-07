@@ -28,18 +28,18 @@
 #include "config.hpp"
 #include "platform/asset_access.hpp"
 
+namespace outside
+{
+
 namespace
 {
 
 // These need to be global to allow for proper clean up with X11
 
-idle::controller room_ctrl;
-graphics::core opengl;
+::idle::controller room_ctrl;
+::graphics::core opengl;
 
 }  // namespace
-
-namespace isolation
-{
 
 bool application::execute_commands(const bool is_nested)
 {
@@ -489,5 +489,5 @@ bool application::load()
     return loader_result.get();
 }
 
-}  // namespace isolation
+}  // namespace outside
 

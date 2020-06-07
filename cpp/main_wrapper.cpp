@@ -31,6 +31,6 @@ int main(void)
 {
     return
 #endif
-    ::isolation::application::real_main();
+    ::outside::application::real_main();
 }
 
