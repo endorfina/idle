@@ -13,9 +13,11 @@ readonly PROGNAME=${BASH_SOURCE[0]##*/}
 if [[ -t 1 && -t 2 ]]
 then
   readonly ESC=$(printf '\033')'['
+  readonly color_blue=$ESC'0;34m'
   readonly color_red=$ESC'1;31m'
   readonly color_norm=$ESC'0m'
 else
+  readonly color_blue=
   readonly color_red=
   readonly color_norm=
 fi
@@ -104,6 +106,10 @@ do
         CM_LOG_LEVEL=0
         ;;
 
+      q)
+        CM_OPTS+=('--log-level=WARNING')
+        ;;
+
       *)
         echo >&2 "$PROGNAME: Ignoring unknown option \"$OPT\""
         ;;
@@ -143,12 +149,24 @@ echo '--'
 for arg_iter in "${ARGS[@]}"
 do
   echo -n "    ${hearts[$hearts_iter]} "
-  if [[ $arg_iter == -* ]]
-  then
-    echo "${color_red}${arg_iter:1:1} :${color_norm} '${arg_iter:2}'"
-  else
-    echo "$arg_iter"
-  fi
+  case $arg_iter in
+    --*=*)
+      arg_iter=${arg_iter#--}
+      echo "${color_red}# :${color_blue} ${arg_iter%%=*} =${color_norm} '${arg_iter#*=}'"
+      ;;
+
+    --*)
+      echo "${color_red}# :${color_blue} ${arg_iter#--}${color_norm}"
+      ;;
+
+    -*)
+      echo "${color_red}${arg_iter:1:1} :${color_norm} '${arg_iter:2}'"
+      ;;
+
+    *)
+      echo "$arg_iter"
+      ;;
+  esac
   (( ++hearts_iter ))
   [[ $hearts_iter -ge ${#hearts[*]} ]] && hearts_iter=0
 done
