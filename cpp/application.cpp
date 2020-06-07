@@ -102,7 +102,10 @@ bool application::execute_commands(const bool is_nested)
                 LOGI(log_prefix, "PausePressed");
                 room_ctrl.sleep();
                 if (!pause)
+                {
+                    room_ctrl.cached_cursor.store({{0.f, 0.f}, false}, std::memory_order_relaxed);
                     pause.emplace(4);
+                }
                 break;
             }
 
@@ -111,7 +114,7 @@ bool application::execute_commands(const bool is_nested)
         if (perform_load && !opengl.setup_graphics()) return false;
     }
 
-    if (window.cursor_update)
+    if (window.cursor_update && !pause)
     {
         room_ctrl.cached_cursor.store({window.cursor.pos * opengl.translate_vector, window.cursor.pressed}, std::memory_order_relaxed);
         window.cursor_update = false;
@@ -248,13 +251,13 @@ void pause_menu::draw() const
     };
 
     gl::ActiveTexture(gl::TEXTURE0);
-    opengl.prog.normal.set_color({1, 1, 1, 1 - fadein_alpha * .333f});
+    opengl.prog.normal.set_color({1, 1, 1, 1 - fadein_alpha * .666f});
     gl::BindTexture(gl::TEXTURE_2D, buffers[0]->texture);
     opengl.prog.normal.position_vertex(opengl.draw_bounds_verts.data());
     opengl.prog.normal.texture_vertex(t);
     gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
 
-    opengl.prog.normal.set_color({1, 1 - fadein_alpha * .2f, 1 - fadein_alpha * .1f, fadein_alpha * .9f});
+    opengl.prog.normal.set_color({1, 1 - fadein_alpha * .2f, 1 - fadein_alpha * .1f, fadein_alpha * .998f});
     gl::BindTexture(gl::TEXTURE_2D, buffers[1]->texture);
     opengl.prog.normal.texture_vertex(tb);
     gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);

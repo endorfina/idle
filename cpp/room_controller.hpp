@@ -46,13 +46,13 @@ struct door
     }
 };
 
-template<typename SkipMonostate>
+template<typename T>
 struct hotel_manager
 {
 };
 
-template<typename SkipMonostate, typename...Rooms>
-struct hotel_manager<std::variant<SkipMonostate, Rooms...>>
+template</* typename SkipMonostate,*/ typename...Rooms>
+struct hotel_manager<std::variant</*SkipMonostate,*/ Rooms...>>
 {
     std::optional<std::variant<door<Rooms>...>> rooms;
 };

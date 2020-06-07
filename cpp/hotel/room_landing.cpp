@@ -150,7 +150,7 @@ std::optional<keyring::variant> room::step(const pointer_wrapper& pointer)
 
 void room::draw(const graphics::core& gl) const
 {
-    const auto alpha_sine = std::sin(thing.alpha * F_TAU_4);
+    const auto alpha_sine = std::sin(std::min<float>(thing.alpha, 1.f) * F_TAU_4);
     gl.prog.fill.use();
     gl.prog.fill.set_identity();
     gl.prog.fill.set_view_identity();

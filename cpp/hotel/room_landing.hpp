@@ -44,7 +44,7 @@ struct landing_button : gui::shapes::button<gui::positions::from_center<X, Y>, w
     void draw_foreground(const graphics::core& gl) const
     {
         gl.prog.text.use();
-        draw_text<text_align::center, text_align::center>(gl, "???", this->pos, 20);
+        draw_text<text_align::center, text_align::center>(gl, "???", this->pos, 28);
     }
 
 #ifdef IDLE_COMPILE_GALLERY
@@ -64,7 +64,7 @@ struct room
         >;
     gui_t gui;
 
-    std::minstd_rand fast_random_device;
+    std::minstd_rand fast_random_device{ std::random_device{}() };
     std::array<float, 2> noise_seed;
     bool clicked_during_intro = false;
     great_crimson_thing thing;

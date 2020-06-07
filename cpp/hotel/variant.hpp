@@ -26,11 +26,10 @@
 namespace idle::hotel
 {
 using rooms = std::variant<
-    std::monostate,
+    landing::room,
 #ifdef IDLE_COMPILE_GALLERY
-    model::room,
+    model::room
 #endif  // IDLE_COMPILE_GALLERY
-    landing::room
     // red_room
 >;
 
