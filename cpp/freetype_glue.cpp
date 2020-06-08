@@ -134,7 +134,7 @@ std::optional<ft_data_t> create_font(const font_face_t freetype_font_face, const
         FT_Render_Glyph(glyph, FT_RENDER_MODE_NORMAL);
 
         glyphs.emplace(charcode, glyph_t{
-            { - glyph->bitmap_left / static_cast<float>(cell_size),
+            { glyph->bitmap_left / static_cast<float>(cell_size),
                 - glyph->bitmap_top / static_cast<float>(cell_size) }, // offset
 
             { texture_position.x * cell_size / static_cast<float>(resolution),

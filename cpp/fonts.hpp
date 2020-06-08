@@ -38,14 +38,23 @@ struct font_t
 
     std::string prepare_string(const std::string_view &str, float size, float max_width) const;
 
-    font_t(glyph_map_t character_map, float cell_size, graphics::unique_texture texture);
-
 #ifndef IDLE_COMPILE_FONT_DEBUG_SCREEN
 private:
 #endif
     graphics::unique_texture texture;
     glyph_map_t character_map;
-    float cell_size, topmost_margin;
+    float cell_size, min_y, max_y;
+
+public:
+    template<typename A, typename B>
+    font_t(A&& tex, B&& map, const float size, const float mny, const float mxy)
+        : texture(std::forward<A>(tex))
+        , character_map(std::forward<B>(map))
+        , cell_size(size)
+        , min_y(mny)
+        , max_y(mxy)
+    {
+    }
 };
 
 }  // namespace fonts

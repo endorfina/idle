@@ -53,13 +53,9 @@ void draw_dim_noise(const graphics::noise_program_t& noise, const point_t size, 
 
     if (fadeout < 1)
     {
-        if (fadeout > .3f)
-            white = (fadeout - .3f) / .7f;
-        else
-            white = 0;
+        white = std::max<float>(0.f, (fadeout - .6f) / .4f);
 
-        if (fadeout < .3f)
-            red = fadeout / .3f;
+        red = std::min<float>(1.f, fadeout / .6f);
     }
 
     const auto faster_alpha = std::min<float>(alpha * 3, 1);
@@ -120,7 +116,7 @@ std::optional<keyring::variant> room::step(const pointer_wrapper& pointer)
     if (thing.rotation > F_TAU)
         thing.rotation -= F_TAU;
 
-    if (!--thing.counter)
+    if (!destination && !--thing.counter)
     {
         thing.counter = shift_appendages(thing.legs[0], fast_random_device);
     }
@@ -147,7 +143,7 @@ std::optional<keyring::variant> room::step(const pointer_wrapper& pointer)
     }
     else if (destination)
     {
-        thing.alpha = std::min<float>(thing.alpha + .0031f, 2.f);
+        thing.alpha = std::min<float>(thing.alpha + .0016f, 2.f);
 
         if (thing.alpha >= 2.f)
         {
@@ -157,6 +153,16 @@ std::optional<keyring::variant> room::step(const pointer_wrapper& pointer)
     else if (pointer.single_press)
     {
         destination = gui.click<keyring::variant>(pointer.cursor.pos);
+
+        if (destination)
+        {
+            random_float dist_float3{-.1f, .3f};
+
+            for (auto& leg : thing.legs[0])
+            {
+                leg += dist_float3(fast_random_device);
+            }
+        }
     }
 
     return {};
@@ -243,11 +249,11 @@ void room::draw(const graphics::core& gl) const
 
     const auto fadeout_alpha_sine = std::sin(std::max<float>(thing.alpha + 1.f, 2.f) * F_TAU_4) + 1.f;
 
-    if (alpha_sine > .95f)
+    if (alpha_sine > .95f && fadeout_alpha_sine > .8f)
     {
-        const float gui_alpha = 20.f * (alpha_sine - .95f) * math::sqr(fadeout_alpha_sine);
+        const float gui_alpha = 20.f * (alpha_sine - .95f) * (fadeout_alpha_sine - .9f) / .1f;
         gl.prog.fill.use();
-        gl.prog.fill.set_color({.33f, 0, 0, gui_alpha / 2});
+        gl.prog.fill.set_color({.71f, 0, 0, gui_alpha / 3});
         gl.prog.text.use();
         gl.prog.text.set_color({0, 0, 0, gui_alpha});
         gui.draw(gl);

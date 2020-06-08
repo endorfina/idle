@@ -36,9 +36,9 @@ using glyph_map_t = std::unordered_map<unsigned long, glyph_t>;
 struct ft_data_t
 {
     std::unique_ptr<unsigned char[]> pixels;
-    unsigned width = 0;
+    unsigned width;
     glyph_map_t map;
-    float cell_size = 0;
+    float cell_size;
 };
 
 }  // namespace fonts

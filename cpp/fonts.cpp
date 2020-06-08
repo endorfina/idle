@@ -27,22 +27,6 @@
 namespace fonts
 {
 
-font_t::font_t(glyph_map_t glyph_map, const float glyph_size, graphics::unique_texture atlas_tex)
-  : texture{std::move(atlas_tex)},
-    character_map{std::move(glyph_map)},
-    cell_size{glyph_size},
-    topmost_margin{
-        std::min_element(
-            character_map.begin(),
-            character_map.end(),
-            [](const auto& lhs, const auto& rhs)
-            {
-                return lhs.second.offset.y < rhs.second.offset.y;
-            }
-        )->second.offset.y * .966f}
-{
-}
-
 static void draw_glyph(const glyph_t& g, const graphics::text_program_t& rcp, const float size, const idle::point_t pos)
 {
     const float tex_coords[8]
@@ -66,7 +50,7 @@ void font_t::draw(const graphics::text_program_t& rcp, const std::string_view &s
     gl::BindTexture(gl::TEXTURE_2D, texture.get());
     rcp.position_vertex(idle::square_coordinates);
 
-    idle::point_t pos{ 0, -topmost_margin };
+    idle::point_t pos{ 0, - min_y * .889f };
 
     for (const auto u8c : utf8x::translator<char>{str})
     {
@@ -91,7 +75,7 @@ void font_t::draw_custom_animation(const graphics::text_program_t& rcp, const st
     gl::BindTexture(gl::TEXTURE_2D, texture.get());
     rcp.position_vertex(idle::square_coordinates);
 
-    idle::point_t pos{0, -topmost_margin};
+    idle::point_t pos{0, 0};
 
     rcp.set_color(col);
     unsigned int i = 0;
@@ -153,7 +137,7 @@ void font_t::draw_custom_animation(const graphics::text_program_t& rcp, const st
     if (current_line_width > max_line_width)
         max_line_width = current_line_width;
 
-    return { max_line_width, line_amount * size };
+    return { max_line_width, (min_y - max_y) + line_amount * size };
 }
 
 

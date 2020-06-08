@@ -18,17 +18,11 @@
 */
 #pragma once
 
-#if __has_include ("config/head.hpp")
-
-#include "config/head.hpp"
-
-#else
-
 namespace idle::config
 {
 
-constexpr char font_asset[] = "font.ttf";
+constexpr char regular_font_asset[] = "NipCen_s_Print_Unicode.ttf";
+
+constexpr char title_font_asset[] = "Piedra-Regular.ttf";
 
 }  // namespace idle::config
-
-#endif

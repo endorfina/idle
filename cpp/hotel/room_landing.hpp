@@ -44,7 +44,7 @@ struct landing_button : gui::shapes::button<gui::positions::from_center<X, Y>, w
     void draw_foreground(const graphics::core& gl) const
     {
         gl.prog.text.use();
-        draw_text<text_align::center, text_align::center>(gl, "???", this->pos, 28);
+        draw_text<text_align::center, text_align::center>(*gl.fonts.title, gl.prog.text, "LAME", this->pos, 28);
     }
 
 #ifdef IDLE_COMPILE_GALLERY

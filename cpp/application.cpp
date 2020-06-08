@@ -25,7 +25,7 @@
 #include "room_controller.hpp"
 #include "lodge.hpp"
 #include "freetype_glue.hpp"
-#include "config.hpp"
+#include "config/assets.hpp"
 #include "platform/asset_access.hpp"
 
 namespace outside
@@ -267,15 +267,15 @@ void pause_menu::draw() const
     opengl.prog.text.use();
     opengl.prog.text.set_color({1, .733f, .796f, fadein_alpha});
 
-    idle::draw_text<idle::text_align::center>(opengl, "paused",
-            {opengl.draw_size.x / 2.f, y_shift}, 64);
+    idle::draw_text<idle::text_align::center>(*opengl.fonts.regular, opengl.prog.text,
+            "paused", {opengl.draw_size.x / 2.f, y_shift}, 64);
 
     if (fadein_alpha > .8f)
     {
         opengl.prog.text.set_color({1, .733f, .796f, (fadein_alpha - .8f) / .2f * (1 - glare_sqr * .5f)});
 
-        idle::draw_text<idle::text_align::center>(opengl, "press to resume",
-                {opengl.draw_size.x / 2.f, 80.f + y_shift}, 20);
+        idle::draw_text<idle::text_align::center>(*opengl.fonts.regular, opengl.prog.text,
+                "press to resume", {opengl.draw_size.x / 2.f, 80.f + y_shift}, 20);
     }
 }
 
@@ -400,6 +400,42 @@ constexpr bool ext_ascii(const unsigned long c)
     return (c >= 0x20 && c < 0x17f);
 }
 
+fonts::font_t make_font(fonts::ft_data_t font_data)
+{
+    auto image = graphics::unique_texture(idle::image_t::load_from_memory(
+                font_data.width, font_data.width,
+#ifdef __ANDROID__
+                gl::LUMINANCE, gl::LUMINANCE,
+#else
+                gl::R8, gl::RED,
+#endif
+                gl::LINEAR, gl::CLAMP_TO_EDGE, std::move(font_data.pixels)).release());
+
+    const auto min_y = std::min_element(font_data.map.begin(), font_data.map.end(),
+            [](const auto& left, const auto& right)
+            {
+                return left.second.offset.y < right.second.offset.y;
+
+            })->second.offset.y;
+
+    const auto max_y = std::max_element(font_data.map.begin(), font_data.map.end(),
+            [](const auto& left, const auto& right)
+            {
+                return left.second.offset.y < right.second.offset.y;
+
+            })->second.offset.y;
+
+    LOGI("Font bbox [%.3f <=> %.3f] : %.3f", min_y, max_y, min_y - max_y);
+
+    return {
+        std::move(image),
+        std::move(font_data.map),
+        font_data.cell_size,
+        min_y,
+        max_y
+    };
+}
+
 }  // namespace
 
 
@@ -425,34 +461,30 @@ bool application::load()
     auto loader_result = loader_callback.get_future();
 
     std::thread loader_thread {
-            [] (std::promise<bool> promise)
+        [] (std::promise<bool> promise)
+        {
+            const fonts::freetype_glue freetype;
+
+            if (const auto unicode_font = platform::asset::hold(idle::config::regular_font_asset))
             {
-                bool success = false;
-
-                if (const auto fontfile = platform::asset::hold(idle::config::font_asset))
+                if (auto ft = freetype(ext_ascii_plus_math, unicode_font.view(), fonts::texture_quality::ok))
                 {
-                    const fonts::freetype_glue freetype;
-                    if (auto opt = freetype(ext_ascii_plus_math, fontfile.view(), fonts::texture_quality::ok))
-                    {
-                        LOGD("Font acquired!");
-
-                        auto image = graphics::unique_texture(idle::image_t::load_from_memory(
-                                    opt->width, opt->width,
-#ifdef __ANDROID__
-                                    gl::LUMINANCE, gl::LUMINANCE,
-#else
-                                    gl::R8, gl::RED,
-#endif
-                                    gl::LINEAR, gl::CLAMP_TO_EDGE, std::move(opt->pixels)).release());
-
-                        opengl.font.emplace(std::move(opt->map), opt->cell_size, std::move(image));
-                        success = true;
-                    }
+                    opengl.fonts.regular.emplace(make_font(std::move(*ft)));
                 }
+            }
 
-                promise.set_value(success);
-            },
-            std::move(loader_callback)
+            if (const auto title_font = platform::asset::hold(idle::config::title_font_asset))
+            {
+                if (auto ft = freetype(ext_ascii, title_font.view(), fonts::texture_quality::ok))
+                {
+                    opengl.fonts.title.emplace(make_font(std::move(*ft)));
+                }
+            }
+
+            promise.set_value(opengl.fonts.regular
+                            && opengl.fonts.title);
+        },
+        std::move(loader_callback)
         };
 
     while (loader_result.wait_for(std::chrono::milliseconds(5)) != std::future_status::ready)

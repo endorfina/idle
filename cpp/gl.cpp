@@ -575,15 +575,15 @@ static void set_projection_matrix(const program_t& prog, const idle::mat4x4_t& m
     gl::UniformMatrix4fv(gl::GetUniformLocation(prog.program_id, "uPM"), 1, gl::FALSE_, static_cast<const GLfloat*>(mat));
 }
 
-void core::copy_projection_matrix(const idle::mat4x4_t& projectionMatrix) const
+void core::copy_projection_matrix(const idle::mat4x4_t& projection_matrix) const
 {
-    set_projection_matrix(prog.normal, projectionMatrix);
-    set_projection_matrix(prog.shift, projectionMatrix);
-    set_projection_matrix(prog.fill, projectionMatrix);
-    set_projection_matrix(prog.text, projectionMatrix);
-    set_projection_matrix(prog.fullbg, projectionMatrix);
-    set_projection_matrix(prog.noise, projectionMatrix);
-    set_projection_matrix(prog.gradient, projectionMatrix);
+    set_projection_matrix(prog.normal, projection_matrix);
+    set_projection_matrix(prog.shift, projection_matrix);
+    set_projection_matrix(prog.fill, projection_matrix);
+    set_projection_matrix(prog.text, projection_matrix);
+    set_projection_matrix(prog.fullbg, projection_matrix);
+    set_projection_matrix(prog.noise, projection_matrix);
+    set_projection_matrix(prog.gradient, projection_matrix);
 }
 
 std::unique_ptr<const render_buffer_t> core::new_render_buffer(const unsigned div) const
@@ -638,7 +638,8 @@ render_buffer_t::render_buffer_t(const buffer_size tex_size, const GLint quality
 
 void core::clean()
 {
-    font.reset();
+    fonts.regular.reset();
+    fonts.title.reset();
     render_buffer_masked.reset();
 }
 

@@ -26,26 +26,26 @@ namespace idle
 namespace detail
 {
 template <text_align H, text_align V>
-point_t get_text_transform(const fonts::font_t& font, std::string_view str, point_t p, float a, const unsigned int limit)
+point_t get_text_transform(const fonts::font_t& font, std::string_view str, point_t pos, const float ft_size, const unsigned int limit)
 {
     if constexpr (H == text_align::near && V == text_align::near)
-        return p;
+        return pos;
     else
     {
-        point_t fs = font.get_extent(str, a, limit);
+        point_t fs = font.get_extent(str, ft_size, limit);
         if constexpr (H == text_align::near)
-            fs.x = p.x;
+            fs.x = pos.x;
         else if constexpr (H == text_align::center)
-            fs.x = p.x - fs.x / 2.0f;
+            fs.x = pos.x - fs.x / 2.0f;
         else
-            fs.x = p.x - fs.x;
+            fs.x = pos.x - fs.x;
 
         if constexpr (V == text_align::near)
-            fs.y = p.y;
+            fs.y = pos.y;
         else if constexpr (V == text_align::center)
-            fs.y = p.y - fs.y / 2.0f;
+            fs.y = pos.y - fs.y / 2.0f;
         else
-            fs.y = p.y - fs.y;
+            fs.y = pos.y - fs.y;
 
         return fs;
     }
@@ -54,15 +54,16 @@ point_t get_text_transform(const fonts::font_t& font, std::string_view str, poin
 }  // namespace detail
 
 template <text_align H = text_align::near, text_align V = text_align::near>
-void draw_text(const graphics::core& gl,
+void draw_text(const fonts::font_t& font,
+        const graphics::text_program_t& prog,
         const std::string_view str,
         const point_t p,
         const float size,
         const unsigned int limit = static_cast<unsigned int>(-1))
 {
-    const auto translate = detail::get_text_transform<H, V>(*gl.font, str, p, size, limit);
-    gl.prog.text.set_view_transform(mat4x4_t::scale(size) * mat4x4_t::translate(translate));
-    gl.font->draw(gl.prog.text, str, limit);
+    const auto translate = detail::get_text_transform<H, V>(font, str, p, size, limit);
+    prog.set_view_transform(mat4x4_t::scale(size) * mat4x4_t::translate(translate));
+    font.draw(prog, str, limit);
 }
 
 }  // namespace idle
