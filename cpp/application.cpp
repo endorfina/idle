@@ -457,11 +457,10 @@ bool application::load()
     };
 
     std::chrono::time_point<std::chrono::steady_clock> lt = std::chrono::steady_clock::now();
-    std::promise<bool> loader_callback;
-    auto loader_result = loader_callback.get_future();
+    bool success {false};
 
     std::thread loader_thread {
-        [] (std::promise<bool> promise)
+        [&promise = success, &flag = la.load_status]
         {
             const fonts::freetype_glue freetype;
 
@@ -481,13 +480,11 @@ bool application::load()
                 }
             }
 
-            promise.set_value(opengl.fonts.regular
-                            && opengl.fonts.title);
-        },
-        std::move(loader_callback)
-        };
+            promise = opengl.fonts.regular && opengl.fonts.title;
+            flag.store(true, std::memory_order_release);
+        }};
 
-    while (loader_result.wait_for(std::chrono::milliseconds(5)) != std::future_status::ready)
+    while (!la.is_done())
     {
         if (!execute_commands(true))
         {
@@ -498,8 +495,6 @@ bool application::load()
 
         if (window.has_opengl())
         {
-            idle::image_t::load_topmost_queued_picture();
-
             if (update_display && std::chrono::steady_clock::now() - lt > minimum_elapsed)
             {
                 lt += std::chrono::duration_cast<std::chrono::steady_clock::time_point::duration>(minimum_elapsed);
@@ -508,7 +503,11 @@ bool application::load()
                     la.draw(opengl);
                 }
                 window.buffer_swap();
+
+                la.tick();
             }
+
+            idle::image_t::load_topmost_queued_picture();
         }
     }
 
@@ -536,9 +535,10 @@ bool application::load()
     }
 #endif
 
+    clock = std::chrono::steady_clock::now();
     room_ctrl.awaken(clock);
 
-    return loader_result.get();
+    return success;
 }
 
 }  // namespace outside

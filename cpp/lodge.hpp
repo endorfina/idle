@@ -17,6 +17,7 @@
     along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
 #pragma once
+#include <atomic>
 #include "drawable.hpp"
 #include "gl.hpp"
 
@@ -26,16 +27,21 @@ class lodge
 {
     idle::image_t picture, background;
     float alpha = 0;
-    // bool loaded = false;
 
   public:
+    std::atomic_bool load_status { false };
+
     template<typename Im1, typename Im2>
     lodge(Im1&& i1, Im2&& i2)
         : picture(std::forward<Im1>(i1)), background(std::forward<Im2>(i2))
     {
     }
 
-    void draw(const graphics::core&);
+    void tick();
+
+    void draw(const graphics::core&) const;
+
+    bool is_done() const;
 };
 
 }  //namespace idle

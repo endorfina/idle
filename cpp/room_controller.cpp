@@ -108,11 +108,6 @@ void controller::awaken(const std::chrono::steady_clock::time_point clock)
                         std::chrono::steady_clock::time_point::duration>(1.5s / application_frames_per_second);
     worker.stop();
 
-    // if (const auto ptr = std::get_if<std::monostate>(&current_variant); ptr && !next_variant.rooms)
-    // {
-    //     next_variant.rooms.emplace(door<hotel::landing::room>{});
-    // }
-
     if (!haiku.has_crashed())
     {
         worker.start([this](std::chrono::steady_clock::time_point step)

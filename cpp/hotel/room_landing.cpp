@@ -74,6 +74,31 @@ void draw_dim_noise(const graphics::noise_program_t& noise, const point_t size, 
 }
 
 template<auto Size, class Rand>
+void tickle_appendages(unsigned times, std::array<float, Size>& ray_array, Rand& rando)
+{
+    static_assert(Size > 0);
+    if (times == 0) return;
+
+    using random_int = std::uniform_int_distribution<unsigned int>;
+    using random_float = std::uniform_real_distribution<float>;
+    random_float amplitude{-.101f, .191f};
+    random_int element_picker{0, Size - 1};
+
+    do
+    {
+        const auto amp = amplitude(rando);
+        const auto elem = element_picker(rando);
+        ray_array[elem] += amp;
+        ray_array[elem < 1 ? Size - 1 : elem - 1] += amp * .41f;
+        ray_array[elem < 2 ? Size - 2 + elem : elem - 2] += amp * .13f;
+        ray_array[elem >= Size - 1 ? 0 : elem + 1] += amp * .41f;
+        ray_array[elem >= Size - 2 ? elem - Size + 2 : elem + 2] += amp * .13f;
+    }
+    while(!!--times);
+}
+
+
+template<auto Size, class Rand>
 unsigned shift_appendages(std::array<float, Size>& ray_array, Rand& rando)
 {
     static_assert(Size > 0);
@@ -89,19 +114,7 @@ unsigned shift_appendages(std::array<float, Size>& ray_array, Rand& rando)
         ray_array[i] = .061f * (val + amp);
     }
 
-    random_float amplitude{-.101f, .191f};
-    random_int element_picker{0, Size - 1};
-
-    for (unsigned i = 0; i < 13; ++i)
-    {
-        const auto amp = amplitude(rando);
-        const auto elem = element_picker(rando);
-        ray_array[elem] += amp;
-        ray_array[elem < 1 ? Size - 1 : elem - 1] += amp * .41f;
-        ray_array[elem < 2 ? Size - 2 + elem : elem - 2] += amp * .13f;
-        ray_array[elem >= Size - 1 ? 0 : elem + 1] += amp * .41f;
-        ray_array[elem >= Size - 2 ? elem - Size + 2 : elem + 2] += amp * .13f;
-    }
+    tickle_appendages(13, ray_array, rando);
 
     return random_int{application_frames_per_second * 3, application_frames_per_second * 11}(rando);
 }
@@ -147,7 +160,7 @@ std::optional<keyring::variant> room::step(const pointer_wrapper& pointer)
 
         if (thing.alpha >= 2.f)
         {
-            idle_try(std::move(destination))
+            return std::move(destination);
         }
     }
     else if (pointer.single_press)
@@ -156,12 +169,7 @@ std::optional<keyring::variant> room::step(const pointer_wrapper& pointer)
 
         if (destination)
         {
-            random_float dist_float3{-.1f, .3f};
-
-            for (auto& leg : thing.legs[0])
-            {
-                leg += dist_float3(fast_random_device);
-            }
+            tickle_appendages(300, thing.legs[1], fast_random_device);
         }
     }
 
