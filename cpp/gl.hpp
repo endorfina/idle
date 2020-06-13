@@ -154,7 +154,7 @@ struct core
         1, 1
     };
 
-    void copy_projection_matrix(const idle::mat4x4_t&) const;
+    void copy_projection_matrix(const idle::mat4x4_noopt_t&) const;
 
     bool setup_graphics();
 

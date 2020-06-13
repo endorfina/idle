@@ -280,7 +280,7 @@ bool core::resize(const buffer_size window_size)
                 prog.noise
             )) return false;
 
-    copy_projection_matrix(idle::mat4x4_t::orthof_static<-1, 1>(0, draw_size.x, 0, draw_size.y));
+    copy_projection_matrix(math::matrices::orthof_static<-1, 1, float>(0, draw_size.x, 0, draw_size.y));
 
     prog.fullbg.use();
     prog.fullbg.set_resolution(math::point_cast<float>(window_size));
@@ -318,7 +318,7 @@ void program_t::set_transform(const idle::mat4x4_noopt_t& f) const
 
 void program_t::set_identity(void) const
 {
-    gl::UniformMatrix4fv(model_handle, 1, gl::FALSE_, static_cast<const GLfloat*>(idle::mat4x4_t::identity()));
+    gl::UniformMatrix4fv(model_handle, 1, gl::FALSE_, static_cast<const GLfloat*>(math::matrices::identity<GLfloat>()));
 }
 
 void program_t::set_view_transform(const idle::mat4x4_t& f) const
@@ -333,7 +333,7 @@ void program_t::set_view_transform(const idle::mat4x4_noopt_t& f) const
 
 void program_t::set_view_identity(void) const
 {
-    gl::UniformMatrix4fv(view_handle, 1, gl::FALSE_, static_cast<const GLfloat*>(idle::mat4x4_t::identity()));
+    gl::UniformMatrix4fv(view_handle, 1, gl::FALSE_, static_cast<const GLfloat*>(math::matrices::identity<GLfloat>()));
 }
 
 void render_program_t::use() const
@@ -569,13 +569,13 @@ void render_program_t::draw_buffer(const render_buffer_t& src) const
 
 
 
-static void set_projection_matrix(const program_t& prog, const idle::mat4x4_t& mat)
+static void set_projection_matrix(const program_t& prog, const idle::mat4x4_noopt_t& mat)
 {
     prog.use();
     gl::UniformMatrix4fv(gl::GetUniformLocation(prog.program_id, "uPM"), 1, gl::FALSE_, static_cast<const GLfloat*>(mat));
 }
 
-void core::copy_projection_matrix(const idle::mat4x4_t& projection_matrix) const
+void core::copy_projection_matrix(const idle::mat4x4_noopt_t& projection_matrix) const
 {
     set_projection_matrix(prog.normal, projection_matrix);
     set_projection_matrix(prog.shift, projection_matrix);

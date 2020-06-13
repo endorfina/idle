@@ -32,18 +32,18 @@ void lodge::draw(const graphics::core& gl) const
 
     gl.prog.normal.use();
     gl.prog.normal.set_color({1, 1, 1, alpha});
-    gl.prog.normal.set_transform(mat4x4_t::translate((gl.draw_size.x - bgsz.x) * .5f, (gl.draw_size.y - bgsz.y) * .5f) * mat4x4_t::scale(bgsc, bgsc, {gl.draw_size.x / 2.f, gl.draw_size.y / 2.f}));
+    gl.prog.normal.set_transform(math::matrices::translate<float>({(gl.draw_size.x - bgsz.x) * .5f, (gl.draw_size.y - bgsz.y) * .5f}) * math::matrices::scale<float>({bgsc, bgsc}, {gl.draw_size.x / 2.f, gl.draw_size.y / 2.f}));
     background.draw(gl.prog.normal);
 
     if (alpha < 1.f)
     {
-        gl.prog.normal.set_transform(mat4x4_t::scale(sinf(alpha * F_TAU_4) *.5f + .5f, point_t((astronaut.right - astronaut.left) / 2, (astronaut.bottom - astronaut.top) / 2))
-            * mat4x4_t::scale(.6f) * mat4x4_t::translate(gl.draw_size.x / 2 - 80.f, 25.f));
+        gl.prog.normal.set_transform(math::matrices::uniform_scale<float>(sinf(alpha * F_TAU_4) *.5f + .5f, {(astronaut.right - astronaut.left) / 2, (astronaut.bottom - astronaut.top) / 2})
+            * math::matrices::uniform_scale(.6f) * math::matrices::translate<float>({gl.draw_size.x / 2 - 80.f, 25.f}));
         gl.prog.normal.set_color({1, 1, 1, alpha * alpha});
     }
     else
     {
-        gl.prog.normal.set_transform(mat4x4_t::scale(.6f) * mat4x4_t::translate(gl.draw_size.x / 2 - 80.f, 25.f));
+        gl.prog.normal.set_transform(math::matrices::uniform_scale(.6f) * math::matrices::translate<float>({gl.draw_size.x / 2 - 80.f, 25.f}));
     }
     picture.draw(gl.prog.normal, astronaut);
 
@@ -57,7 +57,7 @@ void lodge::draw(const graphics::core& gl) const
 
     gl.prog.normal.use();
     gl.prog.normal.set_color({1, 1, 1, 1});
-    gl.prog.normal.set_transform(mat4x4_t::rotate(math::degtorad<float>(90)) * mat4x4_t::scale(.4f) * mat4x4_t::translate(gl.draw_size.x - 1, 1));
+    gl.prog.normal.set_transform(math::matrices::rotate(math::degtorad<float>(90)) * math::matrices::uniform_scale(.4f) * math::matrices::translate<float>({gl.draw_size.x - 1.f, 1.f}));
     picture.draw(gl.prog.normal, text_cp);
 }
 

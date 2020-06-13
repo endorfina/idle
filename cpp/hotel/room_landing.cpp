@@ -150,13 +150,13 @@ std::optional<keyring::variant> room::step(const pointer_wrapper& pointer)
         {
             clicked_during_intro = true;
 
-            if (thing.alpha > .98f)
+            if (thing.alpha > .81f)
                 destination = gui.click<keyring::variant>(pointer.cursor.pos);
         }
     }
     else if (destination)
     {
-        thing.alpha = std::min<float>(thing.alpha + .0016f, 2.f);
+        thing.alpha = std::min<float>(thing.alpha + .002f, 2.f);
 
         if (thing.alpha >= 2.f)
         {
@@ -169,7 +169,7 @@ std::optional<keyring::variant> room::step(const pointer_wrapper& pointer)
 
         if (destination)
         {
-            tickle_appendages(300, thing.legs[1], fast_random_device);
+            tickle_appendages(120, thing.legs[1], fast_random_device);
         }
     }
 
@@ -195,7 +195,7 @@ void room::draw(const graphics::core& gl) const
     gl.prog.gradient.use();
     gl.prog.gradient.set_color(dim_color, 0);
     gl.prog.gradient.set_secondary_color(dim_color, math::sqr(alpha_sine));
-    gl.prog.gradient.set_view_transform(mat4x4_t::translate(gl.draw_size.x / 2, gl.draw_size.y / 2));
+    gl.prog.gradient.set_view_transform(math::matrices::translate(point_t{gl.draw_size.x / 2.f, gl.draw_size.y / 2.f}));
 
     constexpr auto div = F_TAU / static_cast<float>(std::tuple_size<great_crimson_thing::arm_t>::value);
     constexpr auto array_len = std::tuple_size<great_crimson_thing::arm_t>::value + 2;
@@ -237,8 +237,8 @@ void room::draw(const graphics::core& gl) const
     const float higher_ratio = std::max(4.f / 3.f, float(higher_draw_size) / float(lower_draw_size));
     const float adaptive_mult = higher_ratio / (4.f / 3.f);
 
-    gl.prog.gradient.set_transform(mat4x4_t::rotate(thing.rotation)
-            * mat4x4_t::scale(lower_draw_size * (.8f - alpha_sine * .2f) * adaptive_mult));
+    gl.prog.gradient.set_transform(math::matrices::rotate(thing.rotation)
+            * math::matrices::uniform_scale(lower_draw_size * (.8f - alpha_sine * .2f) * adaptive_mult));
 
     gl.prog.gradient.position_vertex(reinterpret_cast<const float *>(&black_points[0]));
     gl.prog.gradient.interpolation_vertex(reinterpret_cast<const float *>(black_interpolation_values.data()));
@@ -248,7 +248,7 @@ void room::draw(const graphics::core& gl) const
     gl.prog.gradient.set_color(ray_color, 0);
     gl.prog.gradient.set_secondary_color(ray_color, .02f + .98f * alpha_sine);
 
-    gl.prog.gradient.set_transform(mat4x4_t::rotate(thing.rotation) * mat4x4_t::scale(lower_draw_size * (.3f + .55f * alpha_sine) * adaptive_mult));
+    gl.prog.gradient.set_transform(math::matrices::rotate(thing.rotation) * math::matrices::uniform_scale(lower_draw_size * (.3f + .55f * alpha_sine) * adaptive_mult));
     gl.prog.gradient.interpolation_vertex(reinterpret_cast<const float *>(red_interpolation_values.data()));
     gl::DrawArrays(gl::TRIANGLE_FAN, 0, array_len);
 

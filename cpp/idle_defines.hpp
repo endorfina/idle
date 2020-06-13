@@ -27,8 +27,8 @@ namespace idle
 using color_t = math::color<GLfloat>;
 using point_t = math::point2<GLfloat>;
 using point_3d_t = math::point3<GLfloat>;
-using mat4x4_t = math::matrix4x4<GLfloat, false>;
-using mat4x4_noopt_t = math::matrix4x4<GLfloat, true>;
+using mat4x4_t = math::matrix4x4<GLfloat, 0>;
+using mat4x4_noopt_t = math::matrix4x4<GLfloat, 1>;
 using rect_t = math::rect<GLfloat>;
 
 enum class text_align { near, center, far };

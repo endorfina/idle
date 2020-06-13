@@ -474,7 +474,7 @@ bool application::load()
 
             if (const auto title_font = platform::asset::hold(idle::config::title_font_asset))
             {
-                if (auto ft = freetype(ext_ascii, title_font.view(), fonts::texture_quality::ok))
+                if (auto ft = freetype(ext_ascii, title_font.view(), fonts::texture_quality::poor))
                 {
                     opengl.fonts.title.emplace(make_font(std::move(*ft)));
                 }

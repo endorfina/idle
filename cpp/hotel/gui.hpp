@@ -159,7 +159,7 @@ struct rectangle
     void draw_background(const graphics::core& gl) const
     {
         gl.prog.fill.use();
-        gl.prog.fill.set_transform(mat4x4_t::scale(Width, Height) * mat4x4_t::translate(this->pos));
+        gl.prog.fill.set_transform(math::matrices::scale(point_t{Width, Height}) * math::matrices::translate(this->pos));
         fill_rectangle(gl.prog.fill, {-.5f,-.5f,.5f,.5f});
     }
 };
@@ -190,7 +190,7 @@ struct rectangle
 //     void draw_bg(const graphics::core& gl) const
 //     {
 //         gl.prog.fill.use();
-//         gl.prog.fill.set_transform(mat4x4_t::scale(W, H) * mat4x4_t::translate(pos));
+//         gl.prog.fill.set_transform(math::matrices::scale(W, H) * math::matrices::translate(pos));
 //         fill_circle(gl.prog.fill, {0, 0}, .5f, 16);
 //     }
 // };
@@ -246,7 +246,7 @@ struct button : Pos
         }();
 
         gl.prog.fill.use();
-        gl.prog.fill.set_transform(mat4x4_t::translate(this->pos));
+        gl.prog.fill.set_transform(math::matrices::translate(this->pos));
         gl.prog.fill.position_vertex(reinterpret_cast<const GLfloat*>(fan.data()));
         gl::DrawArrays(gl::TRIANGLE_FAN, 0, fan.size());
     }

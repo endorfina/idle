@@ -23,30 +23,38 @@
 #include <tuple>
 #include <string_view>
 #include <math.hpp>
-#include "gl.hpp"
+#include "idle_defines.hpp"
 
 namespace idle::glass
 {
 
-template <typename... Appendages>
+namespace blocks
+{
+
 struct bone
 {
-    float length;
-    point_3d_t angle, lower_bound, upper_bound;
-    float stiffness;
+    float length = 10;
+    point_3d_t angle; //, lower_bound, upper_bound;
+    //float stiffness = 0;
+
+    static constexpr unsigned size = 1;
+};
+
+template<typename...Appendages>
+struct joint
+{
+    bone root;
     std::tuple<Appendages...> appendages;
 
-    constexpr bone() :
-        length(10),
-        angle{0, 0, 0},
-        lower_bound{0, 0, 0},
-        upper_bound{0, 0, 0},
-        stiffness{0},
-        appendages{}
-    {}
-
-    template<unsigned Index>
+    template<unsigned Index = 0>
     constexpr auto& get()
+    {
+        static_assert(Index < sizeof...(Appendages));
+        return std::get<Index>(appendages);
+    }
+
+    template<unsigned Index = 0>
+    constexpr auto& get() const
     {
         static_assert(Index < sizeof...(Appendages));
         return std::get<Index>(appendages);
@@ -55,8 +63,17 @@ struct bone
     static constexpr unsigned size = (1 + ... + Appendages::size);
 };
 
-template <unsigned FrameSize, unsigned AnimLength>
-using atable = std::array<std::array<float, FrameSize * 2>, AnimLength>;
+struct arm
+{
+    joint<joint<bone>> bones;
+
+    constexpr void set_bone_length(const float len)
+    {
+        bones.root.length = len;
+        bones.get<0>().root.length = len;
+        bones.get<0>().get<0>().length = len / 2.f;
+    }
+};
 
 template<typename Value>
 struct symmetry
@@ -65,6 +82,45 @@ struct symmetry
 
     static constexpr unsigned size = Value::size * 2;
 };
+
+}  // namespace blocks
+
+namespace meta
+{
+
+template<typename Callable>
+constexpr void apply_for_all(const Callable& func, blocks::bone& node)
+{
+    func(node);
+}
+
+template<unsigned Index = 0, typename Callable, typename...Nodes>
+constexpr void apply_for_all(const Callable& func, blocks::joint<Nodes...>& node)
+{
+    if constexpr (Index == 0)
+    {
+        func(node.root);
+    }
+
+    if constexpr (sizeof...(Nodes) > 0)
+    {
+        apply_for_all(func, node.template get<Index>());
+
+        if constexpr (Index + 1 < sizeof...(Nodes))
+            apply_for_all<Index + 1>(func, node);
+    }
+}
+
+template<typename Callable>
+constexpr void apply_for_all(const Callable& func, blocks::arm& node)
+{
+    apply_for_all(func, node.bones);
+}
+
+}  // namespace meta
+
+template <unsigned FrameSize, unsigned AnimLength>
+using atable = std::array<std::array<float, FrameSize * 2>, AnimLength>;
 
 template<typename... Links>
 struct muscle
@@ -103,48 +159,39 @@ public:
     }
 };
 
-template<unsigned Index = 0, typename Callable, typename...Nodes>
-constexpr void apply_for_all(const Callable& func, bone<Nodes...>& node)
-{
-    if constexpr (Index == 0)
-    {
-        func(node);
-    }
-
-    if constexpr (sizeof...(Nodes) > 0)
-    {
-        apply_for_all<0>(func, node.template get<Index>());
-
-        if constexpr (Index + 1 < sizeof...(Nodes))
-            apply_for_all<Index + 1>(func, node);
-    }
-}
-
-namespace spine
+namespace closet
 {
 
 struct humanoid
 {
-    using limb_bone = bone<bone<bone<>>>;
-    symmetry<limb_bone> arms, legs;
-    bone<> head;
+    blocks::symmetry<blocks::arm> arms, legs;
+    blocks::bone head;
     point_3d_t center, rotation;
 
     static constexpr humanoid get_default()
     {
-        humanoid hu{};
-        constexpr auto mat = mat4x4_t::rotate(0);
+        humanoid hu;
+        hu.head.length = 10;
 
-        apply_for_all([](auto& b){ b.length = 15; }, hu.arms.left);
-        apply_for_all([](auto& b){ b.length = 15; }, hu.arms.right);
+        hu.arms.left.set_bone_length(10);
+        hu.arms.right.set_bone_length(10);
 
-        apply_for_all([](auto& b){ b.length = 20; }, hu.legs.left);
-        apply_for_all([](auto& b){ b.length = 20; }, hu.legs.right);
+        hu.arms.left.bones.root.angle = {F_TAU / 8, 0, 0};
+        hu.arms.left.bones.get<0>().root.angle = {F_TAU / 8, 0, 0};
+        hu.arms.right.bones.root.angle.x = - hu.arms.left.bones.root.angle.x;
+        hu.arms.right.bones.get<0>().root.angle.x = - hu.arms.left.bones.get<0>().root.angle.x;
+
+        hu.legs.left.set_bone_length(15);
+        hu.legs.right.set_bone_length(15);
+
+        hu.legs.left.bones.root.angle = {F_TAU / 16, 0, 0};
+        hu.legs.right.bones.root.angle.x = - hu.legs.left.bones.root.angle.x;
+
         return hu;
     }
 };
 
-}  // namespace spine
+}  // namespace closet
 
 template <unsigned Steps>
 struct blob

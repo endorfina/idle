@@ -95,7 +95,7 @@ void font_t::draw_custom_animation(const graphics::text_program_t& rcp, const st
                 if (anim[1].scale < F_TAU_4)
                     rcp.set_color(col, col.a * (1 - ::math::sqr(cosf(anim->scale))));
 
-                rcp.set_transform(idle::mat4x4_t::scale(1 - cosf(anim->scale) / 2) * idle::mat4x4_t::rotate(anim->rotation));
+                rcp.set_transform(math::matrices::uniform_scale<float>(1 - cosf(anim->scale) / 2) * math::matrices::rotate(anim->rotation));
                 draw_glyph(gi->second, rcp, cell_size, pos);
                 ++anim;
             }

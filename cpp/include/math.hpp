@@ -448,7 +448,7 @@ struct point2
 
     using value_type = T;
     value_type x, y;
-    constexpr point2() = default;
+    constexpr point2() : x(0), y(0) {};
     constexpr point2(value_type a, value_type b) : x(a), y(b) {}
 
     constexpr point2& operator+=(const point2& other)
@@ -528,7 +528,7 @@ struct point3
 
     using value_type = T;
     value_type x, y, z;
-    constexpr point3() = default;
+    constexpr point3() : x(0), y(0), z(0) {};
     constexpr point3(value_type a, value_type b, value_type c) : x(a), y(b), z(c) {}
 
     constexpr point3& operator+=(const point3& other)
@@ -723,21 +723,190 @@ struct rect {
         : left(_a.x), top(_a.y), right(_b.x), bottom(_b.y) {}
 };
 
+namespace meta
+{
 
-template<typename T, bool Secure = true>
+template<typename table_type>
+constexpr table_type multiplication_2d(const table_type& first, const table_type& second)
+{
+    return {
+        first[0] * second[0] + first[1] * second[4],
+        first[0] * second[1] + first[1] * second[5],
+        0,
+        0,
+
+        first[4] * second[0] + first[5] * second[4],
+        first[4] * second[1] + first[5] * second[5],
+        0,
+        0,
+
+        0,
+        0,
+        1,
+        0,
+
+        first[12] * second[0] + first[13] * second[4] + second[12],
+        first[12] * second[1] + first[13] * second[5] + second[13],
+        0,
+        1
+    };
+}
+
+template<typename table_type>
+constexpr table_type multiplication(const table_type& first, const table_type& second)
+{
+    table_type dest{};
+    for (int i = 0; i < 16; ++i) {
+        dest[i] = first[i - (i % 4)] * second[i % 4];
+        for (int n = 1; n < 4; ++n)
+            dest[i] += first[i - (i % 4) + n] * second[(i % 4) + n * 4];
+    }
+    return dest;
+}
+
+template<typename table_type>
+constexpr static bool invert_matrix(table_type &mat_)
+{
+    const table_type inv
+    {
+        mat_[5]  * mat_[10] * mat_[15] -
+        mat_[5]  * mat_[11] * mat_[14] -
+        mat_[9]  * mat_[6]  * mat_[15] +
+        mat_[9]  * mat_[7]  * mat_[14] +
+        mat_[13] * mat_[6]  * mat_[11] -
+        mat_[13] * mat_[7]  * mat_[10],
+
+        -mat_[1]  * mat_[10] * mat_[15] +
+        mat_[1]  * mat_[11] * mat_[14] +
+        mat_[9]  * mat_[2] * mat_[15] -
+        mat_[9]  * mat_[3] * mat_[14] -
+        mat_[13] * mat_[2] * mat_[11] +
+        mat_[13] * mat_[3] * mat_[10],
+
+        mat_[1]  * mat_[6] * mat_[15] -
+        mat_[1]  * mat_[7] * mat_[14] -
+        mat_[5]  * mat_[2] * mat_[15] +
+        mat_[5]  * mat_[3] * mat_[14] +
+        mat_[13] * mat_[2] * mat_[7] -
+        mat_[13] * mat_[3] * mat_[6],
+
+        -mat_[1] * mat_[6] * mat_[11] +
+        mat_[1] * mat_[7] * mat_[10] +
+        mat_[5] * mat_[2] * mat_[11] -
+        mat_[5] * mat_[3] * mat_[10] -
+        mat_[9] * mat_[2] * mat_[7] +
+        mat_[9] * mat_[3] * mat_[6],
+
+        -mat_[4]  * mat_[10] * mat_[15] +
+        mat_[4]  * mat_[11] * mat_[14] +
+        mat_[8]  * mat_[6]  * mat_[15] -
+        mat_[8]  * mat_[7]  * mat_[14] -
+        mat_[12] * mat_[6]  * mat_[11] +
+        mat_[12] * mat_[7]  * mat_[10],
+
+        mat_[0]  * mat_[10] * mat_[15] -
+        mat_[0]  * mat_[11] * mat_[14] -
+        mat_[8]  * mat_[2] * mat_[15] +
+        mat_[8]  * mat_[3] * mat_[14] +
+        mat_[12] * mat_[2] * mat_[11] -
+        mat_[12] * mat_[3] * mat_[10],
+
+        -mat_[0]  * mat_[6] * mat_[15] +
+        mat_[0]  * mat_[7] * mat_[14] +
+        mat_[4]  * mat_[2] * mat_[15] -
+        mat_[4]  * mat_[3] * mat_[14] -
+        mat_[12] * mat_[2] * mat_[7] +
+        mat_[12] * mat_[3] * mat_[6],
+
+        mat_[0] * mat_[6] * mat_[11] -
+        mat_[0] * mat_[7] * mat_[10] -
+        mat_[4] * mat_[2] * mat_[11] +
+        mat_[4] * mat_[3] * mat_[10] +
+        mat_[8] * mat_[2] * mat_[7] -
+        mat_[8] * mat_[3] * mat_[6],
+
+        mat_[4]  * mat_[9] * mat_[15] -
+        mat_[4]  * mat_[11] * mat_[13] -
+        mat_[8]  * mat_[5] * mat_[15] +
+        mat_[8]  * mat_[7] * mat_[13] +
+        mat_[12] * mat_[5] * mat_[11] -
+        mat_[12] * mat_[7] * mat_[9],
+
+        -mat_[0]  * mat_[9] * mat_[15] +
+        mat_[0]  * mat_[11] * mat_[13] +
+        mat_[8]  * mat_[1] * mat_[15] -
+        mat_[8]  * mat_[3] * mat_[13] -
+        mat_[12] * mat_[1] * mat_[11] +
+        mat_[12] * mat_[3] * mat_[9],
+
+        mat_[0]  * mat_[5] * mat_[15] -
+        mat_[0]  * mat_[7] * mat_[13] -
+        mat_[4]  * mat_[1] * mat_[15] +
+        mat_[4]  * mat_[3] * mat_[13] +
+        mat_[12] * mat_[1] * mat_[7] -
+        mat_[12] * mat_[3] * mat_[5],
+
+        -mat_[0] * mat_[5] * mat_[11] +
+        mat_[0] * mat_[7] * mat_[9] +
+        mat_[4] * mat_[1] * mat_[11] -
+        mat_[4] * mat_[3] * mat_[9] -
+        mat_[8] * mat_[1] * mat_[7] +
+        mat_[8] * mat_[3] * mat_[5],
+
+        -mat_[4]  * mat_[9] * mat_[14] +
+        mat_[4]  * mat_[10] * mat_[13] +
+        mat_[8]  * mat_[5] * mat_[14] -
+        mat_[8]  * mat_[6] * mat_[13] -
+        mat_[12] * mat_[5] * mat_[10] +
+        mat_[12] * mat_[6] * mat_[9],
+
+        mat_[0]  * mat_[9] * mat_[14] -
+        mat_[0]  * mat_[10] * mat_[13] -
+        mat_[8]  * mat_[1] * mat_[14] +
+        mat_[8]  * mat_[2] * mat_[13] +
+        mat_[12] * mat_[1] * mat_[10] -
+        mat_[12] * mat_[2] * mat_[9],
+
+        -mat_[0]  * mat_[5] * mat_[14] +
+        mat_[0]  * mat_[6] * mat_[13] +
+        mat_[4]  * mat_[1] * mat_[14] -
+        mat_[4]  * mat_[2] * mat_[13] -
+        mat_[12] * mat_[1] * mat_[6] +
+        mat_[12] * mat_[2] * mat_[5],
+
+        mat_[0] * mat_[5] * mat_[10] -
+        mat_[0] * mat_[6] * mat_[9] -
+        mat_[4] * mat_[1] * mat_[10] +
+        mat_[4] * mat_[2] * mat_[9] +
+        mat_[8] * mat_[1] * mat_[6] -
+        mat_[8] * mat_[2] * mat_[5]
+    };
+
+    if (const auto det = mat_[0] * inv[0] + mat_[1] * inv[4] + mat_[2] * inv[8] + mat_[3] * inv[12])
+    {
+        std::transform(std::begin(inv), std::end(inv), std::begin(mat_), [det](auto a) { return a / det; });
+        return true;
+    }
+    return false;
+}
+
+}  // namespace meta
+
+template<typename T, unsigned Level = 0>
 struct matrix4x4
 {
     static_assert(std::is_arithmetic_v<T>);
 
-protected:
     using value_type = T;
     using table_type = std::array<value_type, 16>;
     table_type data;
 
-public:
     constexpr matrix4x4() = default;
 
     constexpr matrix4x4(const table_type& t) : data(t) {}
+
+    template <unsigned L>
+    constexpr matrix4x4(const matrix4x4<value_type, L>& m) : data(m.data) {}
 
     constexpr explicit operator const value_type *() const { return data.data(); }
 
@@ -745,367 +914,206 @@ public:
 
     constexpr decltype(auto) operator [](unsigned i) { return data[i]; }
 
-protected:
-    constexpr static table_type _multiplication_special_(const table_type& first, const table_type& second)
+    template <unsigned L>
+    constexpr matrix4x4& operator*=(const matrix4x4<value_type, L>& other)
     {
-        table_type dest{first};
-        dest.fill(0);
-        dest[0] = first[0] * second[0] + first[1] * second[4];
-        dest[1] = first[0] * second[1] + first[1] * second[5];
-        dest[4] = first[4] * second[0] + first[5] * second[4];
-        dest[5] = first[4] * second[1] + first[5] * second[5];
-        dest[10] = 1;
-        dest[12] = first[12] * second[0] + first[13] * second[4] + second[12];
-        dest[13] = first[12] * second[1] + first[13] * second[5] + second[13];
-        dest[15] = 1;
-        return dest;
-    }
-
-private:
-    constexpr static table_type _multiplication_(const table_type& first, const table_type& second)
-    {
-        table_type dest{first};
-        for (int i = 0; i < 16; ++i) {
-            dest[i] = first[i - (i % 4)] * second[i % 4];
-            for (int n = 1; n < 4; ++n)
-                dest[i] += first[i - (i % 4) + n] * second[(i % 4) + n * 4];
-        }
-        return dest;
-    }
-
-    constexpr static bool _invert_matrix_(table_type &_mat)
-    {
-        const table_type inv
-        {
-            _mat[5]  * _mat[10] * _mat[15] -
-            _mat[5]  * _mat[11] * _mat[14] -
-            _mat[9]  * _mat[6]  * _mat[15] +
-            _mat[9]  * _mat[7]  * _mat[14] +
-            _mat[13] * _mat[6]  * _mat[11] -
-            _mat[13] * _mat[7]  * _mat[10],
-
-            -_mat[1]  * _mat[10] * _mat[15] +
-            _mat[1]  * _mat[11] * _mat[14] +
-            _mat[9]  * _mat[2] * _mat[15] -
-            _mat[9]  * _mat[3] * _mat[14] -
-            _mat[13] * _mat[2] * _mat[11] +
-            _mat[13] * _mat[3] * _mat[10],
-
-            _mat[1]  * _mat[6] * _mat[15] -
-            _mat[1]  * _mat[7] * _mat[14] -
-            _mat[5]  * _mat[2] * _mat[15] +
-            _mat[5]  * _mat[3] * _mat[14] +
-            _mat[13] * _mat[2] * _mat[7] -
-            _mat[13] * _mat[3] * _mat[6],
-
-            -_mat[1] * _mat[6] * _mat[11] +
-            _mat[1] * _mat[7] * _mat[10] +
-            _mat[5] * _mat[2] * _mat[11] -
-            _mat[5] * _mat[3] * _mat[10] -
-            _mat[9] * _mat[2] * _mat[7] +
-            _mat[9] * _mat[3] * _mat[6],
-
-            -_mat[4]  * _mat[10] * _mat[15] +
-            _mat[4]  * _mat[11] * _mat[14] +
-            _mat[8]  * _mat[6]  * _mat[15] -
-            _mat[8]  * _mat[7]  * _mat[14] -
-            _mat[12] * _mat[6]  * _mat[11] +
-            _mat[12] * _mat[7]  * _mat[10],
-
-            _mat[0]  * _mat[10] * _mat[15] -
-            _mat[0]  * _mat[11] * _mat[14] -
-            _mat[8]  * _mat[2] * _mat[15] +
-            _mat[8]  * _mat[3] * _mat[14] +
-            _mat[12] * _mat[2] * _mat[11] -
-            _mat[12] * _mat[3] * _mat[10],
-
-            -_mat[0]  * _mat[6] * _mat[15] +
-            _mat[0]  * _mat[7] * _mat[14] +
-            _mat[4]  * _mat[2] * _mat[15] -
-            _mat[4]  * _mat[3] * _mat[14] -
-            _mat[12] * _mat[2] * _mat[7] +
-            _mat[12] * _mat[3] * _mat[6],
-
-            _mat[0] * _mat[6] * _mat[11] -
-            _mat[0] * _mat[7] * _mat[10] -
-            _mat[4] * _mat[2] * _mat[11] +
-            _mat[4] * _mat[3] * _mat[10] +
-            _mat[8] * _mat[2] * _mat[7] -
-            _mat[8] * _mat[3] * _mat[6],
-
-            _mat[4]  * _mat[9] * _mat[15] -
-            _mat[4]  * _mat[11] * _mat[13] -
-            _mat[8]  * _mat[5] * _mat[15] +
-            _mat[8]  * _mat[7] * _mat[13] +
-            _mat[12] * _mat[5] * _mat[11] -
-            _mat[12] * _mat[7] * _mat[9],
-
-            -_mat[0]  * _mat[9] * _mat[15] +
-            _mat[0]  * _mat[11] * _mat[13] +
-            _mat[8]  * _mat[1] * _mat[15] -
-            _mat[8]  * _mat[3] * _mat[13] -
-            _mat[12] * _mat[1] * _mat[11] +
-            _mat[12] * _mat[3] * _mat[9],
-
-            _mat[0]  * _mat[5] * _mat[15] -
-            _mat[0]  * _mat[7] * _mat[13] -
-            _mat[4]  * _mat[1] * _mat[15] +
-            _mat[4]  * _mat[3] * _mat[13] +
-            _mat[12] * _mat[1] * _mat[7] -
-            _mat[12] * _mat[3] * _mat[5],
-
-            -_mat[0] * _mat[5] * _mat[11] +
-            _mat[0] * _mat[7] * _mat[9] +
-            _mat[4] * _mat[1] * _mat[11] -
-            _mat[4] * _mat[3] * _mat[9] -
-            _mat[8] * _mat[1] * _mat[7] +
-            _mat[8] * _mat[3] * _mat[5],
-
-            -_mat[4]  * _mat[9] * _mat[14] +
-            _mat[4]  * _mat[10] * _mat[13] +
-            _mat[8]  * _mat[5] * _mat[14] -
-            _mat[8]  * _mat[6] * _mat[13] -
-            _mat[12] * _mat[5] * _mat[10] +
-            _mat[12] * _mat[6] * _mat[9],
-
-            _mat[0]  * _mat[9] * _mat[14] -
-            _mat[0]  * _mat[10] * _mat[13] -
-            _mat[8]  * _mat[1] * _mat[14] +
-            _mat[8]  * _mat[2] * _mat[13] +
-            _mat[12] * _mat[1] * _mat[10] -
-            _mat[12] * _mat[2] * _mat[9],
-
-            -_mat[0]  * _mat[5] * _mat[14] +
-            _mat[0]  * _mat[6] * _mat[13] +
-            _mat[4]  * _mat[1] * _mat[14] -
-            _mat[4]  * _mat[2] * _mat[13] -
-            _mat[12] * _mat[1] * _mat[6] +
-            _mat[12] * _mat[2] * _mat[5],
-
-            _mat[0] * _mat[5] * _mat[10] -
-            _mat[0] * _mat[6] * _mat[9] -
-            _mat[4] * _mat[1] * _mat[10] +
-            _mat[4] * _mat[2] * _mat[9] +
-            _mat[8] * _mat[1] * _mat[6] -
-            _mat[8] * _mat[2] * _mat[5]
-        };
-
-        if (const auto det = _mat[0] * inv[0] + _mat[1] * inv[4] + _mat[2] * inv[8] + _mat[3] * inv[12])
-        {
-            std::transform(std::begin(inv), std::end(inv), std::begin(_mat), [det](auto a) { return a / det; });
-            return true;
-        }
-        return false;
-    }
-
-public:
-    template <typename U, bool O>
-    constexpr matrix4x4& operator*=(const matrix4x4<U, O>& other)
-    {
-        if constexpr (O || Secure)
-            data = _multiplication_(data, other.data);
+        if constexpr (L || Level)
+            data = meta::multiplication(data, other.data);
         else
-            data = _multiplication_special_(data, other.data);
+            data = meta::multiplication_2d(data, other.data);
         return *this;
     }
-
-    template <typename U, bool O>
-    friend constexpr matrix4x4 operator*(matrix4x4 lhs, const matrix4x4<U, O>& rhs)
-    {
-        return lhs *= rhs;
-    }
-
-
 
     constexpr matrix4x4& invert(void)
     {
-        _invert_matrix_(data);
+        meta::invert_matrix(data);
         return *this;
-    }
-
-    constexpr static matrix4x4 identity()
-    {
-        return table_type{1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1};
-    }
-
-    constexpr static matrix4x4 translate(value_type x, value_type y)
-    {
-        matrix4x4 mat{ identity() };
-        mat[12] = x;
-        mat[13] = y;
-        return mat;
-    }
-
-    constexpr static matrix4x4 translate(const point2<value_type> &p)
-    {
-        matrix4x4 mat{ identity() };
-        mat[12] = p.x;
-        mat[13] = p.y;
-        return mat;
-    }
-
-    constexpr static matrix4x4 translate(const point3<value_type> &p)
-    {
-        matrix4x4 mat{ identity() };
-        mat[12] = p.x;
-        mat[13] = p.y;
-        mat[14] = p.z;
-        return mat;
-    }
-
-    constexpr static matrix4x4 scale(value_type w, value_type h)
-    {
-        matrix4x4 mat{ identity() };
-        mat[0] = w;
-        mat[5] = h;
-        return mat;
-    }
-
-    constexpr static matrix4x4 scale(value_type w, value_type h, value_type d)
-    {
-        matrix4x4 mat{ identity() };
-        mat[0] = w;
-        mat[5] = h;
-        mat[10] = d;
-        return mat;
-    }
-
-    constexpr static matrix4x4 scale(value_type w, value_type h, const point2<value_type> &p)
-    {
-        matrix4x4 mat{ identity() };
-        mat[0] = w;
-        mat[5] = h;
-        mat[12] = -p.x * w + p.x;
-        mat[13] = -p.y * h + p.y;
-        return mat;
-    }
-
-    constexpr static matrix4x4 scale(const point2<value_type> p)
-    {
-        matrix4x4 mat{ identity() };
-        mat[0] = p.x;
-        mat[5] = p.y;
-        return mat;
-    }
-
-    constexpr static matrix4x4 scale(value_type sc, const point2<value_type> &p)
-    {
-        matrix4x4 mat{ identity() };
-        mat[0] = sc;
-        mat[5] = sc;
-        mat[12] = -p.x * sc + p.x;
-        mat[13] = -p.y * sc + p.y;
-        return mat;
-    }
-
-    constexpr static matrix4x4 scale(value_type sc)
-    {
-        matrix4x4 mat{ identity() };
-        mat[0] = sc;
-        mat[5] = sc;
-        return mat;
-    }
-
-    constexpr static matrix4x4 rotate_deg(value_type angle, const point2<value_type> &p)
-    {
-        const auto r = degtorad(angle);
-        matrix4x4 mat{ identity() };
-        mat[5] = mat[0] = const_math::cos(r);
-        mat[4] = -(mat[1] = const_math::sin(r));
-
-        mat[12] = -p.x * mat[0] + -p.y * mat[4] + p.x;
-        mat[13] = -p.x * mat[1] + -p.y * mat[5] + p.y;
-        return mat;
-    }
-
-    constexpr static matrix4x4 rotate_x(value_type rad)
-    {
-        matrix4x4 mat{ identity() };
-        mat[10] = mat[5] = const_math::cos(rad);
-        mat[9] = -(mat[6] = const_math::sin(rad));
-        return mat;
-    }
-
-    constexpr static matrix4x4 rotate_y(value_type rad)
-    {
-        matrix4x4 mat{ identity() };
-        mat[10] = mat[0] = const_math::cos(rad);
-        mat[2] = -(mat[8] = const_math::sin(rad));
-        return mat;
-    }
-
-    constexpr static matrix4x4 rotate(value_type rad)
-    {
-        matrix4x4 mat{ identity() };
-        mat[5] = mat[0] = const_math::cos(rad);
-        mat[4] = -(mat[1] = const_math::sin(rad));
-        return mat;
-    }
-
-    constexpr static matrix4x4 rotate(value_type rad, const point2<value_type> &p)
-    {
-        matrix4x4 mat{ identity() };
-        mat[5] = mat[0] = const_math::cos(rad);
-        mat[4] = -(mat[1] = const_math::sin(rad));
-
-        mat[12] = -p.x * mat[0] + -p.y * mat[4] + p.x;
-        mat[13] = -p.x * mat[1] + -p.y * mat[5] + p.y;
-        return mat;
-    }
-
-    constexpr static matrix4x4 orthof(value_type left, value_type right, value_type top, value_type bottom, value_type near, value_type far)
-    {
-        matrix4x4 mat{ identity() };
-        if (right != left && top != bottom && far != near) {
-            mat[0] = 2 / (right - left);
-            mat[5] = 2 / (top - bottom);
-            mat[10] = -2 / (far - near);
-            mat[15] = 1.f;
-            mat[14] = -((far + near) / (far - near));
-            mat[13] = -((top + bottom) / (top - bottom));
-            mat[12] = -((right + left) / (right - left));
-        }
-        return mat;
-    }
-
-    template<int Near, int Far>
-    constexpr static matrix4x4 orthof_static(value_type left, value_type right, value_type top, value_type bottom)
-    {
-        matrix4x4 mat{ identity() };
-        static_assert(Far != Near);
-        if (right != left && top != bottom) {
-            mat[0] = 2 / (right - left);
-            mat[5] = 2 / (top - bottom);
-            mat[10] = -2 / static_cast<value_type>(Far - Near);
-            mat[15] = 1.f;
-            mat[14] = -(static_cast<value_type>(Far + Near) / static_cast<value_type>(Far - Near));
-            mat[13] = -((top + bottom) / (top - bottom));
-            mat[12] = -((right + left) / (right - left));
-        }
-        return mat;
     }
 
     constexpr matrix4x4& reverse_multiply(const matrix4x4& other)
     {
-        this->data = _multiplication_(other.data, this->data);
+        this->data = meta::multiplication(other.data, this->data);
         return *this;
     }
 };
 
-template<typename T, bool O>
+template <typename U, unsigned O1, unsigned O2>
+constexpr matrix4x4<U, std::max(O1, O2)> operator*(matrix4x4<U, O1> lhs, const matrix4x4<U, O2>& rhs)
+{
+    return lhs *= rhs;
+}
+
+template<typename T, unsigned O>
 constexpr point2<T> operator*(const matrix4x4<T, O>& mat, const point2<T> p)
 {
     return { mat[0] * p.x + mat[4] * p.y + mat[12],
              mat[1] * p.x + mat[5] * p.y + mat[13] };
 }
 
-template<typename T, bool O>
+template<typename T, unsigned O>
 constexpr point3<T> operator*(const matrix4x4<T, O>& mat, const point3<T> p)
 {
     return { mat[0] * p.x + mat[4] * p.y + mat[8] * p.z + mat[12],
              mat[1] * p.x + mat[5] * p.y + mat[9] * p.z + mat[13],
              mat[2] * p.x + mat[6] * p.y + mat[10] * p.z + mat[14] };
 }
+
+namespace matrices
+{
+
+template<typename T>
+constexpr matrix4x4<T, 0> identity()
+{
+    return std::array<T, 16>{1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1};
+}
+
+template<typename T>
+constexpr auto translate(const point2<T> &p)
+{
+    auto mat = identity<T>();
+    mat[12] = p.x;
+    mat[13] = p.y;
+    return mat;
+}
+
+template<typename T>
+constexpr matrix4x4<T, 1> translate(const point3<T> &p)
+{
+    auto mat = identity<T>();
+    mat[12] = p.x;
+    mat[13] = p.y;
+    mat[14] = p.z;
+    return mat;
+}
+
+template<typename T>
+constexpr auto scale(const point2<T> sc)
+{
+    auto mat = identity<T>();
+    mat[0] = sc.x;
+    mat[5] = sc.y;
+    return mat;
+}
+
+template<typename T>
+constexpr matrix4x4<T, 1> scale(const point3<T> sc)
+{
+    auto mat = identity<T>();
+    mat[0] = sc.x;
+    mat[5] = sc.y;
+    mat[10] = sc.z;
+    return mat;
+}
+
+template<typename T>
+constexpr auto scale(const point2<T> sc, const point2<T> p)
+{
+    auto mat = identity<T>();
+    mat[0] = sc.x;
+    mat[5] = sc.y;
+    mat[12] = -p.x * sc.x + p.x;
+    mat[13] = -p.y * sc.y + p.y;
+    return mat;
+}
+
+template<typename T>
+constexpr auto uniform_scale(const T sc)
+{
+    auto mat = identity<T>();
+    mat[0] = sc;
+    mat[5] = sc;
+    return mat;
+}
+
+template<typename T>
+constexpr auto uniform_scale(const T sc, const point2<T> p)
+{
+    auto mat = identity<T>();
+    mat[0] = sc;
+    mat[5] = sc;
+    mat[12] = -p.x * sc + p.x;
+    mat[13] = -p.y * sc + p.y;
+    return mat;
+}
+
+template<typename T>
+constexpr matrix4x4<T, 1> rotate_x(const T rad)
+{
+    auto mat = identity<T>();
+    mat[10] = mat[5] = const_math::cos(rad);
+    mat[9] = -(mat[6] = const_math::sin(rad));
+    return mat;
+}
+
+template<typename T>
+constexpr matrix4x4<T, 1> rotate_y(const T rad)
+{
+    auto mat = identity<T>();
+    mat[10] = mat[0] = const_math::cos(rad);
+    mat[2] = -(mat[8] = const_math::sin(rad));
+    return mat;
+}
+
+template<typename T>
+constexpr auto rotate(const T rad)
+{
+    auto mat = identity<T>();
+    mat[5] = mat[0] = const_math::cos(rad);
+    mat[4] = -(mat[1] = const_math::sin(rad));
+    return mat;
+}
+
+template<typename T>
+constexpr auto rotate(const T rad, const point2<T> &p)
+{
+    auto mat = identity<T>();
+    mat[5] = mat[0] = const_math::cos(rad);
+    mat[4] = -(mat[1] = const_math::sin(rad));
+
+    mat[12] = -p.x * mat[0] + -p.y * mat[4] + p.x;
+    mat[13] = -p.x * mat[1] + -p.y * mat[5] + p.y;
+    return mat;
+}
+
+template<typename T>
+constexpr matrix4x4<T, 1> orthof(const T left, const T right, const T top, const T bottom, const T near, const T far)
+{
+    auto mat = identity<T>();
+
+    if (right != left && top != bottom && far != near)
+    {
+        mat[0] = 2 / (right - left);
+        mat[5] = 2 / (top - bottom);
+        mat[10] = -2 / (far - near);
+        mat[15] = 1.f;
+        mat[14] = -((far + near) / (far - near));
+        mat[13] = -((top + bottom) / (top - bottom));
+        mat[12] = -((right + left) / (right - left));
+    }
+    return mat;
+}
+
+template<int Near, int Far, typename T>
+constexpr matrix4x4<T, 1> orthof_static(const T left, const T right, const T top, const T bottom)
+{
+    static_assert(Far != Near);
+    auto mat = identity<T>();
+
+    if (right != left && top != bottom)
+    {
+        mat[0] = 2 / (right - left);
+        mat[5] = 2 / (top - bottom);
+        mat[10] = -2 / static_cast<T>(Far - Near);
+        mat[15] = 1.f;
+        mat[14] = -(static_cast<T>(Far + Near) / static_cast<T>(Far - Near));
+        mat[13] = -((top + bottom) / (top - bottom));
+        mat[12] = -((right + left) / (right - left));
+    }
+    return mat;
+}
+
+
+}  // namespace matrices
 
 template<typename Uint>
 struct field
