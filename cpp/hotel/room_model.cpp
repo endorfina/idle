@@ -41,32 +41,94 @@ constexpr auto make_matrix(const point_3d_t angle)
         * math::matrices::rotate_y<float>(angle.y);
 }
 
-constexpr std::array<point_t, 4> legs_to_points(const glass::blocks::arm& arm)
+template<std::size_t I = 0, typename Callable, typename... Tp>
+constexpr void elem_visit(const Callable& call, const std::tuple<Tp...>& tuple)
 {
-    std::array<point_3d_t, 4> pts{};
-    auto rot = math::matrices::translate<float>({0, 0, arm.bones.root.length}) * make_matrix(arm.bones.root.angle);
-    pts[1] = rot * point_3d_t{};
+    call(std::get<I>(tuple));
 
-    rot = math::matrices::translate<float>({0, 0, arm.bones.get<0>().root.length}) * make_matrix(arm.bones.get<0>().root.angle) * rot;
-    pts[2] = rot * point_3d_t{};
+    if constexpr (I + 1 < sizeof...(Tp))
+    {
+        elem_visit<I + 1, Callable, Tp...>(call, tuple);
+    }
+}
 
-    rot = math::matrices::translate<float>({0, 0, arm.bones.get<0>().get<0>().length}) * make_matrix(arm.bones.get<0>().get<0>().angle) * rot;
-    pts[3] = rot * point_3d_t{};
+using index_pair = std::array<unsigned, 2>;
 
-    std::array<point_t, 4> out{};
-    for (unsigned i = 0; i < out.size(); ++i)
-        out[i] = flatten(pts[i]);
+template<typename J>
+struct tree_skeleton
+{
+    std::array<point_t, 1 + J::size + J::oddness> table;
+    std::array<unsigned, 1 + J::oddness> lengths;
+
+    constexpr index_pair to_lines(index_pair index, const glass::blocks::bone& b, const mat4x4_noopt_t& mat)
+    {
+        const auto rot = math::matrices::translate<float>({0, 0, b.length}) * make_matrix(b.angle) * mat;
+        table[index[0]++] = flatten(rot * point_3d_t{});
+        return index;
+    }
+
+    template<typename...Vars>
+    constexpr index_pair to_lines(const index_pair index, const glass::blocks::joint<Vars...>& j, const mat4x4_noopt_t& mat)
+    {
+        const auto rot = math::matrices::translate<float>({0, 0, j.root.length}) * make_matrix(j.root.angle) * mat;
+        auto new_index = index;
+        table[new_index[0]++] = flatten(rot * point_3d_t{});
+        new_index = to_lines(new_index, j.template link<0>(), rot);
+
+        if constexpr (sizeof...(Vars) > 1)
+        {
+            elem_visit<1>([&](const auto& it)
+                {
+                    lengths[new_index[1]++] = new_index[0];
+                    table[new_index[0]++] = table[index[0]];
+                    new_index = to_lines(new_index, it, rot);
+                },
+                j.links);
+        }
+        return new_index;
+    }
+
+    template<typename Val>
+    constexpr index_pair to_lines(const index_pair index, const glass::blocks::symmetry<Val>& s, const mat4x4_noopt_t& mat)
+    {
+        auto new_index = to_lines(index, s.left, mat);
+        lengths[new_index[1]++] = new_index[0];
+        table[new_index[0]++] = table[index[0] - 1];
+        return to_lines(new_index, s.right, mat);
+    }
+
+};
+
+
+constexpr auto to_points(const glass::closet::humanoid& hu)
+{
+    tree_skeleton<glass::closet::humanoid> out{};
+    const auto [total_length, last_iter] = out.to_lines({1, 0}, hu, math::matrices::identity<float>());
+    out.lengths[last_iter] = total_length;
+
+    for (auto i = out.lengths.size() - 1; i > 0; --i)
+    {
+        out.lengths[i] -= out.lengths[i - 1];
+    }
+
     return out;
 }
 
 void draw_bones(const graphics::core& gl)
 {
     constexpr auto hu = glass::closet::humanoid::get_default();
-    constexpr auto pts = legs_to_points(hu.arms.left);
+    constexpr auto pts = to_points(hu);
     gl.prog.fill.use();
     gl.prog.fill.set_view_transform(math::matrices::translate(math::point_cast<float>(gl.draw_size) / 2.f));
-    gl.prog.fill.position_vertex(reinterpret_cast<const GLfloat*>(pts.data()));
-    gl::DrawArrays(gl::LINE_STRIP, 0, pts.size());
+
+    auto ptr = pts.table.data();
+
+    for (const auto it : pts.lengths)
+    {
+        gl.prog.fill.position_vertex(reinterpret_cast<const GLfloat*>(ptr));
+        gl::DrawArrays(gl::LINE_STRIP, 0, it);
+        ptr += it;
+    }
 }
 
 }  // namespace

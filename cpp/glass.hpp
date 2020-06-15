@@ -38,40 +38,45 @@ struct bone
     //float stiffness = 0;
 
     static constexpr unsigned size = 1;
+    static constexpr unsigned oddness = 0;
+    static constexpr unsigned prime_branch_len = 1;
 };
 
 template<typename...Appendages>
 struct joint
 {
+    static_assert(sizeof...(Appendages) > 0);
     bone root;
-    std::tuple<Appendages...> appendages;
+
+    using tuple_type = std::tuple<Appendages...>;
+    tuple_type links;
 
     template<unsigned Index = 0>
-    constexpr auto& get()
+    constexpr auto& link()
     {
         static_assert(Index < sizeof...(Appendages));
-        return std::get<Index>(appendages);
+        return std::get<Index>(links);
     }
 
     template<unsigned Index = 0>
-    constexpr auto& get() const
+    constexpr auto& link() const
     {
         static_assert(Index < sizeof...(Appendages));
-        return std::get<Index>(appendages);
+        return std::get<Index>(links);
     }
 
     static constexpr unsigned size = (1 + ... + Appendages::size);
+    static constexpr unsigned oddness = ((sizeof...(Appendages) - 1) + ... + Appendages::oddness);
+    static constexpr unsigned prime_branch_len = 1 + std::tuple_element<0, tuple_type>::type::prime_branch_len;
 };
 
-struct arm
+struct arm : joint<joint<bone>>
 {
-    joint<joint<bone>> bones;
-
     constexpr void set_bone_length(const float len)
     {
-        bones.root.length = len;
-        bones.get<0>().root.length = len;
-        bones.get<0>().get<0>().length = len / 2.f;
+        root.length = len;
+        link<0>().root.length = len;
+        link<0>().link<0>().length = len / 2.f;
     }
 };
 
@@ -81,6 +86,8 @@ struct symmetry
     Value left, right;
 
     static constexpr unsigned size = Value::size * 2;
+    static constexpr unsigned oddness = Value::oddness * 2 + 1;
+    static constexpr unsigned prime_branch_len = Value::prime_branch_len;
 };
 
 }  // namespace blocks
@@ -104,17 +111,11 @@ constexpr void apply_for_all(const Callable& func, blocks::joint<Nodes...>& node
 
     if constexpr (sizeof...(Nodes) > 0)
     {
-        apply_for_all(func, node.template get<Index>());
+        apply_for_all(func, node.template link<Index>());
 
         if constexpr (Index + 1 < sizeof...(Nodes))
             apply_for_all<Index + 1>(func, node);
     }
-}
-
-template<typename Callable>
-constexpr void apply_for_all(const Callable& func, blocks::arm& node)
-{
-    apply_for_all(func, node.bones);
 }
 
 }  // namespace meta
@@ -162,30 +163,74 @@ public:
 namespace closet
 {
 
-struct humanoid
+struct humanoid : blocks::joint
+                <
+                    blocks::joint
+                    <
+                        blocks::symmetry<blocks::joint<blocks::arm>>
+                    >,
+
+                    blocks::joint
+                    <
+                        blocks::symmetry<blocks::joint<blocks::arm>>
+                    >
+                >
 {
-    blocks::symmetry<blocks::arm> arms, legs;
-    blocks::bone head;
-    point_3d_t center, rotation;
+    constexpr decltype(auto) get_upperbody()
+    {
+        return link<0>();
+    }
+
+    constexpr decltype(auto) get_lowerbody()
+    {
+        return link<1>();
+    }
+
+    constexpr decltype(auto) get_shoulders()
+    {
+        return get_upperbody().link<0>();
+    }
+
+    constexpr decltype(auto) get_hips()
+    {
+        return get_lowerbody().link<0>();
+    }
 
     static constexpr humanoid get_default()
     {
         humanoid hu;
-        hu.head.length = 10;
+        // hu.head.length = 10;
 
-        hu.arms.left.set_bone_length(10);
-        hu.arms.right.set_bone_length(10);
+        hu.root.length = 35;
 
-        hu.arms.left.bones.root.angle = {F_TAU / 8, 0, 0};
-        hu.arms.left.bones.get<0>().root.angle = {F_TAU / 8, 0, 0};
-        hu.arms.right.bones.root.angle.x = - hu.arms.left.bones.root.angle.x;
-        hu.arms.right.bones.get<0>().root.angle.x = - hu.arms.left.bones.get<0>().root.angle.x;
+        auto& ub = hu.get_upperbody().root;
+        auto& lb = hu.get_lowerbody().root;
 
-        hu.legs.left.set_bone_length(15);
-        hu.legs.right.set_bone_length(15);
+        ub.length = lb.length = 5.f;
 
-        hu.legs.left.bones.root.angle = {F_TAU / 16, 0, 0};
-        hu.legs.right.bones.root.angle.x = - hu.legs.left.bones.root.angle.x;
+        lb.angle.y = F_TAU_2;
+
+        auto& sh = hu.get_shoulders();
+        auto& hp = hu.get_hips();
+
+        blocks::arm& left_arm = sh.left.link<0>();
+        blocks::arm& right_arm = sh.right.link<0>();
+        blocks::arm& left_leg = hp.left.link<0>();
+        blocks::arm& right_leg = hp.right.link<0>();
+
+        left_arm.set_bone_length(10);
+        right_arm.set_bone_length(10);
+
+        left_arm.root.angle = {F_TAU / 8, 0, 0};
+        left_arm.link<0>().root.angle = {F_TAU / 8, 0, 0};
+        right_arm.root.angle.x = - left_arm.root.angle.x;
+        right_arm.link<0>().root.angle.x = - left_arm.link<0>().root.angle.x;
+
+        left_leg.set_bone_length(15);
+        right_leg.set_bone_length(15);
+
+        left_leg.root.angle = {F_TAU / 16, 0, 0};
+        right_leg.root.angle.x = - left_leg.root.angle.x;
 
         return hu;
     }

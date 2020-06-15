@@ -3,27 +3,21 @@
 ### About
 
 *Boo!* 👻
-Idle is an OpenGL vector graphics engine targeted for X11 and Android's NDK.
-The project's prime objective is to help me deal with some lingering symptoms of ptsd.
+Idle is an OpenGL vector graphics engine targeted for X11 and Android's NDK, with strong focus on `constexpr`.
+The project has a number of objectives, one of which is to help me deal with some lingering symptoms of ptsd.
 
-Requires a C++17 compiler to be available.
-Depends on linking against freetype, alsa and GLX - instructions for installing these can be found in the section below.
-Idle also includes a slightly modified [SoLoud](http://sol.gfxile.net/soloud/) library for xmod playback as well as [lodepng](https://github.com/lvandeve/lodepng) for image decoding.
+**Crimson** (production title) is an example game, which implements idle's methods.
+It's objectives include:
 
-### Building
-
-Just run the associated bash configure script and then `make`:
-```sh
-./configure.sh && make
-```
-
-The configure script accepts some flags, however by default it will prepare a proper CMake release build.
-
-Add the `-n` flag if you have a *need* for more speed. 😁
-
-`make run` will boot up idle.
+* #DecadeJam entry
+* Cute, horror-themed visual novel game
+* Cool beans, and many spooks!
 
 ### Dependencies
+
+Requires a C++17 compiler to be available.
+Shared library dependencies include freetype, alsa and GLX - instructions for installing which can be found in the following section.
+Additionally, idle includes a slightly modified [SoLoud](http://sol.gfxile.net/soloud/) library used for xmod playback as well as [lodepng](https://github.com/lvandeve/lodepng) for image decoding.
 
 Installing dependencies on **Solus**:
 ```sh
@@ -40,10 +34,23 @@ Installing dependencies on **Fedora**:
 sudo dnf install libX11-devel alsa-lib-devel mesa-libGL-devel freetype-devel zlib-devel
 ```
 
+### Building
+
+Simply run the associated bash configure script and then `make`:
+```sh
+./configure.sh && make
+```
+
+The configure script accepts some flags, however, by default it will prepare a proper CMake release build.
+
+Add the `-n` flag if you have a *need* for more speed. 😁
+
+`make run` will start idle.
+
 ### All wrongs reserved
 
 ![GPLv3](https://www.gnu.org/graphics/gplv3-88x31.png) [![CC-BY-SA](https://i.creativecommons.org/l/by-sa/4.0/88x31.png)](http://creativecommons.org/licenses/by-sa/4.0/)
 
 idle is licensed under **GPL version 3**.
-Every asset distributed alongside the software (i.e. images, music, etc.) is licensed under [Creative Commons Attribution-ShareAlike 4.0 International License](http://creativecommons.org/licenses/by-sa/4.0/).
+Every asset distributed alongside the software (i.e. images, music, etc.) is licensed under [Creative Commons Attribution-ShareAlike 4.0 International License](http://creativecommons.org/licenses/by-sa/4.0/) unless otherwise stated.
 
