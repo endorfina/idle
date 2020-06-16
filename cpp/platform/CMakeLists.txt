@@ -73,7 +73,7 @@ if(ANDROID)
     target_link_libraries(${PROJECT_NAME} PRIVATE "android" "log" "EGL" "GLESv2")
 
 else()
-    get_filename_component(OUTPUT_PATH "../out" REALPATH BASE_DIR "${CMAKE_SOURCE_DIR}" CACHE)
+    get_filename_component(OUTPUT_PATH "${CMAKE_BINARY_DIR}/out" REALPATH CACHE)
 
     option(X11_USE_CLIENTMESSAGE "Makes x11 handle closing in a cleaner manner by intercepting close calls from your WM" ON)
 
@@ -90,15 +90,14 @@ else()
         target_compile_definitions(${PROJECT_NAME} PRIVATE X11_USE_CLIENTMESSAGE)
     endif()
 
+    file(MAKE_DIRECTORY "${OUTPUT_PATH}")
     set_target_properties(${PROJECT_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${OUTPUT_PATH}")
 
-    set(CLI_RUN_COMMAND "cd '${OUTPUT_PATH}' && './${PROJECT_NAME}'" CACHE STRING "A command which can be used to boot ${PROJECT_NAME}" FORCE)
+    get_filename_component(IDLE_WORKING_DIR "${CMAKE_SOURCE_DIR}/.." REALPATH)
 
-    if(NOT EXISTS "${OUTPUT_PATH}")
-        file(MAKE_DIRECTORY "${OUTPUT_PATH}")
-        # links seem to depend on cmake 3.14, but we're gonna assume its 3.14 on X11
-        file(CREATE_LINK "${CMAKE_SOURCE_DIR}/config/runtime_assets" "${OUTPUT_PATH}/assets" COPY_ON_ERROR SYMBOLIC)
-    endif()
+    string(REGEX REPLACE "^${IDLE_WORKING_DIR}/" "" IDLE_OUTPUT_PATH "${OUTPUT_PATH}/${PROJECT_NAME}")
+
+    set(CLI_RUN_COMMAND "cd '${IDLE_WORKING_DIR}' && '${IDLE_OUTPUT_PATH}'" CACHE STRING "A command which can be used to boot ${PROJECT_NAME}" FORCE)
 endif()
 
 add_library(${PROJECT_NAME}-opengl-glue OBJECT "opengl_core_adaptive.cpp")

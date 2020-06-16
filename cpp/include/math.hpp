@@ -901,7 +901,7 @@ struct matrix4x4
     using table_type = std::array<value_type, 16>;
     table_type data;
 
-    constexpr matrix4x4() = default;
+    constexpr matrix4x4() : data{1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1} {}
 
     constexpr matrix4x4(const table_type& t) : data(t) {}
 
@@ -962,15 +962,9 @@ namespace matrices
 {
 
 template<typename T>
-constexpr matrix4x4<T, 0> identity()
-{
-    return std::array<T, 16>{1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1};
-}
-
-template<typename T>
 constexpr auto translate(const point2<T> &p)
 {
-    auto mat = identity<T>();
+    matrix4x4<T, 0> mat;
     mat[12] = p.x;
     mat[13] = p.y;
     return mat;
@@ -979,7 +973,7 @@ constexpr auto translate(const point2<T> &p)
 template<typename T>
 constexpr matrix4x4<T, 1> translate(const point3<T> &p)
 {
-    auto mat = identity<T>();
+    matrix4x4<T, 1> mat;
     mat[12] = p.x;
     mat[13] = p.y;
     mat[14] = p.z;
@@ -989,7 +983,7 @@ constexpr matrix4x4<T, 1> translate(const point3<T> &p)
 template<typename T>
 constexpr auto scale(const point2<T> sc)
 {
-    auto mat = identity<T>();
+    matrix4x4<T, 0> mat;
     mat[0] = sc.x;
     mat[5] = sc.y;
     return mat;
@@ -998,7 +992,7 @@ constexpr auto scale(const point2<T> sc)
 template<typename T>
 constexpr matrix4x4<T, 1> scale(const point3<T> sc)
 {
-    auto mat = identity<T>();
+    matrix4x4<T, 1> mat;
     mat[0] = sc.x;
     mat[5] = sc.y;
     mat[10] = sc.z;
@@ -1008,7 +1002,7 @@ constexpr matrix4x4<T, 1> scale(const point3<T> sc)
 template<typename T>
 constexpr auto scale(const point2<T> sc, const point2<T> p)
 {
-    auto mat = identity<T>();
+    matrix4x4<T, 0> mat;
     mat[0] = sc.x;
     mat[5] = sc.y;
     mat[12] = -p.x * sc.x + p.x;
@@ -1019,7 +1013,7 @@ constexpr auto scale(const point2<T> sc, const point2<T> p)
 template<typename T>
 constexpr auto uniform_scale(const T sc)
 {
-    auto mat = identity<T>();
+    matrix4x4<T, 0> mat;
     mat[0] = sc;
     mat[5] = sc;
     return mat;
@@ -1028,7 +1022,7 @@ constexpr auto uniform_scale(const T sc)
 template<typename T>
 constexpr auto uniform_scale(const T sc, const point2<T> p)
 {
-    auto mat = identity<T>();
+    matrix4x4<T, 0> mat;
     mat[0] = sc;
     mat[5] = sc;
     mat[12] = -p.x * sc + p.x;
@@ -1039,7 +1033,7 @@ constexpr auto uniform_scale(const T sc, const point2<T> p)
 template<typename T>
 constexpr matrix4x4<T, 1> rotate_x(const T rad)
 {
-    auto mat = identity<T>();
+    matrix4x4<T, 1> mat;
     mat[10] = mat[5] = const_math::cos(rad);
     mat[9] = -(mat[6] = const_math::sin(rad));
     return mat;
@@ -1048,7 +1042,7 @@ constexpr matrix4x4<T, 1> rotate_x(const T rad)
 template<typename T>
 constexpr matrix4x4<T, 1> rotate_y(const T rad)
 {
-    auto mat = identity<T>();
+    matrix4x4<T, 1> mat;
     mat[10] = mat[0] = const_math::cos(rad);
     mat[2] = -(mat[8] = const_math::sin(rad));
     return mat;
@@ -1057,7 +1051,7 @@ constexpr matrix4x4<T, 1> rotate_y(const T rad)
 template<typename T>
 constexpr auto rotate(const T rad)
 {
-    auto mat = identity<T>();
+    matrix4x4<T, 0> mat;
     mat[5] = mat[0] = const_math::cos(rad);
     mat[4] = -(mat[1] = const_math::sin(rad));
     return mat;
@@ -1066,7 +1060,7 @@ constexpr auto rotate(const T rad)
 template<typename T>
 constexpr auto rotate(const T rad, const point2<T> &p)
 {
-    auto mat = identity<T>();
+    matrix4x4<T, 0> mat;
     mat[5] = mat[0] = const_math::cos(rad);
     mat[4] = -(mat[1] = const_math::sin(rad));
 
@@ -1078,7 +1072,7 @@ constexpr auto rotate(const T rad, const point2<T> &p)
 template<typename T>
 constexpr matrix4x4<T, 1> orthof(const T left, const T right, const T top, const T bottom, const T near, const T far)
 {
-    auto mat = identity<T>();
+    matrix4x4<T, 1> mat;
 
     if (right != left && top != bottom && far != near)
     {
@@ -1097,7 +1091,7 @@ template<int Near, int Far, typename T>
 constexpr matrix4x4<T, 1> orthof_static(const T left, const T right, const T top, const T bottom)
 {
     static_assert(Far != Near);
-    auto mat = identity<T>();
+    matrix4x4<T, 1> mat;
 
     if (right != left && top != bottom)
     {

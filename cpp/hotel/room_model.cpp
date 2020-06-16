@@ -55,10 +55,10 @@ constexpr void elem_visit(const Callable& call, const std::tuple<Tp...>& tuple)
 using index_pair = std::array<unsigned, 2>;
 
 template<typename J>
-struct tree_skeleton
+class tree_skeleton
 {
-    std::array<point_t, 1 + J::size + J::oddness> table;
-    std::array<unsigned, 1 + J::oddness> lengths;
+    std::array<point_t, J::size + J::oddness> table{};
+    std::array<unsigned, 1 + J::oddness> lengths{};
 
     constexpr index_pair to_lines(index_pair index, const glass::blocks::bone& b, const mat4x4_noopt_t& mat)
     {
@@ -97,38 +97,42 @@ struct tree_skeleton
         return to_lines(new_index, s.right, mat);
     }
 
+public:
+    void draw(const graphics::core& gl) const
+    {
+        auto ptr = table.data();
+
+        for (const auto it : lengths)
+        {
+            gl.prog.fill.position_vertex(reinterpret_cast<const GLfloat*>(ptr));
+            gl::DrawArrays(gl::LINE_STRIP, 0, it);
+            ptr += it;
+        }
+    }
+
+    constexpr tree_skeleton(const J& hu)
+    {
+        const auto [total_length, last_iter] = to_lines({0, 0}, hu, math::matrices::rotate<GLfloat>(F_TAU_8) * math::matrices::rotate_y<GLfloat>(F_TAU_4 / 3));
+        lengths[last_iter] = total_length;
+
+        for (auto i = lengths.size() - 1; i > 0; --i)
+        {
+            lengths[i] -= lengths[i - 1];
+        }
+    }
 };
 
 
-constexpr auto to_points(const glass::closet::humanoid& hu)
-{
-    tree_skeleton<glass::closet::humanoid> out{};
-    const auto [total_length, last_iter] = out.to_lines({1, 0}, hu, math::matrices::identity<float>());
-    out.lengths[last_iter] = total_length;
-
-    for (auto i = out.lengths.size() - 1; i > 0; --i)
-    {
-        out.lengths[i] -= out.lengths[i - 1];
-    }
-
-    return out;
-}
 
 void draw_bones(const graphics::core& gl)
 {
     constexpr auto hu = glass::closet::humanoid::get_default();
-    constexpr auto pts = to_points(hu);
+    constexpr tree_skeleton model(hu);
+
     gl.prog.fill.use();
     gl.prog.fill.set_view_transform(math::matrices::translate(math::point_cast<float>(gl.draw_size) / 2.f));
 
-    auto ptr = pts.table.data();
-
-    for (const auto it : pts.lengths)
-    {
-        gl.prog.fill.position_vertex(reinterpret_cast<const GLfloat*>(ptr));
-        gl::DrawArrays(gl::LINE_STRIP, 0, it);
-        ptr += it;
-    }
+    model.draw(gl);
 }
 
 }  // namespace

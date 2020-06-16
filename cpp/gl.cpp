@@ -316,9 +316,11 @@ void program_t::set_transform(const idle::mat4x4_noopt_t& f) const
     gl::UniformMatrix4fv(model_handle, 1, gl::FALSE_, static_cast<const GLfloat*>(f));
 }
 
+static constexpr auto identity_mat = idle::mat4x4_t{};
+
 void program_t::set_identity(void) const
 {
-    gl::UniformMatrix4fv(model_handle, 1, gl::FALSE_, static_cast<const GLfloat*>(math::matrices::identity<GLfloat>()));
+    gl::UniformMatrix4fv(model_handle, 1, gl::FALSE_, static_cast<const GLfloat*>(identity_mat));
 }
 
 void program_t::set_view_transform(const idle::mat4x4_t& f) const
@@ -333,7 +335,7 @@ void program_t::set_view_transform(const idle::mat4x4_noopt_t& f) const
 
 void program_t::set_view_identity(void) const
 {
-    gl::UniformMatrix4fv(view_handle, 1, gl::FALSE_, static_cast<const GLfloat*>(math::matrices::identity<GLfloat>()));
+    gl::UniformMatrix4fv(view_handle, 1, gl::FALSE_, static_cast<const GLfloat*>(identity_mat));
 }
 
 void render_program_t::use() const
