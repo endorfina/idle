@@ -97,7 +97,7 @@ else()
 
     string(REGEX REPLACE "^${IDLE_WORKING_DIR}/" "" IDLE_OUTPUT_PATH "${OUTPUT_PATH}/${PROJECT_NAME}")
 
-    set(CLI_RUN_COMMAND "cd '${IDLE_WORKING_DIR}' && '${IDLE_OUTPUT_PATH}'" CACHE STRING "A command which can be used to boot ${PROJECT_NAME}" FORCE)
+    set(CLI_RUN_COMMAND "cd '${IDLE_WORKING_DIR}' && test -x '${IDLE_OUTPUT_PATH}' && ( '${IDLE_OUTPUT_PATH}' || true )" CACHE STRING "A command which can be used to boot ${PROJECT_NAME}" FORCE)
 endif()
 
 add_library(${PROJECT_NAME}-opengl-glue OBJECT "opengl_core_adaptive.cpp")

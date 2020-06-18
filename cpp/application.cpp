@@ -25,7 +25,7 @@
 #include "room_controller.hpp"
 #include "lodge.hpp"
 #include "freetype_glue.hpp"
-#include "config/assets.hpp"
+#include "assets_config.hpp"
 #include "platform/asset_access.hpp"
 
 namespace outside
