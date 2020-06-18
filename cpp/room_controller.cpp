@@ -83,7 +83,7 @@ void controller::draw_frame(const graphics::core& gl)
         gl.prog.text.set_color({1, 1, 1, .9f});
 
         draw_text<text_align::center, text_align::center>(*gl.fonts.regular, gl.prog.text,
-                haiku.get_string(), math::point_cast<GLfloat>(gl.draw_size) / 2.f, 32);
+                haiku.get_string(), gl.draw_size / 2.f, 32);
     }
     else
     {

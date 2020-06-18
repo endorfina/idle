@@ -135,7 +135,8 @@ struct core
 
     GLint render_quality = gl::LINEAR;
     std::unique_ptr<const render_buffer_t> render_buffer_masked;
-    buffer_size draw_size{0, 0}, screen_size{0, 0}, viewport_size{0, 0};
+    idle::point_t draw_size{0, 0};
+    buffer_size screen_size{0, 0}, viewport_size{0, 0};
     math::point2<GLfloat> translate_vector;
 
     std::array<GLfloat, 8> draw_bounds_verts;

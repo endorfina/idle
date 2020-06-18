@@ -27,7 +27,7 @@ namespace idle
 void lodge::draw(const graphics::core& gl) const
 {
     auto bgsz = background.get_size<float>();
-    const float bgsc = std::max(static_cast<float>(gl.draw_size.y) / bgsz.y, static_cast<float>(gl.draw_size.x) / bgsz.x);
+    const float bgsc = std::max(gl.draw_size.y / bgsz.y, gl.draw_size.x / bgsz.x);
     constexpr rect_t astronaut{0, 0, 398, 432}, /* text_loading{0, 512 - 70, 360, 512},*/ text_cp{450, 0, 512, 512};
 
     gl.prog.normal.use();

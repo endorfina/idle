@@ -234,7 +234,7 @@ void room::draw(const graphics::core& gl) const
 
     const auto lower_draw_size = std::min(gl.draw_size.x, gl.draw_size.y);
     const auto higher_draw_size = std::max(gl.draw_size.x, gl.draw_size.y);
-    const float higher_ratio = std::max(4.f / 3.f, float(higher_draw_size) / float(lower_draw_size));
+    const float higher_ratio = std::max(4.f / 3.f, higher_draw_size / lower_draw_size);
     const float adaptive_mult = higher_ratio / (4.f / 3.f);
 
     gl.prog.gradient.set_transform(math::matrices::rotate(thing.rotation)
@@ -270,7 +270,7 @@ void room::draw(const graphics::core& gl) const
     gl.view_mask();
 
     draw_dim_noise(gl.prog.noise,
-            math::point_cast<float>(gl.draw_size),
+            gl.draw_size,
             *reinterpret_cast<const point_t*>(noise_seed.data()),
             alpha_sine,
             fadeout_alpha_sine);

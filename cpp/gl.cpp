@@ -259,16 +259,16 @@ bool core::resize(const buffer_size window_size)
     constexpr unsigned draw_height = 360;
     constexpr unsigned main_buffer_height = 720;
 
-    draw_size = { draw_height * window_size.x / window_size.y, draw_height };
+    draw_size = { static_cast<float>(draw_height * window_size.x / window_size.y), static_cast<float>(draw_height) };
     viewport_size = { main_buffer_height * window_size.x / window_size.y, main_buffer_height };
     screen_size = window_size;
-    translate_vector = math::point_cast<float>(draw_size) / math::point_cast<float>(window_size);
+    translate_vector = draw_size / math::point_cast<float>(window_size);
 
     draw_bounds_verts = {
         0, 0,
-        static_cast<float>(draw_size.x), 0,
-        0, static_cast<float>(draw_size.y),
-        static_cast<float>(draw_size.x), static_cast<float>(draw_size.y)
+        draw_size.x, 0,
+        0, draw_size.y,
+        draw_size.x, draw_size.y
     };
 
     if (!programs_are_functional(
@@ -297,7 +297,7 @@ bool core::resize(const buffer_size window_size)
     prog.render_blur.set_resolution(
             static_cast<float>(viewport_size.y)
             / static_cast<float>(actual_padded_pixel_size.y)
-            / static_cast<float>(draw_size.y));
+            / draw_size.y);
 
     prog.render_masked.use();
     prog.render_masked.set_offsets(3.f / 4.f, 1.f / 3.f, render_buffer_masked->texture_h * (3.f / 4.f));

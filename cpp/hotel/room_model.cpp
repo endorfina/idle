@@ -55,11 +55,12 @@ constexpr void elem_visit(const Callable& call, const std::tuple<Tp...>& tuple)
 using index_pair = std::array<unsigned, 2>;
 
 template<typename J>
-class tree_skeleton
+struct tree_skeleton
 {
     std::array<point_t, J::size + J::oddness> table{};
     std::array<unsigned, 1 + J::oddness> lengths{};
 
+private:
     constexpr index_pair to_lines(index_pair index, const glass::blocks::bone& b, const mat4x4_noopt_t& mat)
     {
         const auto rot = math::matrices::translate<float>({0, 0, b.length}) * make_matrix(b.angle) * mat;
@@ -110,9 +111,9 @@ public:
         }
     }
 
-    constexpr tree_skeleton(const J& hu)
+    constexpr tree_skeleton(const J& root)
     {
-        const auto [total_length, last_iter] = to_lines({0, 0}, hu, math::matrices::rotate<GLfloat>(F_TAU_8) * math::matrices::rotate_y<GLfloat>(F_TAU_4 / 3));
+        const auto [total_length, last_iter] = to_lines({0, 0}, root, math::matrices::rotate<GLfloat>(F_TAU_8) * math::matrices::rotate_y<GLfloat>(F_TAU_4 / 3));
         lengths[last_iter] = total_length;
 
         for (auto i = lengths.size() - 1; i > 0; --i)
@@ -122,15 +123,13 @@ public:
     }
 };
 
-
-
 void draw_bones(const graphics::core& gl)
 {
     constexpr auto hu = glass::closet::humanoid::get_default();
     constexpr tree_skeleton model(hu);
 
     gl.prog.fill.use();
-    gl.prog.fill.set_view_transform(math::matrices::translate(math::point_cast<float>(gl.draw_size) / 2.f));
+    gl.prog.fill.set_view_transform(math::matrices::translate(gl.draw_size / 2.f));
 
     model.draw(gl);
 }
@@ -145,9 +144,11 @@ void room::draw(const graphics::core& gl) const
     gl.prog.fill.set_color({0,0,0});
     fill_screen(gl, gl.prog.fill);
 
+    constexpr auto greyscale = color_t::greyscale(.29f);
+
     gl.prog.text.use();
-    gl.prog.text.set_color(color_t::greyscale(.29f));
-    draw_text<text_align::center, text_align::center>(*gl.fonts.title, gl.prog.text, "Model", math::point_cast<float>(gl.draw_size) / 2.f, 48);
+    gl.prog.text.set_color(greyscale);
+    draw_text<text_align::center, text_align::center>(*gl.fonts.title, gl.prog.text, "Model", gl.draw_size / 2.f, 48);
 
     gl.prog.fill.use();
     gl.prog.fill.set_color({1,0,0});

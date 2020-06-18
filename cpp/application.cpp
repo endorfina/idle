@@ -135,7 +135,7 @@ bool application::execute_commands(const bool is_nested)
 
             if (!!resize_result)
             {
-                room_ctrl.resize(math::point_cast<GLfloat>(opengl.draw_size));
+                room_ctrl.resize(opengl.draw_size);
                 earliest_available_resize = now + std::chrono::milliseconds(500);
             }
         }
