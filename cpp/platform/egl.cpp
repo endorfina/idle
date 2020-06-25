@@ -308,7 +308,7 @@ void context::terminate_display()
     egl.surface = EGL_NO_SURFACE;
 }
 
-const struct android_app * asset::android_activity = nullptr;
+struct android_app * asset::android_activity = nullptr;
 
 asset::asset(AAsset* f, std::string_view d)
     : file(f), data(d)

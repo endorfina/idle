@@ -26,11 +26,11 @@ namespace platform
 
 class asset
 {
-protected:
 #ifdef __ANDROID__
+public:
     static struct android_app * android_activity;
-    friend struct context;
 
+private:
     AAsset * file = nullptr;
     std::string_view data;
 
@@ -43,6 +43,7 @@ public:
     ~asset();
 
 #else
+private:
     std::unique_ptr<unsigned char[]> ptr;
     size_t size = 0;
 
