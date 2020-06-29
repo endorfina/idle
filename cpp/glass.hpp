@@ -302,22 +302,5 @@ struct blob
     }
 };
 
-template <typename T>
-struct flesh
-{
-
-};
-
-template<unsigned FrameSize, unsigned AnimLength>
-void draw(const graphics::double_vertex_program_t& program, const atable<FrameSize, AnimLength>& table)
-{
-    constexpr blob<5> b(5);
-
-
-    program.position_vertex(table[0].data());
-    program.destination_vertex(table[1].data());
-    gl::DrawArrays(gl::TRIANGLE_STRIP, 0, FrameSize);
-}
-
 }  // namespace idle::glass
 

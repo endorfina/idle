@@ -23,7 +23,7 @@
 #include <array>
 #include <algorithm>
 
-#ifdef __GNUC__          // gcc is love
+#ifndef  __clang__  // gcc is love
 #include <cmath>
 #endif
 
@@ -434,10 +434,10 @@ constexpr std::enable_if_t<std::is_floating_point_v<T>, float> degtorad(T a)
 }
 
 
-#ifdef __GNUC__
-namespace const_math = ::std;
-#else
+#ifdef __clang__
 namespace const_math = ce;
+#else
+namespace const_math = ::std;
 #endif
 
 
