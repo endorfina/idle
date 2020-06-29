@@ -21,14 +21,28 @@
 #include <idle/gl.hpp>
 
 #ifdef IDLE_COMPILE_GALLERY
-#include "gui.hpp"
+#include <idle/pointer_wrapper.hpp>
 #include <idle/draw_text.hpp>
+#include "gui.hpp"
+#include "keys.hpp"
 
 namespace idle::hotel::model
 {
 
+struct animation
+{
+    unsigned source, dest;
+    float interpolation;
+};
+
 struct room
 {
+    float timer = F_TAU;
+
+    std::atomic<animation> model_anim = animation{0, 1, 0.f};
+
+    std::optional<keyring::variant> step(const pointer_wrapper& cursor);
+
     void draw(const graphics::core& gl) const;
 };
 

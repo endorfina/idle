@@ -368,7 +368,7 @@ asset asset::hold(std::string path)
                 size >= 1024 ? size / 1024 : size,
                 size >= 1024 ? "KB" : "bytes");
 
-        std::unique_ptr<unsigned char[]> ptr(new unsigned char[size]);
+        auto ptr = std::make_unique<unsigned char[]>(size);
 
         if (std::fread(ptr.get(), 1, size, f.get()) == static_cast<size_t>(size))
         {

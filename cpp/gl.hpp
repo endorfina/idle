@@ -124,8 +124,9 @@ struct core
         blur_render_program_t render_blur;
 
         textured_program_t normal;
-        double_vertex_program_t shift;
         program_t fill;
+        double_vertex_program_t double_normal;
+        double_solid_program_t double_fill;
         text_program_t text;
         fullbg_program_t fullbg;
         noise_program_t noise;

@@ -28,6 +28,28 @@
 namespace idle::glass
 {
 
+template<std::size_t I = 0, typename Callable, typename...Vars>
+constexpr void tuple_visit(const Callable& call, const std::tuple<Vars...>& tuple)
+{
+    call(std::get<I>(tuple));
+
+    if constexpr (I + 1 < sizeof...(Vars))
+    {
+        tuple_visit<I + 1, Callable, Vars...>(call, tuple);
+    }
+}
+
+template<std::size_t I = 0, typename...Vars>
+constexpr void tuple_copy(std::tuple<Vars...>& dest, const std::tuple<Vars...>& src)
+{
+    std::get<I>(dest) = std::get<I>(src);
+
+    if constexpr (I + 1 < sizeof...(Vars))
+    {
+        tuple_visit<I + 1, Vars...>(dest, src);
+    }
+}
+
 namespace blocks
 {
 
@@ -63,6 +85,13 @@ struct joint
     {
         static_assert(Index < sizeof...(Appendages));
         return std::get<Index>(links);
+    }
+
+    constexpr joint& operator=(const joint& other)
+    {
+        root = other.root;
+        tuple_copy(links, other.links);
+        return *this;
     }
 
     static constexpr unsigned size = (1 + ... + Appendages::size);
@@ -118,6 +147,13 @@ constexpr void apply_for_all(const Callable& func, blocks::joint<Nodes...>& node
     }
 }
 
+template<typename Val>
+constexpr void sync_right(blocks::symmetry<Val>& sym)
+{
+    sym.right = sym.left;
+    apply_for_all([](auto& b) { b.angle *= math::point3<float>{-1.f, 1.f, -1.f}; }, sym.right);
+}
+
 }  // namespace meta
 
 template <unsigned FrameSize, unsigned AnimLength>
@@ -167,6 +203,7 @@ struct humanoid : blocks::joint
                 <
                     blocks::joint
                     <
+                        blocks::joint<blocks::bone>,
                         blocks::symmetry<blocks::joint<blocks::arm>>
                     >,
 
@@ -188,6 +225,11 @@ struct humanoid : blocks::joint
 
     constexpr decltype(auto) get_shoulders()
     {
+        return get_upperbody().link<1>();
+    }
+
+    constexpr decltype(auto) get_head()
+    {
         return get_upperbody().link<0>();
     }
 
@@ -196,43 +238,52 @@ struct humanoid : blocks::joint
         return get_lowerbody().link<0>();
     }
 
-    static constexpr humanoid get_default()
+    constexpr void align_feet()
     {
-        humanoid hu;
-        // hu.head.length = 10;
+    }
 
-        hu.root.length = 35;
+    constexpr humanoid()
+    {
+        get_head().root.length = 10;
+        get_head().link<0>().length = 15;
+        get_head().link<0>().angle.y = - (get_head().root.angle.y = F_TAU / 30);
 
-        auto& ub = hu.get_upperbody().root;
-        auto& lb = hu.get_lowerbody().root;
+        root.length = 40;
 
-        ub.length = lb.length = 5.f;
+        auto& ub = get_upperbody().root;
+        auto& lb = get_lowerbody().root;
+
+        ub.length = lb.length = 15;
 
         lb.angle.y = F_TAU_2;
 
-        auto& sh = hu.get_shoulders();
-        auto& hp = hu.get_hips();
+        auto& sh = get_shoulders();
+        auto& hp = get_hips();
 
-        blocks::arm& left_arm = sh.left.link<0>();
-        blocks::arm& right_arm = sh.right.link<0>();
-        blocks::arm& left_leg = hp.left.link<0>();
-        blocks::arm& right_leg = hp.right.link<0>();
+        blocks::arm& arm = sh.left.link<0>();
+        blocks::arm& leg = hp.left.link<0>();
 
-        left_arm.set_bone_length(10);
-        right_arm.set_bone_length(10);
+        arm.set_bone_length(10);
 
-        left_arm.root.angle = {F_TAU / 8, 0, 0};
-        left_arm.link<0>().root.angle = {F_TAU / 8, 0, 0};
-        right_arm.root.angle.x = - left_arm.root.angle.x;
-        right_arm.link<0>().root.angle.x = - left_arm.link<0>().root.angle.x;
+        sh.left.root.length = 7;
 
-        left_leg.set_bone_length(15);
-        right_leg.set_bone_length(15);
+        sh.left.root.angle = {F_TAU / -4, 0, 0};
+        arm.root.angle = {F_TAU / -5, F_TAU / -12, 0};
+        arm.link<0>().root.angle = {F_TAU / 20, F_TAU / 12, 0};
+        arm.link<0>().link<0>().angle.y = F_TAU / 12;
 
-        left_leg.root.angle = {F_TAU / 16, 0, 0};
-        right_leg.root.angle.x = - left_leg.root.angle.x;
+        leg.set_bone_length(18);
 
-        return hu;
+        hp.left.root.length = 7;
+
+        hp.left.root.angle = { F_TAU / -5, 0, 0};
+        leg.root.angle = { F_TAU / 5.5f, F_TAU / -20, 0};
+        leg.link<0>().root.angle = { 0.f, F_TAU / 16, F_TAU / -20 };
+        leg.link<0>().link<0>().angle.y = F_TAU / -4;
+
+        meta::sync_right(sh);
+        meta::sync_right(hp);
+
     }
 };
 

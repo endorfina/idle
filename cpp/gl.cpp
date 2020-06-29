@@ -170,8 +170,9 @@ void apply_to_all(core::program_container_t& con, const Call& call)
     call(con.render_blur);
 
     call(con.normal);
-    call(con.shift);
     call(con.fill);
+    call(con.double_normal);
+    call(con.double_fill);
     call(con.text);
     call(con.fullbg);
     call(con.noise);
@@ -188,7 +189,8 @@ bool compile_shaders(core::program_container_t& prog)
     prog.render_blur.program = sc.compile(source::pos_renderv, source::pos_simpleblurf);
 
     prog.normal.program_id = sc.compile(source::pos_normv, source::pos_normf);
-    prog.shift.program_id = sc.compile(source::pos_doublev, source::pos_normf);
+    prog.double_normal.program_id = sc.compile(source::pos_doublenormv, source::pos_normf);
+    prog.double_fill.program_id = sc.compile(source::pos_doublesolidv, source::pos_solidf);
     prog.fill.program_id = sc.compile(source::pos_solidv, source::pos_solidf);
     prog.text.program_id = sc.compile(source::pos_textv, source::pos_textf);
     prog.fullbg.program_id = sc.compile(source::pos_solidv, source::pos_fullbgf);
@@ -273,8 +275,9 @@ bool core::resize(const buffer_size window_size)
 
     if (!programs_are_functional(
                 prog.normal,
-                prog.shift,
                 prog.fill,
+                prog.double_normal,
+                prog.double_fill,
                 prog.text,
                 prog.fullbg,
                 prog.noise
@@ -368,7 +371,7 @@ void textured_program_t::texture_vertex(const GLfloat *f) const
     gl::VertexAttribPointer(texture_position_handle, 2, gl::FLOAT, gl::FALSE_, 0, f);
 }
 
-void double_vertex_program_t::destination_vertex(const GLfloat *f) const
+void double_base_program_t::destination_vertex(const GLfloat *f) const
 {
     gl::VertexAttribPointer(destination_handle, 2, gl::FLOAT, gl::FALSE_, 0, f);
 }
@@ -378,7 +381,7 @@ void text_program_t::set_text_offset(const idle::point_t offset) const
     gl::Uniform2f(font_offset_handle, offset.x, offset.y);
 }
 
-void double_vertex_program_t::set_interpolation(const GLfloat x) const
+void double_base_program_t::set_interpolation(const GLfloat x) const
 {
     gl::Uniform1f(interpolation_handle, x);
 }
@@ -516,15 +519,26 @@ void fullbg_program_t::prepare()
     report_opengl_errors("fullbg_program_t::prepare()");
 }
 
-void double_vertex_program_t::prepare()
+void double_base_program_t::prepare_headless(const GLuint prog)
 {
-    textured_program_t::prepare();
-    destination_handle = static_cast<GLuint>(gl::GetAttribLocation(program_id,"vDest"));
-    interpolation_handle = gl::GetUniformLocation(program_id, "uIv");
+    destination_handle = static_cast<GLuint>(gl::GetAttribLocation(prog,"vDest"));
+    interpolation_handle = gl::GetUniformLocation(prog, "uIv");
 
     set_interpolation(0);
     gl::EnableVertexAttribArray(destination_handle);
-    report_opengl_errors("double_vertex_program_t::prepare()");
+    report_opengl_errors("double_base_program_t::prepare()");
+}
+
+void double_solid_program_t::prepare()
+{
+    program_t::prepare();
+    double_base_program_t::prepare_headless(program_id);
+}
+
+void double_vertex_program_t::prepare()
+{
+    textured_program_t::prepare();
+    double_base_program_t::prepare_headless(program_id);
 }
 
 void blur_render_program_t::prepare()
@@ -580,8 +594,9 @@ static void set_projection_matrix(const program_t& prog, const idle::mat4x4_noop
 void core::copy_projection_matrix(const idle::mat4x4_noopt_t& projection_matrix) const
 {
     set_projection_matrix(prog.normal, projection_matrix);
-    set_projection_matrix(prog.shift, projection_matrix);
     set_projection_matrix(prog.fill, projection_matrix);
+    set_projection_matrix(prog.double_normal, projection_matrix);
+    set_projection_matrix(prog.double_fill, projection_matrix);
     set_projection_matrix(prog.text, projection_matrix);
     set_projection_matrix(prog.fullbg, projection_matrix);
     set_projection_matrix(prog.noise, projection_matrix);

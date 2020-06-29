@@ -138,7 +138,18 @@ void main() {
   gl_FragColor = uCol + (uCo2 - uCol) * vA;
 }
 
-@@ doublev
+@@ doublesolidv
+
+attribute vec2 vPos, vDest;
+uniform mat4 uPM, uVM, uMM; // projection, view, model
+uniform float uIv;  // interpolate value (between 0 and 1)
+
+void main() {
+    vec2 pos = vPos + (vDest - vPos) * uIv;
+    gl_Position = uPM * uVM * uMM * vec4(pos, 0.0, 1.0);
+}
+
+@@ doublenormv
 
 attribute vec2 vPos, vDest, aUV;
 uniform mat4 uPM, uVM, uMM; // projection, view, model
@@ -150,20 +161,6 @@ void main() {
     vec2 pos = vPos + (vDest - vPos) * uIv;
     gl_Position = uPM * uVM * uMM * vec4(pos, 0.0, 1.0);
 }
-
-@@ doublef
-
-#ifdef GL_ES
-precision mediump float;
-#endif
-//uniform sampler2D uT;
-uniform vec4 uCol;
-//varying vec2 vUV;
-
-void main() {
-  gl_FragColor = uCol;//texture2D(uT, vUV) * uCol;
-}
-
 
 @@ solidv
 

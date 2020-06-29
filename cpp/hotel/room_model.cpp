@@ -38,18 +38,8 @@ constexpr point_t flatten(const point_3d_t p)
 constexpr auto make_matrix(const point_3d_t angle)
 {
     return math::matrices::rotate_x<float>(angle.x)
-        * math::matrices::rotate_y<float>(angle.y);
-}
-
-template<std::size_t I = 0, typename Callable, typename... Tp>
-constexpr void elem_visit(const Callable& call, const std::tuple<Tp...>& tuple)
-{
-    call(std::get<I>(tuple));
-
-    if constexpr (I + 1 < sizeof...(Tp))
-    {
-        elem_visit<I + 1, Callable, Tp...>(call, tuple);
-    }
+        * math::matrices::rotate_y<float>(angle.y)
+        * math::matrices::rotate<float>(angle.z);
 }
 
 using index_pair = std::array<unsigned, 2>;
@@ -78,7 +68,7 @@ private:
 
         if constexpr (sizeof...(Vars) > 1)
         {
-            elem_visit<1>([&](const auto& it)
+            glass::tuple_visit<1>([&](const auto& it)
                 {
                     lengths[new_index[1]++] = new_index[0];
                     table[new_index[0]++] = table[index[0]];
@@ -111,9 +101,22 @@ public:
         }
     }
 
-    constexpr tree_skeleton(const J& root)
+    void draw_interpolated(const graphics::core& gl, const tree_skeleton& another) const
     {
-        const auto [total_length, last_iter] = to_lines({0, 0}, root, math::matrices::rotate<GLfloat>(F_TAU_8) * math::matrices::rotate_y<GLfloat>(F_TAU_4 / 3));
+        size_t sum = 0;
+
+        for (const auto it : lengths)
+        {
+            gl.prog.double_fill.position_vertex(reinterpret_cast<const GLfloat*>(&table[sum]));
+            gl.prog.double_fill.destination_vertex(reinterpret_cast<const GLfloat*>(&another.table[sum]));
+            gl::DrawArrays(gl::LINE_STRIP, 0, it);
+            sum += it;
+        }
+    }
+
+    constexpr tree_skeleton(const J& root, const mat4x4_noopt_t& mat)
+    {
+        const auto [total_length, last_iter] = to_lines({0, 0}, root, mat);
         lengths[last_iter] = total_length;
 
         for (auto i = lengths.size() - 1; i > 0; --i)
@@ -123,15 +126,39 @@ public:
     }
 };
 
-void draw_bones(const graphics::core& gl)
+constexpr mat4x4_noopt_t skew_mat = math::matrices::rotate<GLfloat>(F_TAU_8) * math::matrices::rotate_y<GLfloat>(F_TAU_4 / 3);
+
+template<unsigned...Degs, typename J>
+constexpr std::array<tree_skeleton<J>, sizeof...(Degs)> rotate(const J& root)
 {
-    constexpr auto hu = glass::closet::humanoid::get_default();
-    constexpr tree_skeleton model(hu);
+    return { tree_skeleton<J>{ root, math::matrices::rotate<float>(math::degtorad<float>(Degs)) * skew_mat } ... };
+}
 
+constexpr auto def_models_rotated = rotate<0, 45, 90, 135, 180, 225, 270, 315>(glass::closet::humanoid{});
+
+template<typename Models>
+void draw_bones(const Models& models, const graphics::core& gl, const animation anim)
+{
     gl.prog.fill.use();
-    gl.prog.fill.set_view_transform(math::matrices::translate(gl.draw_size / 2.f));
+    gl.prog.fill.set_color({1,0,0});
 
-    model.draw(gl);
+    const auto model_offset = gl.draw_size.x / (models.size() + 1);
+    gl.prog.fill.set_view_transform(math::matrices::translate<float>({model_offset, gl.draw_size.y * .8f}));
+
+    unsigned i = 0;
+    for (const auto& it : models)
+    {
+        gl.prog.fill.set_transform(math::matrices::translate<float>({model_offset * i++, 0}));
+        it.draw(gl);
+    }
+
+    gl.prog.double_fill.use();
+    gl.prog.double_fill.set_color({1,1,1,.9f});
+    const auto view = math::matrices::uniform_scale(2.f) * math::matrices::translate(gl.draw_size / 2.f);
+    gl.prog.double_fill.set_view_transform(view);
+    gl.prog.double_fill.set_interpolation(anim.interpolation);
+
+    models[anim.source % models.size()].draw_interpolated(gl, models[anim.dest % models.size()]);
 }
 
 }  // namespace
@@ -150,10 +177,30 @@ void room::draw(const graphics::core& gl) const
     gl.prog.text.set_color(greyscale);
     draw_text<text_align::center, text_align::center>(*gl.fonts.title, gl.prog.text, "Model", gl.draw_size / 2.f, 48);
 
-    gl.prog.fill.use();
-    gl.prog.fill.set_color({1,0,0});
-    draw_bones(gl);
+    draw_bones(def_models_rotated, gl, model_anim.load(std::memory_order_relaxed));
 
+}
+
+std::optional<keyring::variant> room::step(const pointer_wrapper& [[maybe_unused]] cursor)
+{
+    auto work_copy = model_anim.load(std::memory_order_relaxed);
+    timer += .04f;
+
+    if (timer >= F_TAU)
+    {
+        timer = F_TAU_2;
+
+        work_copy.source = work_copy.dest;
+
+        if (++work_copy.dest >= def_models_rotated.size())
+        {
+            work_copy.dest = 0;
+        }
+    }
+
+    work_copy.interpolation = (std::cos(timer) + 1.f) / 2.f;
+    model_anim.store(work_copy, std::memory_order_relaxed);
+    return {};
 }
 
 }  // namespace idle::hotel::model

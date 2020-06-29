@@ -116,7 +116,7 @@ public:
     void interpolation_vertex(const GLfloat *f) const;
 };
 
-struct double_vertex_program_t : textured_program_t
+struct double_base_program_t
 {
 private:
     GLuint destination_handle = 0;
@@ -127,6 +127,16 @@ public:
 
     void set_interpolation(GLfloat x) const;
 
+    void prepare_headless(GLuint prog);
+};
+
+struct double_solid_program_t : program_t, double_base_program_t
+{
+    void prepare();
+};
+
+struct double_vertex_program_t : textured_program_t, double_base_program_t
+{
     void prepare();
 };
 
