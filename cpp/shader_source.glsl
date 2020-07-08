@@ -129,7 +129,7 @@ void main() {
 @@ gradientf
 
 #ifdef GL_ES
-precision mediump float;
+precision lowp float;
 #endif
 uniform vec4 uCol, uCo2;
 varying float vA;
@@ -174,7 +174,7 @@ void main() {
 @@ solidf
 
 #ifdef GL_ES
-precision mediump float;
+precision lowp float;
 #endif
 uniform vec4 uCol;
 
@@ -185,26 +185,27 @@ void main() {
 @@ noisef  // linked with normv
 
 #ifdef GL_ES
-precision mediump float;
+precision highp float;
 #endif
 uniform vec4 uCol, uCo2, uCo3;
 varying vec2 vUV;
 uniform vec2 uSeed;
 
-float rand(vec2 co)  // straight up textbook rand
+float snoise(vec2 co)  // straight up textbook rand
 {
     float a = 12.9898;
     float b = 78.233;
     float c = 43758.5453;
-    float dt= dot(co.xy ,vec2(a,b));
-    float sn= mod(dt,3.14);
+    float dt = dot(co, vec2(a, b));
+    float sn = mod(dt, 3.14);
     return fract(sin(sn) * c);
 }
 
 void main() {
     float dist = min(distance(vUV, vec2(0.5, 0.5)) * 1.49, 1.0);
-    vec4 sum = uCo2 + (uCo3 - uCo2) * dist;
-    gl_FragColor = uCol + (sum - uCol) * rand(vUV + uSeed);
+    vec4 sum_color = uCo2 + (uCo3 - uCo2) * dist;
+    vec2 seed = vUV * 5000.0 + uSeed;
+    gl_FragColor = uCol + (sum_color - uCol) * snoise(seed);
 }
 
 @@ textv

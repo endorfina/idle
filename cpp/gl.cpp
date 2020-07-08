@@ -75,15 +75,15 @@ GLuint load_shader(const GLenum shaderType, const char* const pSource)
     return shader;
 }
 
-std::optional<GLuint> create_program(const char* const pVertexSource, const char* const pFragmentSource)
+GLuint create_program(const char* const pVertexSource, const char* const pFragmentSource)
 {
     GLuint vertexShader = load_shader(gl::VERTEX_SHADER, pVertexSource);
     if (!vertexShader)
-        return {};
+        return 0;
 
     GLuint pixelShader = load_shader(gl::FRAGMENT_SHADER, pFragmentSource);
     if (!pixelShader)
-        return {};
+        return 0;
 
     if (GLuint program = gl::CreateProgram())
     {
@@ -104,11 +104,11 @@ std::optional<GLuint> create_program(const char* const pVertexSource, const char
                 LOGE("Could not link program:\n%s", buf);
             }
             gl::DeleteProgram(program);
-            return {};
+            return 0;
         }
-        return { program };
+        return program;
     }
-    return {};
+    return 0;
 }
 
 struct shader_compiler
@@ -142,7 +142,7 @@ public:
         {
             if (const auto r = create_program(data(v), data(f)))
             {
-                return *r;
+                return r;
             }
             else
             {
@@ -229,7 +229,11 @@ bool core::setup_graphics()
     gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
     gl::Enable(gl::BLEND);
 
-    compile_shaders(prog);
+    if (!compile_shaders(prog))
+    {
+        return false;
+    }
+
     apply_to_all(prog, [] (auto& program) { program.prepare(); });
 
 #if LOG_LEVEL > 3

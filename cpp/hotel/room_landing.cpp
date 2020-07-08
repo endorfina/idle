@@ -139,7 +139,7 @@ std::optional<keyring::variant> room::step(const pointer_wrapper& pointer)
         thing.legs[1][i] += (thing.legs[0][i] - thing.legs[1][i]) / application_frames_per_second * .3f;
     }
 
-    random_float dist_float2{-1.f, 1.f};
+    random_float dist_float2{ 5000.f, 43758.5453f };
     std::generate(noise_seed.begin(), noise_seed.end(), [this, &dist_float2](){ return dist_float2(fast_random_device); });
 
     if (thing.alpha < 1.f)

@@ -70,7 +70,7 @@ if(ANDROID)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -u ANativeActivity_onCreate")
 
     add_library(${PROJECT_NAME} SHARED $<TARGET_OBJECTS:android_glue> "egl.cpp")
-    target_link_libraries(${PROJECT_NAME} PRIVATE "android" "log" "EGL" "GLESv2")
+    target_link_libraries(${PROJECT_NAME} PRIVATE android log EGL GLESv2)
 
 else()
     get_filename_component(OUTPUT_PATH "${CMAKE_BINARY_DIR}/out" REALPATH CACHE)

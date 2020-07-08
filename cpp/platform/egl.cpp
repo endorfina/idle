@@ -69,7 +69,7 @@ std::optional<resize_request_t> create_window(egl_display& egl)
 {
     // initialize OpenGL ES and EGL
     EGLint w, h;
-    while (true)
+
     {
         EGLint format;
         EGLSurface get_surface;
@@ -82,7 +82,7 @@ std::optional<resize_request_t> create_window(egl_display& egl)
         * sample, we have a very simplified selection process, where we pick
         * the first EGLConfig that matches our criteria */
 
-        static const auto sconfig = [get_display]()->EGLConfig
+        const auto sconfig = [get_display]()->EGLConfig
         {
             EGLint numConfigs;
             eglChooseConfig(get_display, attributes, nullptr, 0, &numConfigs);
@@ -136,8 +136,6 @@ std::optional<resize_request_t> create_window(egl_display& egl)
         egl.display = get_display;
         egl.context = get_context;
         egl.surface = get_surface;
-
-        break;
     }
 
     if (static const gl::exts::LoadTest glTest = gl::sys::LoadFunctions(); !glTest)
@@ -145,8 +143,10 @@ std::optional<resize_request_t> create_window(egl_display& egl)
         LOGE("Failed to load crucial OpenGL functions");
         return {};
     }
-    else if (const auto amt = glTest.GetNumMissing(); amt > 0)
+    else if (const auto amt = glTest.GetNumMissing())
+    {
         LOGE("Number of functions that failed to load: %i.", amt);
+    }
 
     return {{ static_cast<unsigned>(w), static_cast<unsigned>(h) }};
 }
@@ -294,6 +294,8 @@ bool context::has_opengl() const
 void context::terminate_display()
 {
     auto& egl = egl_display::cast(data);
+
+    LOGD("context::terminate_display");
 
     if (egl.display != EGL_NO_DISPLAY) {
         eglMakeCurrent(egl.display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
