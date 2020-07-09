@@ -31,8 +31,13 @@ varying vec2 vUV;
 uniform vec3 uO; // the uniform offsets
 
 void main() {
-  vec4 raw = texture2D(uT, vec2(vUV.x, vUV.y * uO.x));
-  vec4 mask = texture2D(uT, vec2(vUV.x * uO.y, vUV.y * uO.x * uO.y + uO.z));
+  vec2 coords = vec2(vUV.x, vUV.y * uO.x);
+  vec4 raw = texture2D(uT, coords);
+
+  vec2 mask_coords = coords * uO.y;
+  mask_coords.y += uO.z;
+  vec4 mask = texture2D(uT, mask_coords);
+
   gl_FragColor = raw * mask;
 }
 
