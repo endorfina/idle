@@ -17,6 +17,7 @@
     along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <utility>
 #include <idle/drawable.hpp>
 #include "room_model.hpp"
 
@@ -30,70 +31,18 @@ namespace idle::hotel::model
 namespace
 {
 
-constexpr point_t flatten(const point_3d_t p)
+template<typename...Js>
+struct line_mesh
 {
-    return { p.y, - p.z };
-}
+    using tree_type = glass::flat_tree<Js...>;
 
-constexpr auto make_matrix(const point_3d_t angle)
-{
-    return math::matrices::rotate_x<float>(angle.x)
-        * math::matrices::rotate_y<float>(angle.y)
-        * math::matrices::rotate<float>(angle.z);
-}
+    tree_type mesh;
 
-using index_pair = std::array<unsigned, 2>;
-
-template<typename J>
-struct tree_skeleton
-{
-    std::array<point_t, J::size + J::oddness> table{};
-    std::array<unsigned, 1 + J::oddness> lengths{};
-
-private:
-    constexpr index_pair to_lines(index_pair index, const glass::blocks::bone& b, const mat4x4_noopt_t& mat)
-    {
-        const auto rot = math::matrices::translate<float>({0, 0, b.length}) * make_matrix(b.angle) * mat;
-        table[index[0]++] = flatten(rot * point_3d_t{});
-        return index;
-    }
-
-    template<typename...Vars>
-    constexpr index_pair to_lines(const index_pair index, const glass::blocks::joint<Vars...>& j, const mat4x4_noopt_t& mat)
-    {
-        const auto rot = math::matrices::translate<float>({0, 0, j.root.length}) * make_matrix(j.root.angle) * mat;
-        auto new_index = index;
-        table[new_index[0]++] = flatten(rot * point_3d_t{});
-        new_index = to_lines(new_index, j.template link<0>(), rot);
-
-        if constexpr (sizeof...(Vars) > 1)
-        {
-            glass::tuple_visit<1>([&](const auto& it)
-                {
-                    lengths[new_index[1]++] = new_index[0];
-                    table[new_index[0]++] = table[index[0]];
-                    new_index = to_lines(new_index, it, rot);
-                },
-                j.links);
-        }
-        return new_index;
-    }
-
-    template<typename Val>
-    constexpr index_pair to_lines(const index_pair index, const glass::blocks::symmetry<Val>& s, const mat4x4_noopt_t& mat)
-    {
-        auto new_index = to_lines(index, s.left, mat);
-        lengths[new_index[1]++] = new_index[0];
-        table[new_index[0]++] = table[index[0] - 1];
-        return to_lines(new_index, s.right, mat);
-    }
-
-public:
     void draw(const graphics::core& gl) const
     {
-        auto ptr = table.data();
+        auto ptr = mesh.table.data();
 
-        for (const auto it : lengths)
+        for (const auto it : mesh.lengths)
         {
             gl.prog.fill.position_vertex(reinterpret_cast<const GLfloat*>(ptr));
             gl::DrawArrays(gl::LINE_STRIP, 0, it);
@@ -101,40 +50,78 @@ public:
         }
     }
 
-    void draw_interpolated(const graphics::core& gl, const tree_skeleton& another) const
+    void draw_interpolated(const graphics::core& gl, const line_mesh& another) const
     {
         size_t sum = 0;
 
-        for (const auto it : lengths)
+        for (const auto it : mesh.lengths)
         {
-            gl.prog.double_fill.position_vertex(reinterpret_cast<const GLfloat*>(&table[sum]));
-            gl.prog.double_fill.destination_vertex(reinterpret_cast<const GLfloat*>(&another.table[sum]));
+            gl.prog.double_fill.position_vertex(reinterpret_cast<const GLfloat*>(&mesh.table[sum]));
+            gl.prog.double_fill.destination_vertex(reinterpret_cast<const GLfloat*>(&another.mesh.table[sum]));
             gl::DrawArrays(gl::LINE_STRIP, 0, it);
             sum += it;
         }
     }
 
-    constexpr tree_skeleton(const J& root, const mat4x4_noopt_t& mat)
+    explicit constexpr line_mesh(const tree_type& tree) : mesh{tree}
     {
-        const auto [total_length, last_iter] = to_lines({0, 0}, root, mat);
-        lengths[last_iter] = total_length;
-
-        for (auto i = lengths.size() - 1; i > 0; --i)
-        {
-            lengths[i] -= lengths[i - 1];
-        }
     }
 };
 
-constexpr mat4x4_noopt_t skew_mat = math::matrices::rotate<GLfloat>(F_TAU_8) * math::matrices::rotate_y<GLfloat>(F_TAU_4 / 3);
+constexpr mat4x4_noopt_t skew_matrix = math::matrices::rotate<GLfloat>(F_TAU_8) * math::matrices::rotate_y<GLfloat>(F_TAU_4 / 3);
 
 template<unsigned...Degs, typename J>
-constexpr std::array<tree_skeleton<J>, sizeof...(Degs)> rotate(const J& root)
+constexpr auto spin(const J& root)
 {
-    return { tree_skeleton<J>{ root, math::matrices::rotate<float>(math::degtorad<float>(Degs)) * skew_mat } ... };
+    return std::array{
+        line_mesh{
+            glass::flat_tree(
+                glass::deep_tree(
+                    root,
+                    math::matrices::rotate<float>(math::degtorad<float>(Degs)) * skew_matrix
+                )) } ...
+    };
 }
 
-constexpr auto def_models_rotated = rotate<0, 45, 90, 135, 180, 225, 270, 315>(glass::closet::humanoid{});
+template<typename S, auto...Is>
+constexpr auto skew_index(const S& source, std::index_sequence<Is...>)
+{
+    return std::array{
+        line_mesh{
+            glass::flat_tree(
+                glass::deep_tree(
+                    source[Is],
+                    skew_matrix
+                )) } ...
+    };
+}
+
+template<typename Rig, auto Size>
+constexpr auto skew(const std::array<Rig, Size>& anim)
+{
+    return skew_index(anim, std::make_index_sequence<Size>{});
+}
+
+constexpr glass::closet::humanoid hueman{};
+
+constexpr auto def_models_rotated = spin<0, 45, 90, 135, 180, 225, 270, 315>(hueman);
+
+constexpr auto walking = skew(
+    glass::muscle{
+        std::make_tuple(
+            [](glass::closet::humanoid h)
+            {
+                h.root.length += 5;
+                return h;
+            },
+            [](glass::closet::humanoid h)
+            {
+                h.root.length -= 10;
+                h.get_hips().left[2].angle.y += F_TAU_8;
+                return h;
+            }
+        )
+    }.animate(hueman));
 
 template<typename Models>
 void draw_bones(const Models& models, const graphics::core& gl, const animation anim)
@@ -177,7 +164,8 @@ void room::draw(const graphics::core& gl) const
     gl.prog.text.set_color(greyscale);
     draw_text<text_align::center, text_align::center>(*gl.fonts.title, gl.prog.text, "Model", gl.draw_size / 2.f, 48);
 
-    draw_bones(def_models_rotated, gl, model_anim.load(std::memory_order_relaxed));
+    // draw_bones(def_models_rotated, gl, model_anim.load(std::memory_order_relaxed));
+    draw_bones(walking, gl, model_anim.load(std::memory_order_relaxed));
 
 }
 

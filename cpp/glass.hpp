@@ -46,7 +46,7 @@ constexpr void tuple_copy(std::tuple<Vars...>& dest, const std::tuple<Vars...>& 
 
     if constexpr (I + 1 < sizeof...(Vars))
     {
-        tuple_visit<I + 1, Vars...>(dest, src);
+        tuple_copy<I + 1, Vars...>(dest, src);
     }
 }
 
@@ -62,6 +62,14 @@ struct bone
     static constexpr unsigned size = 1;
     static constexpr unsigned oddness = 0;
     static constexpr unsigned prime_branch_len = 1;
+
+    constexpr auto get_transform() const
+    {
+        return math::matrices::translate<float>({0, 0, length})
+            * math::matrices::rotate_x<float>(angle.x)
+            * math::matrices::rotate_y<float>(angle.y)
+            * math::matrices::rotate<float>(angle.z);
+    }
 };
 
 template<typename...Appendages>
@@ -71,26 +79,26 @@ struct joint
     bone root;
 
     using tuple_type = std::tuple<Appendages...>;
-    tuple_type links;
+    tuple_type branches;
 
     template<unsigned Index = 0>
-    constexpr auto& link()
+    constexpr auto& branch()
     {
         static_assert(Index < sizeof...(Appendages));
-        return std::get<Index>(links);
+        return std::get<Index>(branches);
     }
 
     template<unsigned Index = 0>
-    constexpr auto& link() const
+    constexpr auto& branch() const
     {
         static_assert(Index < sizeof...(Appendages));
-        return std::get<Index>(links);
+        return std::get<Index>(branches);
     }
 
     constexpr joint& operator=(const joint& other)
     {
         root = other.root;
-        tuple_copy(links, other.links);
+        tuple_copy(branches, other.branches);
         return *this;
     }
 
@@ -99,14 +107,26 @@ struct joint
     static constexpr unsigned prime_branch_len = 1 + std::tuple_element<0, tuple_type>::type::prime_branch_len;
 };
 
-struct arm : joint<joint<bone>>
+template<unsigned Size>
+struct segment
 {
-    constexpr void set_bone_length(const float len)
+    static_assert(Size > 0);
+
+    std::array<bone, Size> table;
+
+    constexpr const bone& operator[](unsigned pos) const
     {
-        root.length = len;
-        link<0>().root.length = len;
-        link<0>().link<0>().length = len / 2.f;
+        return table[pos];
     }
+
+    constexpr bone& operator[](unsigned pos)
+    {
+        return table[pos];
+    }
+
+    static constexpr unsigned size = Size;
+    static constexpr unsigned oddness = 0;
+    static constexpr unsigned prime_branch_len = Size;
 };
 
 template<typename Value>
@@ -130,6 +150,15 @@ constexpr void apply_for_all(const Callable& func, blocks::bone& node)
     func(node);
 }
 
+template<unsigned Size, typename Callable>
+constexpr void apply_for_all(const Callable& func, blocks::segment<Size>& node)
+{
+    for (auto& it : node.table)
+    {
+        func(it);
+    }
+}
+
 template<unsigned Index = 0, typename Callable, typename...Nodes>
 constexpr void apply_for_all(const Callable& func, blocks::joint<Nodes...>& node)
 {
@@ -140,7 +169,7 @@ constexpr void apply_for_all(const Callable& func, blocks::joint<Nodes...>& node
 
     if constexpr (sizeof...(Nodes) > 0)
     {
-        apply_for_all(func, node.template link<Index>());
+        apply_for_all(func, node.template branch<Index>());
 
         if constexpr (Index + 1 < sizeof...(Nodes))
             apply_for_all<Index + 1>(func, node);
@@ -151,22 +180,119 @@ template<typename Val>
 constexpr void sync_right(blocks::symmetry<Val>& sym)
 {
     sym.right = sym.left;
-    apply_for_all([](auto& b) { b.angle *= math::point3<float>{-1.f, 1.f, -1.f}; }, sym.right);
+    apply_for_all([](auto& b) { b.angle *= point_3d_t{-1.f, 1.f, -1.f}; }, sym.right);
+}
+
+using index_pair = std::array<unsigned, 2>;
+
+constexpr point_t flatten(const point_3d_t p)
+{
+    return { p.y, - p.z };
 }
 
 }  // namespace meta
 
-template <unsigned FrameSize, unsigned AnimLength>
-using atable = std::array<std::array<float, FrameSize * 2>, AnimLength>;
+
+template<typename...Js>
+struct deep_tree
+{
+    using joint_type = blocks::joint<Js...>;
+
+    std::array<point_3d_t, joint_type::size + joint_type::oddness> table{};
+    std::array<unsigned, 1 + joint_type::oddness> lengths{};
+
+private:
+    constexpr meta::index_pair to_lines(meta::index_pair index, const blocks::bone& b, const mat4x4_noopt_t& mat)
+    {
+        const auto rot = b.get_transform() * mat;
+        table[index[0]++] = rot * point_3d_t{};
+        return index;
+    }
+
+    template<unsigned Size>
+    constexpr meta::index_pair to_lines(meta::index_pair index, const blocks::segment<Size>& s, mat4x4_noopt_t mat)
+    {
+        for (const auto& it : s.table)
+        {
+            mat.reverse_multiply(it.get_transform());
+            table[index[0]++] = mat * point_3d_t{};
+        }
+
+        return index;
+    }
+
+    template<typename...Vars>
+    constexpr meta::index_pair to_lines(meta::index_pair index, const blocks::joint<Vars...>& j, const mat4x4_noopt_t& mat)
+    {
+        const auto rot = j.root.get_transform() * mat;
+        const auto branchoff_point = index[0];
+
+        table[index[0]++] = rot * point_3d_t{};
+        index = to_lines(index, j.template branch<0>(), rot);
+
+        if constexpr (sizeof...(Vars) > 1)
+        {
+            tuple_visit<1>([&](const auto& it)
+                {
+                    lengths[index[1]++] = index[0];
+                    table[index[0]++] = table[branchoff_point];
+                    index = to_lines(index, it, rot);
+                },
+                j.branches);
+        }
+        return index;
+    }
+
+    template<typename Val>
+    constexpr meta::index_pair to_lines(meta::index_pair index, const blocks::symmetry<Val>& s, const mat4x4_noopt_t& mat)
+    {
+        const auto branchoff_point = index[0];
+        index = to_lines(index, s.left, mat);
+        lengths[index[1]++] = index[0];
+        table[index[0]++] = table[branchoff_point - 1];
+        return to_lines(index, s.right, mat);
+    }
+
+public:
+    constexpr deep_tree(const joint_type& root, const mat4x4_noopt_t& mat)
+    {
+        const auto [total_length, last_iter] = to_lines({0, 0}, root, mat);
+        lengths[last_iter] = total_length;
+
+        for (auto i = lengths.size() - 1; i > 0; --i)
+        {
+            lengths[i] -= lengths[i - 1];
+        }
+    }
+};
+
+template<typename...Js>
+struct flat_tree
+{
+    using joint_type = blocks::joint<Js...>;
+
+    std::array<point_t, joint_type::size + joint_type::oddness> table{};
+    std::array<unsigned, 1 + joint_type::oddness> lengths;
+
+    explicit constexpr flat_tree(const deep_tree<Js...>& source)
+        : lengths{source.lengths}
+    {
+        // std::transform is unavailable in C++17
+
+        for (unsigned i = 0; i < table.size(); ++i)
+        {
+            table[i] = meta::flatten(source.table[i]);
+        }
+    }
+};
 
 template<typename... Links>
 struct muscle
 {
     std::tuple<Links...> chain;
 
-    template<typename... Li>
-    constexpr muscle(Li&&... var)
-        : chain{std::forward<Li>(var)...}
+    constexpr muscle(std::tuple<Links...> var)
+        : chain{std::move(var)}
     {}
 
 protected:
@@ -187,7 +313,7 @@ public:
     using array_t = std::array<Val, sizeof...(Links)>;
 
     template<typename Cargo>
-    constexpr array_t<Cargo> link(const Cargo& cargo) const
+    constexpr array_t<Cargo> animate(const Cargo& cargo) const
     {
         array_t<Cargo> out{};
         out[0] = cargo;
@@ -203,52 +329,62 @@ struct humanoid : blocks::joint
                 <
                     blocks::joint
                     <
-                        blocks::joint<blocks::bone>,
-                        blocks::symmetry<blocks::joint<blocks::arm>>
+                        blocks::segment<2>,
+                        blocks::symmetry<blocks::segment<4>>
                     >,
 
                     blocks::joint
                     <
-                        blocks::symmetry<blocks::joint<blocks::arm>>
+                        blocks::symmetry<blocks::segment<4>>
                     >
                 >
 {
     constexpr decltype(auto) get_upperbody()
     {
-        return link<0>();
+        return branch<0>();
     }
 
     constexpr decltype(auto) get_lowerbody()
     {
-        return link<1>();
+        return branch<1>();
     }
 
     constexpr decltype(auto) get_shoulders()
     {
-        return get_upperbody().link<1>();
+        return get_upperbody().branch<1>();
     }
 
     constexpr decltype(auto) get_head()
     {
-        return get_upperbody().link<0>();
+        return get_upperbody().branch<0>();
     }
 
     constexpr decltype(auto) get_hips()
     {
-        return get_lowerbody().link<0>();
+        return get_lowerbody().branch<0>();
     }
 
-    constexpr void align_feet()
+    constexpr void realign()
     {
+        const deep_tree tree(*this, {});
+        const auto low = std::min_element(
+                tree.table.begin(),
+                tree.table.end(),
+                [] (const auto& lhs, const auto& rhs) { return lhs.z < rhs.z; }
+            )->z;
+
+        if (low < 0)
+            root.length -= low;
     }
 
     constexpr humanoid()
     {
-        get_head().root.length = 10;
-        get_head().link<0>().length = 15;
-        get_head().link<0>().angle.y = - (get_head().root.angle.y = F_TAU / 30);
+        auto& [neck, face] = get_head().table;
+        neck.length = 10;
+        face.length = 15;
+        face.angle.y = - (neck.angle.y = F_TAU / 30);
 
-        root.length = 40;
+        root.length = 1;
 
         auto& ub = get_upperbody().root;
         auto& lb = get_lowerbody().root;
@@ -260,30 +396,27 @@ struct humanoid : blocks::joint
         auto& sh = get_shoulders();
         auto& hp = get_hips();
 
-        blocks::arm& arm = sh.left.link<0>();
-        blocks::arm& leg = hp.left.link<0>();
+        auto& arm = sh.left.table;
+        auto& leg = hp.left.table;
 
-        arm.set_bone_length(10);
+        arm = {
+            blocks::bone{ 7.f, { F_TAU / -4, 0, 0 } },
+            blocks::bone{ 10.f, { F_TAU / -5, F_TAU / -12, 0 } },
+            blocks::bone{ 10.f, { F_TAU / 20, F_TAU / 12, 0 } },
+            blocks::bone{ 4.f, { 0.f, F_TAU / 12, 0.f } }
+        };
 
-        sh.left.root.length = 7;
-
-        sh.left.root.angle = {F_TAU / -4, 0, 0};
-        arm.root.angle = {F_TAU / -5, F_TAU / -12, 0};
-        arm.link<0>().root.angle = {F_TAU / 20, F_TAU / 12, 0};
-        arm.link<0>().link<0>().angle.y = F_TAU / 12;
-
-        leg.set_bone_length(18);
-
-        hp.left.root.length = 7;
-
-        hp.left.root.angle = { F_TAU / -5, 0, 0};
-        leg.root.angle = { F_TAU / 5.5f, F_TAU / -20, 0};
-        leg.link<0>().root.angle = { 0.f, F_TAU / 16, F_TAU / -20 };
-        leg.link<0>().link<0>().angle.y = F_TAU / -4;
+        leg = {
+            blocks::bone{ 7.f, { F_TAU / -5, 0, 0 } },
+            blocks::bone{ 18.f, { F_TAU / 5.5f, F_TAU_4 * -.2f, 0 } },
+            blocks::bone{ 18.f, { 0.f, F_TAU_4 * .25f, F_TAU_4 * -.2f } },
+            blocks::bone{ 8.f, { 0.f, F_TAU_4 * (.2f - .25f - 1.f), 0.f } }
+        };
 
         meta::sync_right(sh);
         meta::sync_right(hp);
 
+        realign();
     }
 };
 

@@ -192,7 +192,7 @@ namespace detail
             if (epsilon_equal(sum, new_sum))
                 return sum;
             sum = new_sum;
-            n = n * i * (i + 1);
+            n *= i * (i + 1);
             i += 2;
             s = -s;
             t *= x * x;
@@ -251,7 +251,46 @@ namespace detail
             atan_sum(x, sum + atan_product(x, n), n+1);
     }
 
+    template <typename T>
+    constexpr T inverse_trigonometry(const T x, T sum, int n, T t)
+    {
+        while (true)
+        {
+            const T new_sum = sum + t * n / (n + 2);
+            if (epsilon_equal(sum, new_sum))
+                return sum;
+            sum = new_sum;
+            n += 2;
+            t *= x * x * n / (n + 3);
+        }
+    }
+
 }  // namespace detail
+
+template <typename T>
+constexpr auto asin(T x)
+{
+    if (x <= -1)
+        return F_TAU_2 / -2.f;
+    if (x >= 1)
+        return F_TAU_4;
+
+    if constexpr (std::is_floating_point_v<T>)
+        return detail::inverse_trigonometry(x, x, 1, x * x * x / 2.f);
+    else
+        return detail::inverse_trigonometry<float>(x, x, 1, x * x * x / 2.f);
+}
+
+template <typename T>
+constexpr auto acos(T x)
+{
+    if (x <= -1)
+        return F_TAU_2;
+    if (x >= 1)
+        return 0.f;
+
+    return F_TAU_4 - asin(x);
+}
 
 template <typename T>
 constexpr auto atan(T x)
@@ -890,57 +929,55 @@ constexpr static bool invert_matrix(table_type &mat_)
     return false;
 }
 
-}  // namespace meta
-
-template<typename T, unsigned Level = 0>
-struct matrix4x4
+template<typename T>
+struct matrix4x4_bare
 {
     static_assert(std::is_arithmetic_v<T>);
 
     using value_type = T;
     using table_type = std::array<value_type, 16>;
-    table_type data;
 
-    constexpr matrix4x4() : data{1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1} {}
+    table_type values;
 
-    constexpr matrix4x4(const table_type& t) : data(t) {}
+    constexpr matrix4x4_bare() : values{1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1} {}
 
-    template <unsigned L>
-    constexpr matrix4x4(const matrix4x4<value_type, L>& m) : data(m.data) {}
+    constexpr matrix4x4_bare(const table_type& table) : values{table} {}
 
-    constexpr explicit operator const value_type *() const { return data.data(); }
+    constexpr explicit operator const value_type *() const { return values.data(); }
 
-    constexpr decltype(auto) operator [](unsigned i) const { return data[i]; }
+    constexpr decltype(auto) operator [](const unsigned i) const { return values[i]; }
 
-    constexpr decltype(auto) operator [](unsigned i) { return data[i]; }
+    constexpr decltype(auto) operator [](const unsigned i) { return values[i]; }
+};
 
-    template <unsigned L>
-    constexpr matrix4x4& operator*=(const matrix4x4<value_type, L>& other)
-    {
-        if constexpr (L || Level)
-            data = meta::multiplication(data, other.data);
-        else
-            data = meta::multiplication_2d(data, other.data);
-        return *this;
-    }
+}  // namespace meta
+
+template<typename T, unsigned Level = 0>
+struct matrix4x4 : meta::matrix4x4_bare<T>
+{
+    using bare_type = meta::matrix4x4_bare<T>;
+    using bare_type::matrix4x4_bare;
 
     constexpr matrix4x4& invert(void)
     {
-        meta::invert_matrix(data);
+        meta::invert_matrix(this->values);
         return *this;
     }
 
     constexpr matrix4x4& reverse_multiply(const matrix4x4& other)
     {
-        this->data = meta::multiplication(other.data, this->data);
+        this->values = meta::multiplication(other.values, this->values);
         return *this;
     }
 };
 
 template <typename U, unsigned O1, unsigned O2>
-constexpr matrix4x4<U, std::max(O1, O2)> operator*(matrix4x4<U, O1> lhs, const matrix4x4<U, O2>& rhs)
+constexpr matrix4x4<U, std::max(O1, O2)> operator*(const matrix4x4<U, O1>& lhs, const matrix4x4<U, O2>& rhs)
 {
-    return lhs *= rhs;
+    if constexpr (O1 || O2)
+        return meta::multiplication(lhs.values, rhs.values);
+    else
+        return meta::multiplication_2d(lhs.values, rhs.values);
 }
 
 template<typename T, unsigned O>
