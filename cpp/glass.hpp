@@ -366,10 +366,12 @@ struct humanoid : blocks::joint
 
     constexpr void realign()
     {
+        root.length = 1;
+
         const deep_tree tree(*this, {});
         const auto low = std::min_element(
-                tree.table.begin(),
-                tree.table.end(),
+                tree.table.cbegin(),
+                tree.table.cend(),
                 [] (const auto& lhs, const auto& rhs) { return lhs.z < rhs.z; }
             )->z;
 
@@ -380,11 +382,9 @@ struct humanoid : blocks::joint
     constexpr humanoid()
     {
         auto& [neck, face] = get_head().table;
-        neck.length = 10;
-        face.length = 15;
+        neck.length = 12;
+        face.length = 14;
         face.angle.y = - (neck.angle.y = F_TAU / 30);
-
-        root.length = 1;
 
         auto& ub = get_upperbody().root;
         auto& lb = get_lowerbody().root;
@@ -400,17 +400,17 @@ struct humanoid : blocks::joint
         auto& leg = hp.left.table;
 
         arm = {
-            blocks::bone{ 7.f, { F_TAU / -4, 0, 0 } },
-            blocks::bone{ 10.f, { F_TAU / -5, F_TAU / -12, 0 } },
-            blocks::bone{ 10.f, { F_TAU / 20, F_TAU / 12, 0 } },
-            blocks::bone{ 4.f, { 0.f, F_TAU / 12, 0.f } }
+            blocks::bone{ 6.f, { -F_TAU_4, 0, 0 } },
+            blocks::bone{ 10.f, { -F_TAU_8, 0, 0 } },
+            blocks::bone{ 10.f, { 0, 0, 0 } },
+            blocks::bone{ 4.f, { 0, 0, 0 } }
         };
 
         leg = {
-            blocks::bone{ 7.f, { F_TAU / -5, 0, 0 } },
-            blocks::bone{ 18.f, { F_TAU / 5.5f, F_TAU_4 * -.2f, 0 } },
-            blocks::bone{ 18.f, { 0.f, F_TAU_4 * .25f, F_TAU_4 * -.2f } },
-            blocks::bone{ 8.f, { 0.f, F_TAU_4 * (.2f - .25f - 1.f), 0.f } }
+            blocks::bone{ 7.f, { -F_TAU_4, 0, 0 } },
+            blocks::bone{ 18.f, { F_TAU_4 * .966f, 0, F_TAU_4 * -.1f } },
+            blocks::bone{ 18.f, { 0, F_TAU_4 * .2f, 0 } },
+            blocks::bone{ 8.f, { 0, F_TAU_4 * (.1f - .2f - 1.f), 0 } }
         };
 
         meta::sync_right(sh);

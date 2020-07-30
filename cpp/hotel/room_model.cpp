@@ -180,7 +180,7 @@ std::optional<keyring::variant> room::step(const pointer_wrapper& cursor)
 
         work_copy.source = work_copy.dest;
 
-        if (++work_copy.dest >= def_models_rotated.size())
+        if (++work_copy.dest >= walking.size())
         {
             work_copy.dest = 0;
         }

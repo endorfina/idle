@@ -35,7 +35,8 @@ enum class text_align { near, center, far };
 
 constexpr unsigned application_frames_per_second = 60;
 
-constexpr float square_coordinates[8] = {
+constexpr float square_coordinates[8]
+{
     0, 0, 1, 0,
     0, 1, 1, 1
 };
