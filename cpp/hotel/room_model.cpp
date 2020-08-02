@@ -68,60 +68,111 @@ struct line_mesh
     }
 };
 
-constexpr mat4x4_noopt_t skew_matrix = math::matrices::rotate<GLfloat>(F_TAU_8) * math::matrices::rotate_y<GLfloat>(F_TAU_4 / 3);
-
-template<unsigned...Degs, typename J>
-constexpr auto spin(const J& root)
-{
-    return std::array{
-        line_mesh{
-            glass::flat_tree(
-                glass::deep_tree(
-                    root,
-                    math::matrices::rotate<float>(math::degtorad<float>(Degs)) * skew_matrix
-                )) } ...
-    };
-}
-
 template<typename S, auto...Is>
-constexpr auto skew_index(const S& source, std::index_sequence<Is...>)
+constexpr auto skew_index(const S& source, const mat4x4_noopt_t& mat, std::index_sequence<Is...>)
 {
     return std::array{
         line_mesh{
             glass::flat_tree(
                 glass::deep_tree(
                     source[Is],
-                    skew_matrix
+                    mat
                 )) } ...
     };
 }
 
-template<typename Rig, auto Size>
+constexpr mat4x4_noopt_t skew_matrix = math::matrices::rotate<GLfloat>(F_TAU_8) * math::matrices::rotate_y<GLfloat>(F_TAU_4 / 3);
+
+template<unsigned...Deg, typename Rig, auto Size>
 constexpr auto skew(const std::array<Rig, Size>& anim)
 {
-    return skew_index(anim, std::make_index_sequence<Size>{});
+    auto fun = [&anim] (const float deg)
+    {
+        return skew_index(
+                anim,
+                math::matrices::rotate<float>(math::degtorad<float>(deg)) * skew_matrix,
+                std::make_index_sequence<Size>{});
+    };
+
+    return std::array { fun(static_cast<float>(Deg)) ... };
 }
 
 constexpr glass::closet::humanoid hueman{};
 
-constexpr auto def_models_rotated = spin<0, 45, 90, 135, 180, 225, 270, 315>(hueman);
+constexpr float walk_leg_raise = F_TAU_8 / 4.f;
+constexpr float walk_knee_bend = F_TAU_8;
+constexpr float walk_hip_swing = F_TAU_8 / 8.f;
 
-constexpr auto walking = skew(
-    glass::muscle{
+constexpr auto walking_muscle_digest = glass::muscle
+    {
         std::make_tuple(
+            // [](glass::closet::humanoid h) { return h; },
+
             [](glass::closet::humanoid h)
             {
-                h.root.length += 5;
+                h.get_lowerbody().root.angle.z += walk_hip_swing;
+
+                auto& hips = h.get_hips();
+                hips.right[0].angle.y -= walk_leg_raise;
+                hips.right[2].angle.y += walk_knee_bend;
+                hips.right[3].angle.y -= walk_leg_raise * 2;
+                hips.left[0].angle.y += walk_leg_raise;
+                hips.left[3].angle.y -= walk_leg_raise;
+
+                h.realign();
                 return h;
             },
+
             [](glass::closet::humanoid h)
             {
-                h.root.length -= 10;
-                h.get_hips().left[2].angle.y += F_TAU_8;
+                h.get_lowerbody().root.angle.z += walk_hip_swing;
+
+                auto& hips = h.get_hips();
+
+                hips.right[0].angle.y -= walk_leg_raise;
+                hips.right[2].angle.y -= walk_knee_bend;
+                hips.right[3].angle.y += walk_knee_bend;
+                hips.left[0].angle.y += walk_leg_raise;
+                hips.left[3].angle.y -= walk_leg_raise;
+
+                h.realign();
+                return h;
+            },
+
+            [](glass::closet::humanoid h)
+            {
+                h.get_lowerbody().root.angle.z -= walk_hip_swing * 3;
+
+                auto& hips = h.get_hips();
+
+                hips.right[0].angle.y += walk_leg_raise * 3;
+                hips.right[3].angle.y += walk_leg_raise - walk_knee_bend;
+                hips.left[0].angle.y -= walk_leg_raise * 3;
+                hips.left[2].angle.y += walk_knee_bend;
+
+                h.realign();
+                return h;
+            },
+
+            [](glass::closet::humanoid h)
+            {
+                h.get_lowerbody().root.angle.z -= walk_hip_swing;
+
+                auto& hips = h.get_hips();
+
+                hips.left[0].angle.y -= walk_leg_raise;
+                hips.left[2].angle.y -= walk_knee_bend;
+                hips.left[3].angle.y += walk_knee_bend;
+                hips.right[0].angle.y += walk_leg_raise;
+                hips.right[3].angle.y -= walk_leg_raise;
+
+                h.realign();
                 return h;
             }
         )
-    }.animate(hueman));
+    }.animate(hueman);
+
+constexpr auto walking = skew<0, 45, 90, 135, 180, 225, 270, 315>(walking_muscle_digest);
 
 template<typename Models>
 void draw_bones(const Models& models, const graphics::core& gl, const animation anim)
@@ -165,29 +216,42 @@ void room::draw(const graphics::core& gl) const
     draw_text<text_align::center, text_align::center>(*gl.fonts.title, gl.prog.text, "Model", gl.draw_size / 2.f, 48);
 
     // draw_bones(def_models_rotated, gl, model_anim.load(std::memory_order_relaxed));
-    draw_bones(walking, gl, model_anim.load(std::memory_order_relaxed));
+    draw_bones(walking[facing], gl, model_anim.load(std::memory_order_relaxed));
 
 }
 
 std::optional<keyring::variant> room::step(const pointer_wrapper& cursor)
 {
     auto work_copy = model_anim.load(std::memory_order_relaxed);
-    timer += .04f;
+    timer += .12f / F_TAU_2;
 
-    if (timer >= F_TAU)
+    if (timer >= 1.f)
     {
-        timer = F_TAU_2;
+        timer = 0.f;
 
         work_copy.source = work_copy.dest;
 
-        if (++work_copy.dest >= walking.size())
+        if (++work_copy.dest >= walking[0].size())
         {
             work_copy.dest = 0;
         }
     }
 
-    work_copy.interpolation = (std::cos(timer) + 1.f) / 2.f;
+    work_copy.interpolation = timer;
     model_anim.store(work_copy, std::memory_order_relaxed);
+
+    if (cursor.single_press)
+    {
+        if (static_cast<unsigned>(facing) + 1 >= walking.size())
+        {
+            facing = 0;
+        }
+        else
+        {
+            ++facing;
+        }
+    }
+
     return {};
 }
 

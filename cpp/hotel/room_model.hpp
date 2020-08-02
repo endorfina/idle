@@ -37,7 +37,8 @@ struct animation
 
 struct room
 {
-    float timer = F_TAU;
+    float timer = 0.f;
+    unsigned char facing = 0;
 
     std::atomic<animation> model_anim = animation{0, 1, 0.f};
 
