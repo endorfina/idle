@@ -60,11 +60,16 @@ do
 
     find "$BUILD_DIR/out" -type f | while read -r filename
     do
+        echo
+
         if test -x "$filename"
         then
+            echo -n '💽 '
             ls -lGh "$filename"
         fi
     done
+
+    echo
 
 done << END
 lll

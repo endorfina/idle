@@ -74,7 +74,7 @@ add_custom_target(${PROJECT_NAME}-generate-sh
         -r "${SHADER_OUTPUT}"
         -a "${SHADER_OUTPUT}" -nt "${SHADER_SOURCE}"
         -a "${SHADER_OUTPUT}" -nt "${SHADER_GENERATOR}"
-        && echo "${SHADER_OUTPUT_BASENAME} is up-to-date."
+        && echo "🏮 ${SHADER_OUTPUT_BASENAME} is up-to-date."
         || "${SHADER_GENERATOR}" < "${SHADER_SOURCE}" > "${SHADER_OUTPUT}"
     BYPRODUCTS "${SHADER_OUTPUT}"
     COMMENT "Preparing ${SHADER_OUTPUT}"
