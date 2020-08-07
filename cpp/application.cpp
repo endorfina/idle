@@ -525,7 +525,7 @@ bool application::load()
 
             gl::ActiveTexture(gl::TEXTURE0);
             opengl.prog.normal.set_color({1, 1, 1, 1});
-            gl::BindTexture(gl::TEXTURE_2D, opengl.font->texture.get());
+            gl::BindTexture(gl::TEXTURE_2D, opengl.fonts.regular->texture.get());
             opengl.prog.normal.position_vertex(opengl.draw_bounds_verts.data());
             opengl.prog.normal.texture_vertex(opengl.texture_bounds_verts.data());
             gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
