@@ -17,6 +17,7 @@
     along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <cmath>
 #include <optional>
 #include <utility>
 #include <memory>

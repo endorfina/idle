@@ -4,7 +4,7 @@ project(idle
     VERSION 0.1
     LANGUAGES C CXX)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti -fno-exceptions -ffast-math -fconstexpr-ops-limit=268435456")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti -fno-exceptions -ffast-math")
 # set(CMAKE_CXX_STANDARD 17) # 17 requires 3.8.2, 20 requires 3.12.4
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_SKIP_RPATH ON)
@@ -108,6 +108,12 @@ target_include_directories(${PROJECT_NAME}-top INTERFACE include)
 target_compile_definitions(${PROJECT_NAME}-top INTERFACE "$<$<CONFIG:Debug>:DEBUG>" "LOG_LEVEL=${LOG_LEVEL}")
 target_compile_options(${PROJECT_NAME}-top INTERFACE -Wall -Wredundant-move)
 target_compile_features(${PROJECT_NAME}-top INTERFACE cxx_std_17)
+
+if("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
+    target_compile_options(${PROJECT_NAME}-top INTERFACE -fconstexpr-ops-limit=268435456)
+elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+    target_compile_options(${PROJECT_NAME}-top INTERFACE -fconstexpr-steps=268435456)
+endif()
 
 target_compile_definitions(lodepng PUBLIC "$<$<NOT:$<CONFIG:Debug>>:LODEPNG_NO_COMPILE_ERROR_TEXT>")
 
