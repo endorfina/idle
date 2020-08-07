@@ -57,6 +57,15 @@ do
         && time make \
         && make test \
         || die_safely "Configuration '$color_red$flags$color_norm' has failed to build"
+
+    find "$BUILD_DIR/out" -type f | while read -r filename
+    do
+        if test -x "$filename"
+        then
+            ls -lGh "$filename"
+        fi
+    done
+
 done << END
 lll
 dev

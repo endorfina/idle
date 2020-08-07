@@ -40,7 +40,7 @@ CM_LOG_LEVEL=2 # default: 2 (warnings)
 if [[ $# -gt 0 && $1 == dev ]]
 then
   shift
-  set -- '-ndcgSl' "$@"
+  set -- '-ncgSl' "$@"
 fi
 
 for CLI_ARG in "$@"

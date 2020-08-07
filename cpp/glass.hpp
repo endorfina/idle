@@ -400,17 +400,21 @@ struct humanoid : blocks::joint
         auto& leg = hp.left.table;
 
         arm = {
-            blocks::bone{ 6.f, { -F_TAU_4, 0, 0 } },
-            blocks::bone{ 10.f, { -F_TAU_8, 0, 0 } },
-            blocks::bone{ 10.f, { 0, 0, 0 } },
-            blocks::bone{ 4.f, { 0, 0, 0 } }
+            blocks::bone{ 7.f, { -F_TAU_4, 0, 0 } },
+            blocks::bone{ 11.f, { -F_TAU_8, 0, 0 } },
+            blocks::bone{ 11.f, { 0, 0, 0 } },
+            blocks::bone{ 5.f, { -F_TAU_8 / 8, F_TAU_8 / 8, 0 } }
         };
 
+        constexpr float
+                knee_bend = F_TAU_4 * .12f,
+                thigh_raise = F_TAU_4 * .08f;
+
         leg = {
-            blocks::bone{ 7.f, { -F_TAU_4, 0, 0 } },
-            blocks::bone{ 18.f, { F_TAU_4 * .966f, 0, F_TAU_4 * -.1f } },
-            blocks::bone{ 18.f, { 0, F_TAU_4 * .2f, 0 } },
-            blocks::bone{ 8.f, { 0, F_TAU_4 * (.1f - .2f - 1.f), 0 } }
+            blocks::bone{ 6.f, { -F_TAU_4, 0, 0 } },
+            blocks::bone{ 18.f, { F_TAU_4 * .966f, 0, -thigh_raise } },
+            blocks::bone{ 18.f, { 0, knee_bend, 0 } },
+            blocks::bone{ 7.f, { 0, - knee_bend + thigh_raise - F_TAU_4, 0 } }
         };
 
         meta::sync_right(sh);

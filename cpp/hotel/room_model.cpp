@@ -99,9 +99,14 @@ constexpr auto skew(const std::array<Rig, Size>& anim)
 
 constexpr glass::closet::humanoid hueman{};
 
-constexpr float walk_leg_raise = F_TAU_8 / 4.f;
+constexpr float walk_leg_raise = F_TAU_8 / 6.f;
 constexpr float walk_knee_bend = F_TAU_8;
-constexpr float walk_hip_swing = F_TAU_8 / 8.f;
+constexpr float walk_foot_raise = F_TAU_8 * -.6f;
+constexpr float walk_hip_swing = F_TAU_8 / 12.f;
+
+constexpr float walk_shoulder_swing = F_TAU_8 / 16.f;
+constexpr float walk_arm_raise = F_TAU_8 / 8.f;
+constexpr float walk_elbow_bend = F_TAU_8 / 4.f;
 
 constexpr auto walking_muscle_digest = glass::muscle
     {
@@ -110,12 +115,21 @@ constexpr auto walking_muscle_digest = glass::muscle
 
             [](glass::closet::humanoid h)
             {
+                h.get_upperbody().root.angle.z -= walk_shoulder_swing;
                 h.get_lowerbody().root.angle.z += walk_hip_swing;
+
+                auto& shoulders = h.get_shoulders();
+                shoulders.right[1].angle.x += F_TAU_8 * .61f;
+                shoulders.left[1].angle.x -= F_TAU_8 * .61f;
+                shoulders.right[0].angle.y += walk_arm_raise / 2;
+                shoulders.right[2].angle.y += walk_elbow_bend;
+                shoulders.left[0].angle.y -= walk_arm_raise / 2;
+                shoulders.left[2].angle.y += walk_elbow_bend;
 
                 auto& hips = h.get_hips();
                 hips.right[0].angle.y -= walk_leg_raise;
                 hips.right[2].angle.y += walk_knee_bend;
-                hips.right[3].angle.y -= walk_leg_raise * 2;
+                hips.right[3].angle.y += walk_leg_raise + walk_foot_raise;
                 hips.left[0].angle.y += walk_leg_raise;
                 hips.left[3].angle.y -= walk_leg_raise;
 
@@ -125,13 +139,19 @@ constexpr auto walking_muscle_digest = glass::muscle
 
             [](glass::closet::humanoid h)
             {
+                h.get_upperbody().root.angle.z -= walk_shoulder_swing;
                 h.get_lowerbody().root.angle.z += walk_hip_swing;
+
+                auto& shoulders = h.get_shoulders();
+                shoulders.right[0].angle.y += walk_arm_raise;
+                shoulders.left[0].angle.y -= walk_arm_raise;
+                shoulders.left[2].angle.y += walk_elbow_bend;
 
                 auto& hips = h.get_hips();
 
                 hips.right[0].angle.y -= walk_leg_raise;
                 hips.right[2].angle.y -= walk_knee_bend;
-                hips.right[3].angle.y += walk_knee_bend;
+                hips.right[3].angle.y += walk_leg_raise - walk_foot_raise;
                 hips.left[0].angle.y += walk_leg_raise;
                 hips.left[3].angle.y -= walk_leg_raise;
 
@@ -141,14 +161,21 @@ constexpr auto walking_muscle_digest = glass::muscle
 
             [](glass::closet::humanoid h)
             {
-                h.get_lowerbody().root.angle.z -= walk_hip_swing * 3;
+                h.get_upperbody().root.angle.z += walk_shoulder_swing * 2;
+                h.get_lowerbody().root.angle.z -= walk_hip_swing * 2;
+
+                auto& shoulders = h.get_shoulders();
+                shoulders.right[0].angle.y -= walk_arm_raise * 3;
+                shoulders.left[0].angle.y += walk_arm_raise * 3;
+                shoulders.left[2].angle.y -= walk_elbow_bend;
 
                 auto& hips = h.get_hips();
 
                 hips.right[0].angle.y += walk_leg_raise * 3;
-                hips.right[3].angle.y += walk_leg_raise - walk_knee_bend;
+                hips.right[3].angle.y -= walk_leg_raise * 3;
                 hips.left[0].angle.y -= walk_leg_raise * 3;
                 hips.left[2].angle.y += walk_knee_bend;
+                hips.left[3].angle.y += walk_leg_raise * 3 + walk_foot_raise;
 
                 h.realign();
                 return h;
@@ -156,13 +183,19 @@ constexpr auto walking_muscle_digest = glass::muscle
 
             [](glass::closet::humanoid h)
             {
+                h.get_upperbody().root.angle.z += walk_shoulder_swing;
                 h.get_lowerbody().root.angle.z -= walk_hip_swing;
+
+                auto& shoulders = h.get_shoulders();
+                shoulders.right[0].angle.y -= walk_arm_raise;
+                shoulders.left[0].angle.y += walk_arm_raise;
+                shoulders.right[2].angle.y += walk_elbow_bend;
 
                 auto& hips = h.get_hips();
 
                 hips.left[0].angle.y -= walk_leg_raise;
                 hips.left[2].angle.y -= walk_knee_bend;
-                hips.left[3].angle.y += walk_knee_bend;
+                hips.left[3].angle.y += walk_leg_raise - walk_foot_raise;
                 hips.right[0].angle.y += walk_leg_raise;
                 hips.right[3].angle.y -= walk_leg_raise;
 
