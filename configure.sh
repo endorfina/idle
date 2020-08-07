@@ -172,11 +172,7 @@ do
 done
 
 echo '--'
-if ! cmake "${ARGS[@]}"
-then
-  # a long while before -S was available -H could have been used instead
-  cmake "${ARGS[@]/#-S/-H}" || die "CMake configuration failed. Verbatim CLI arguments: \"${ARGS[*]}\""
-fi
+cmake "${ARGS[@]}" || die "CMake configuration failed. Verbatim CLI arguments: \"${ARGS[*]}\""
 
 [[ ! -f "$SOURCE_DIR/$COMPC_FILE" \
   && -f "$BUILD_DIR/$COMPC_FILE" ]] \
