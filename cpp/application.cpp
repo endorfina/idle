@@ -56,22 +56,22 @@ bool application::execute_commands(const bool is_nested)
             switch (cmd)
             {
             case ::platform::command::InitWindow:
-                LOGI(log_prefix, "InitWindow");
+                LOGD(log_prefix, "InitWindow");
 
                 if (!is_nested) perform_load = true;
                 break;
 
             case ::platform::command::SaveState:
-                LOGI(log_prefix, "SaveState");
+                LOGD(log_prefix, "SaveState");
                 break;
 
             case ::platform::command::GainedFocus:
-                LOGI(log_prefix, "GainedFocus");
+                LOGD(log_prefix, "GainedFocus");
                 update_display = true;
                 break;
 
             case ::platform::command::LostFocus:
-                LOGI(log_prefix, "LostFocus");
+                LOGD(log_prefix, "LostFocus");
                 if (update_display)
                 {
                     draw();
@@ -80,7 +80,7 @@ bool application::execute_commands(const bool is_nested)
                 break;
 
             case ::platform::command::GLCleanUp:
-                LOGI(log_prefix, "GLCleanUp");
+                LOGD(log_prefix, "GLCleanUp");
                 update_display = false;
                 if (pause)
                 {
@@ -92,14 +92,14 @@ bool application::execute_commands(const bool is_nested)
                 break;
 
             case ::platform::command::CloseWindow:
-                LOGI(log_prefix, "CloseWindow");
+                LOGD(log_prefix, "CloseWindow");
                 opengl.clean();
                 window.terminate_display();
                 shutdown_was_requested = true;
                 return false;
 
             case ::platform::command::PausePressed:
-                LOGI(log_prefix, "PausePressed");
+                LOGD(log_prefix, "PausePressed");
                 room_ctrl.sleep();
                 if (!pause)
                 {
@@ -425,7 +425,7 @@ fonts::font_t make_font(fonts::ft_data_t font_data)
 
             })->second.offset.y;
 
-    LOGI("Font bbox [%.3f <=> %.3f] : %.3f", min_y, max_y, min_y - max_y);
+    LOGDD("Font bbox [%.3f <=> %.3f] : %.3f", min_y, max_y, min_y - max_y);
 
     return {
         std::move(image),
