@@ -57,7 +57,7 @@ struct landing_button : gui::shapes::buttonless<gui::positions::from_center<X, Y
     void draw_foreground(const graphics::core& gl, const button_state& st) const
     {
         gl.prog.text.use();
-        gl.prog.text.set_color({ .61f, 0, 0, st.alpha });
+        gl.prog.text.set_color({ .62f, 0, .35f, st.alpha });
 
         constexpr auto text = []()->std::string_view
         {
@@ -77,9 +77,11 @@ struct landing_button : gui::shapes::buttonless<gui::positions::from_center<X, Y
             }
         }();
 
-        const float scale = Id == st.focus
-                ? static_cast<float>(height) + (1.f - st.alpha) * 4
-                : static_cast<float>(height - 1) + st.alpha;
+        const float scale = static_cast<float>(height)
+            * (Id == st.focus
+                    ? 1.f + (1.f - st.alpha) * .15f
+                    : .8f + st.alpha * .2f
+                );
 
         draw_text<text_align::center, text_align::center>(*gl.fonts.title, gl.prog.text, text, this->pos, scale);
 
@@ -102,14 +104,19 @@ struct luminous_cloud
 {
     struct flying_polyp
     {
-        float fade = 0.f, fade_decr = 0.f, scale = 1.f;
+        float fade_decr = 0.f, scale = 1.f;
         point_t position, speed;
+        float noise, fade = 0.f;
     };
 
-    std::array<flying_polyp, 40> table;
+    std::array<flying_polyp, 80> table;
     std::atomic_bool flag = false;
 
-    void step();
+    template<typename Rando>
+    void step(Rando&);
+
+    template<unsigned rX, unsigned rY, typename Rando>
+    void spark(point_t position, Rando& rando);
 
     void draw(const graphics::core& gl) const;
 };
@@ -130,7 +137,7 @@ struct room
     std::array<float, 2> noise_seed;
     std::array<float, 3> menu_visual_noise;
     function focus = function::none;
-    bool clicked_during_intro = false;
+    bool impatient = false;
     std::optional<keyring::variant> destination;
     great_crimson_thing thing;
     luminous_cloud polyps;

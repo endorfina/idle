@@ -29,23 +29,6 @@ namespace idle::hotel::landing
 namespace
 {
 
-template<unsigned rX, unsigned rY, typename Rando>
-void spark(luminous_cloud& cloud, point_t position, Rando& rando)
-{
-    std::uniform_real_distribution<float> dist_float3{ -1.f, 1.f };
-
-    for (auto& it : cloud.table)
-    {
-        it.fade_decr = (dist_float3(rando) - 1.f) * .00244f - .003921f;
-        it.position = position + point_t{ dist_float3(rando) * rX, dist_float3(rando) * rY };
-        it.speed = point_t{ dist_float3(rando) * .5f, dist_float3(rando) * .3f };
-        it.scale = (dist_float3(rando) + 1.f) * 6.f + 18.f;
-        it.fade = 1.f;
-    }
-
-    cloud.flag.store(true, std::memory_order_release);
-}
-
 void draw_dim_noise(const graphics::noise_program_t& noise, const point_t size, const point_t& seed, const float alpha, const float fadeout)
 {
     noise.use();
@@ -138,8 +121,37 @@ unsigned shift_appendages(std::array<float, Size>& ray_array, Rand& rando)
 
 }  // namespace
 
-void luminous_cloud::step()
+template<unsigned rX, unsigned rY, typename Rando>
+void luminous_cloud::spark(point_t position, Rando& rando)
 {
+    std::uniform_real_distribution<float> generator{ -1.f, 1.f };
+
+    std::generate(table.begin(), table.end(), [&]()->flying_polyp
+        {
+            return
+            {
+                .fade_decr = (generator(rando) - 1.f) * .00244f - .00398f,
+                .scale = (generator(rando) + 1.f) * 10.f + 60.f,
+                .position = position + point_t{ generator(rando) * rX, generator(rando) * rY },
+                .speed = point_t{ generator(rando) * .5f, generator(rando) * .3f },
+                .noise = 0.f,
+                .fade = 1.f
+            };
+        });
+
+    flag.store(true, std::memory_order_release);
+}
+
+template<function Id, int X, int Y, unsigned width, unsigned height, typename Rando>
+static void spark(luminous_cloud& cloud, const landing_button<Id, X, Y, width, height>& focus, Rando& rando)
+{
+    cloud.spark<width / 2, height / 2>(focus.pos, rando);
+}
+
+template<typename Rando>
+void luminous_cloud::step(Rando& rando)
+{
+    std::uniform_real_distribution<float> generator{ -1.f, 1.f };
     bool is_empty = true;
 
     for (auto& it : table)
@@ -150,6 +162,8 @@ void luminous_cloud::step()
             it.position += it.speed;
 
             it.speed *= .99f;
+
+            it.noise = generator(rando);
 
             is_empty = false;
         }
@@ -184,38 +198,43 @@ std::optional<keyring::variant> room::step(const pointer_wrapper& pointer)
 
     if (polyps.flag.load(std::memory_order_relaxed))
     {
-        polyps.step();
+        polyps.step(fast_random_device);
     }
 
     if (thing.alpha < 1.f)
     {
-        thing.alpha = std::min<float>(thing.alpha + (clicked_during_intro ? .0091f : .00052f), 1.f);
+        thing.alpha = std::min<float>(thing.alpha + (impatient ? .0088f : .00059f), 1.f);
     }
 
     if (destination)
     {
-        thing.alpha = std::min<float>(thing.alpha + .002f, 2.f);
+        thing.alpha = std::min<float>(thing.alpha + (impatient ? .0029f : .0017f), 2.f);
 
-        if (thing.alpha > 1.833f)
+        if (thing.alpha > 1.811f)
         {
             return std::move(destination);
+        }
+        else if (pointer.single_press)
+        {
+            impatient = true;
         }
     }
     else if (pointer.single_press)
     {
         auto sparkler = [this](const auto& butt)
             {
-                spark<60, 8>(polyps, butt.pos, fast_random_device);
+                spark(polyps, butt, fast_random_device);
             };
 
         if (thing.alpha < .821f)
         {
-            clicked_during_intro = true;
+            impatient = true;
         }
         else if (const auto dest = gui.click<function>(pointer.cursor.pos, sparkler))
         {
             tickle_appendages(64, thing.legs[1], fast_random_device);
 
+            impatient = false;
             focus = *dest;
 
             switch (focus)
@@ -225,6 +244,10 @@ std::optional<keyring::variant> room::step(const pointer_wrapper& pointer)
                     destination.emplace(keyring::somewhere_else<hotel::model::room>{});
                     break;
 #endif
+
+                case function::cont:
+                    destination.emplace(keyring::somewhere_else<hotel::landing::room>{});
+                    break;
 
                 default:
                     break;
@@ -237,10 +260,9 @@ std::optional<keyring::variant> room::step(const pointer_wrapper& pointer)
 
 void luminous_cloud::draw(const graphics::core& gl) const
 {
-    constexpr color_t not_white{ 1, .91f, .96f, 1 };
-    constexpr color_t not_red{ .9f, .5, .65f, 0 };
+    constexpr color_t not_white{ 1, .91f, .91f, 0 };
+    constexpr color_t not_red{ .82f, .15f, .31f, 0 };
     gl.prog.gradient.use();
-    gl.prog.gradient.set_color(not_red);
 
     constexpr unsigned blob_array_len = 16;
 
@@ -274,17 +296,20 @@ void luminous_cloud::draw(const graphics::core& gl) const
     {
         if (it.fade > 0.f)
         {
-            const float alpha = (std::cos(F_TAU_2 * (1.f + it.fade * 2)) + 1.f) / 9;
+            const float alpha = (std::cos(F_TAU_2 * (1.f + it.fade * 2)) + 1.f) / 6;
+            const float scale = it.scale + (it.noise - it.fade * 5.f) * 9.f;
 
             gl.view_mask();
-            gl.prog.gradient.set_secondary_color(not_white, alpha * .5f);
+            gl.prog.gradient.set_color(not_white);
+            gl.prog.gradient.set_secondary_color(not_white, alpha * .067f);
             gl.prog.gradient.set_view_transform(math::matrices::translate<float>(it.position));
-            gl.prog.gradient.set_transform(math::matrices::uniform_scale<float>(it.scale - it.fade * 5.f));
-
+            gl.prog.gradient.set_transform(math::matrices::uniform_scale<float>(scale));
             gl::DrawArrays(gl::TRIANGLE_FAN, 0, blob_array_len);
+
             gl.view_normal();
-            gl.prog.gradient.set_secondary_color(not_white, alpha);
-            gl.prog.gradient.set_transform(math::matrices::uniform_scale<float>((it.scale - it.fade * 5.f) / 5));
+            gl.prog.gradient.set_color(not_red);
+            gl.prog.gradient.set_secondary_color(not_red, alpha);
+            gl.prog.gradient.set_transform(math::matrices::uniform_scale<float>(scale / 6));
             gl::DrawArrays(gl::TRIANGLE_FAN, 0, blob_array_len);
         }
     }
@@ -381,11 +406,11 @@ void room::draw(const graphics::core& gl) const
 
     gl.view_normal();
 
-    if (thing.alpha > .8f && fadeout_alpha_sine > .6f)
+    if (thing.alpha > .8f && fadeout_alpha_sine > .7f)
     {
         const button_state menu_state
         {
-            .alpha = std::min<float>((thing.alpha - .8f) / .2f, 1.f) * ((fadeout_alpha_sine - .6f) / .4f),
+            .alpha = std::min<float>((thing.alpha - .8f) / .2f, 1.f) * ((fadeout_alpha_sine - .7f) / .3f),
             .focus = focus,
             .noise = menu_visual_noise.data()
         };
