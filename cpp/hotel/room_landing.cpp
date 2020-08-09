@@ -29,6 +29,24 @@ namespace idle::hotel::landing
 namespace
 {
 
+template<unsigned rX, unsigned rY, typename Rando>
+void spark(luminous_cloud& cloud, point_t position, Rando& rando)
+{
+    std::uniform_real_distribution<float> dist_float3{ -1.f, 1.f };
+
+    for (auto& it : cloud.table)
+    {
+        it.fade_decr = (dist_float3(rando) - 1.f) * .00244f - .003921f;
+        it.position = position + point_t{ dist_float3(rando) * rX, dist_float3(rando) * rY };
+        it.speed = point_t{ dist_float3(rando) * .5f, dist_float3(rando) * .3f };
+        it.rotation = (dist_float3(rando) + 1.f) * F_TAU_4;
+        it.scale = (dist_float3(rando) + 1.f) * 6.f + 18.f;
+        it.fade = 1.f;
+    }
+
+    cloud.flag.store(true, std::memory_order_release);
+}
+
 void draw_dim_noise(const graphics::noise_program_t& noise, const point_t size, const point_t& seed, const float alpha, const float fadeout)
 {
     noise.use();
@@ -121,6 +139,27 @@ unsigned shift_appendages(std::array<float, Size>& ray_array, Rand& rando)
 
 }  // namespace
 
+void luminous_cloud::step()
+{
+    bool is_empty = true;
+
+    for (auto& it : table)
+    {
+        if (it.fade > 0.f)
+        {
+            it.fade += it.fade_decr;
+            it.position += it.speed;
+
+            it.speed *= .99f;
+
+            is_empty = false;
+        }
+    }
+
+    if (is_empty)
+        flag.store(false, std::memory_order_release);
+}
+
 std::optional<keyring::variant> room::step(const pointer_wrapper& pointer)
 {
     using random_float = std::uniform_real_distribution<float>;
@@ -141,20 +180,20 @@ std::optional<keyring::variant> room::step(const pointer_wrapper& pointer)
 
     random_float dist_float2{ 5000.f, 43758.5453f };
     std::generate(noise_seed.begin(), noise_seed.end(), [this, &dist_float2](){ return dist_float2(fast_random_device); });
+    random_float dist_float4{ -1.f, 1.f };
+    std::generate(menu_visual_noise.begin(), menu_visual_noise.end(), [this, &dist_float4](){ return dist_float4(fast_random_device); });
+
+    if (polyps.flag.load(std::memory_order_relaxed))
+    {
+        polyps.step();
+    }
 
     if (thing.alpha < 1.f)
     {
         thing.alpha = std::min<float>(thing.alpha + (clicked_during_intro ? .0091f : .00052f), 1.f);
-
-        if (pointer.single_press)
-        {
-            clicked_during_intro = true;
-
-            if (thing.alpha > .81f)
-                destination = gui.click<keyring::variant>(pointer.cursor.pos);
-        }
     }
-    else if (destination)
+
+    if (destination)
     {
         thing.alpha = std::min<float>(thing.alpha + .002f, 2.f);
 
@@ -165,15 +204,91 @@ std::optional<keyring::variant> room::step(const pointer_wrapper& pointer)
     }
     else if (pointer.single_press)
     {
-        destination = gui.click<keyring::variant>(pointer.cursor.pos);
+        auto sparkler = [this](const auto& butt)
+            {
+                spark<60, 8>(polyps, butt.pos, fast_random_device);
+            };
 
-        if (destination)
+        if (thing.alpha < .821f)
         {
-            tickle_appendages(120, thing.legs[1], fast_random_device);
+            clicked_during_intro = true;
+        }
+        else if (const auto dest = gui.click<function>(pointer.cursor.pos, sparkler))
+        {
+            tickle_appendages(64, thing.legs[1], fast_random_device);
+
+            focus = *dest;
+
+            switch (focus)
+            {
+#ifdef IDLE_COMPILE_GALLERY
+                case function::model:
+                    destination.emplace(keyring::somewhere_else<hotel::model::room>{});
+                    break;
+#endif
+
+                default:
+                    break;
+            }
         }
     }
 
     return {};
+}
+
+void luminous_cloud::draw(const graphics::core& gl) const
+{
+    constexpr color_t not_white{ 1, .81f, .92f, 1 };
+    constexpr color_t not_red{ .9f, 0, .2f, 0 };
+    gl.prog.gradient.use();
+    gl.prog.gradient.set_color(not_red);
+
+    constexpr unsigned blob_array_len = 16;
+
+    constexpr auto blob_colors = []()
+    {
+        std::array<float, blob_array_len> out{};
+        out[0] = 1.f;
+        return out;
+    }();
+
+    constexpr auto blob_points = []()
+    {
+        std::array<point_t, blob_array_len> out{};
+        float angle = 0.f;
+        static_assert(blob_array_len > 4);
+        constexpr float step = F_TAU / static_cast<float>(blob_array_len - 2);
+
+        for (unsigned i = 1; i < blob_array_len; ++i)
+        {
+            out[i] = point_t{ math::const_math::cos(angle), math::const_math::sin(angle) };
+            angle += step;
+        }
+
+        return out;
+    }();
+
+    gl.prog.gradient.position_vertex(reinterpret_cast<const float*>(blob_points.data()));
+    gl.prog.gradient.interpolation_vertex(reinterpret_cast<const float*>(blob_colors.data()));
+
+    for (const auto& it : table)
+    {
+        if (it.fade > 0.f)
+        {
+            const float alpha = (std::cos(F_TAU_2 * (1.f + it.fade * 2)) + 1.f) / 9;
+
+            gl.view_mask();
+            gl.prog.gradient.set_secondary_color(not_white, alpha * .5f);
+            gl.prog.gradient.set_view_transform(math::matrices::rotate<float>(it.rotation) * math::matrices::translate<float>(it.position));
+            gl.prog.gradient.set_transform(math::matrices::uniform_scale<float>(it.scale - it.fade * 5.f));
+
+            gl::DrawArrays(gl::TRIANGLE_FAN, 0, blob_array_len);
+            gl.view_normal();
+            gl.prog.gradient.set_secondary_color(not_white, alpha);
+            gl.prog.gradient.set_transform(math::matrices::uniform_scale<float>((it.scale - it.fade * 5.f) / 5));
+            gl::DrawArrays(gl::TRIANGLE_FAN, 0, blob_array_len);
+        }
+    }
 }
 
 void room::draw(const graphics::core& gl) const
@@ -257,16 +372,6 @@ void room::draw(const graphics::core& gl) const
 
     const auto fadeout_alpha_sine = std::sin(std::max<float>(thing.alpha + 1.f, 2.f) * F_TAU_4) + 1.f;
 
-    if (alpha_sine > .95f && fadeout_alpha_sine > .8f)
-    {
-        const float gui_alpha = 20.f * (alpha_sine - .95f) * (fadeout_alpha_sine - .9f) / .1f;
-        gl.prog.fill.use();
-        gl.prog.fill.set_color({.71f, 0, 0, gui_alpha / 3});
-        gl.prog.text.use();
-        gl.prog.text.set_color({0, 0, 0, gui_alpha});
-        gui.draw(gl);
-    }
-
     gl.view_mask();
 
     draw_dim_noise(gl.prog.noise,
@@ -276,6 +381,22 @@ void room::draw(const graphics::core& gl) const
             fadeout_alpha_sine);
 
     gl.view_normal();
+
+    if (alpha_sine > .95f && fadeout_alpha_sine > .8f)
+    {
+        const button_state menu_state
+        {
+            .alpha = 20.f * (alpha_sine - .95f) * (fadeout_alpha_sine - .9f) / .1f,
+            .focus = focus,
+            .noise = menu_visual_noise.data()
+        };
+        gui.draw(gl, menu_state);
+    }
+
+    if (polyps.flag.load(std::memory_order_acquire))
+    {
+        polyps.draw(gl);
+    }
 }
 
 void room::on_resize(point_t screen_size)

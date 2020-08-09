@@ -74,23 +74,27 @@ void elem_update_position(point_t screen_size, std::tuple<Tp...>& tuple)
 
 TEMPLATE_CHECK_METHOD(trigger);
 
-template<std::size_t I = 0, typename Ret, typename Tuple, typename...Vars>
-std::optional<Ret> elem_trigger(const point_t pointer, Tuple& tuple, Vars&...vars)
+template<std::size_t I = 0, typename Ret, typename Tuple, typename Func, typename...Vars>
+std::optional<Ret> elem_trigger(const point_t pointer, Tuple& tuple, Func&& func, Vars&&...vars)
 {
     constexpr auto tuple_size = std::tuple_size<Tuple>::value;
     constexpr auto elem_id = tuple_size - I - 1;
 
     if constexpr (has_trigger_method<typename std::tuple_element<elem_id, Tuple>::type>::value)
     {
-        if (std::get<elem_id>(tuple).is_touching(pointer))
+        auto& elem = std::get<elem_id>(tuple);
+
+        if (elem.is_touching(pointer))
         {
-            return { std::get<elem_id>(tuple).trigger(vars...) };
+            func(elem);
+
+            return { elem.trigger(std::forward<Vars>(vars)...) };
         }
     }
 
     if constexpr (I + 1 < tuple_size)
     {
-        return elem_trigger<I + 1, Ret, Tuple, Vars...>(pointer, tuple, vars...);
+        return elem_trigger<I + 1, Ret, Tuple>(pointer, tuple, std::forward<Func>(func), std::forward<Vars>(vars)...);
     }
     else
     {
@@ -196,7 +200,7 @@ struct rectangle
 // };
 
 template<class Pos, unsigned Width, unsigned Height>
-struct button : Pos
+struct buttonless : Pos
 {
     static_assert(Width > Height);
 
@@ -217,7 +221,11 @@ struct button : Pos
         }
         return false;
     }
+};
 
+template<class Pos, unsigned Width, unsigned Height>
+struct button : buttonless<Pos, Width, Height>
+{
     void draw_background(const graphics::core& gl) const
     {
         constexpr auto fan = []
@@ -272,10 +280,10 @@ public:
         internal::elem_draw<0, tuple_t, Vars...>(tuple_array, vars...);
     }
 
-    template<typename Ret, typename...Vars>
-    std::optional<Ret> click(point_t pos, Vars&...vars)
+    template<typename Ret, typename Func>
+    std::optional<Ret> click(point_t pos, Func&& func)
     {
-        return internal::elem_trigger<0, Ret, tuple_t, Vars...>(pos, tuple_array, vars...);
+        return internal::elem_trigger<0, Ret, tuple_t>(pos, tuple_array, std::forward<Func>(func));
     }
 };
 

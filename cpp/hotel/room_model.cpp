@@ -248,9 +248,8 @@ void room::draw(const graphics::core& gl) const
     gl.prog.text.set_color(greyscale);
     draw_text<text_align::center, text_align::center>(*gl.fonts.title, gl.prog.text, "Model", gl.draw_size / 2.f, 48);
 
-    // draw_bones(def_models_rotated, gl, model_anim.load(std::memory_order_relaxed));
+    gl::LineWidth(2.f);
     draw_bones(walking[facing], gl, model_anim.load(std::memory_order_relaxed));
-
 }
 
 std::optional<keyring::variant> room::step(const pointer_wrapper& cursor)

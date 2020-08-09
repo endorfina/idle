@@ -19,6 +19,7 @@
 #pragma once
 #include <array>
 #include <random>
+#include <atomic>
 #include <optional>
 #include <idle/gl.hpp>
 #include <idle/draw_text.hpp>
@@ -38,37 +39,101 @@ struct great_crimson_thing
     std::array<arm_t, 2> legs;
 };
 
-template<int X, int Y, unsigned width>
-struct landing_button : gui::shapes::button<gui::positions::from_center<X, Y>, width, 28>
+enum class function : unsigned char
 {
-    void draw_foreground(const graphics::core& gl) const
-    {
-        gl.prog.text.use();
-        draw_text<text_align::center, text_align::center>(*gl.fonts.title, gl.prog.text, "LAME", this->pos, 28);
-    }
-
-#ifdef IDLE_COMPILE_GALLERY
-    std::optional<keyring::variant> trigger() const
-    {
-        return { keyring::somewhere_else<hotel::model::room>{} };
-    }
-#endif
+    none, model, start, cont
 };
 
+struct button_state
+{
+    float alpha;
+    function focus;
+    const float* noise;
+};
+
+template<function Id, int X, int Y, unsigned width, unsigned height>
+struct landing_button : gui::shapes::buttonless<gui::positions::from_center<X, Y>, width, height>
+{
+    void draw_foreground(const graphics::core& gl, const button_state& st) const
+    {
+        gl.prog.text.use();
+        gl.prog.text.set_color({ .61f, 0, 0, st.alpha });
+
+        constexpr auto text = []()->std::string_view
+        {
+            switch(Id)
+            {
+                case function::start:
+                    return "start";
+
+                case function::cont:
+                    return "continue";
+
+                case function::model:
+                    return "gallery";
+
+                default:
+                    return "???";
+            }
+        }();
+
+        const float scale = Id == st.focus
+                ? static_cast<float>(height) + (1.f - st.alpha) * 4
+                : static_cast<float>(height - 1) + st.alpha;
+
+        draw_text<text_align::center, text_align::center>(*gl.fonts.title, gl.prog.text, text, this->pos, scale);
+
+        const auto po = this->pos + point_t{ st.noise[0], st.noise[1] };
+
+        gl.view_mask();
+        gl.prog.text.set_color({ Id == st.focus ? 1.f - st.alpha : 0, 0, 0, st.alpha });
+        draw_text<text_align::center, text_align::center>(*gl.fonts.title, gl.prog.text, text, po, scale + .85f + st.noise[3]);
+
+        gl.view_normal();
+    }
+
+    function trigger() const
+    {
+        return Id;
+    }
+};
+
+struct luminous_cloud
+{
+    struct flying_polyp
+    {
+        float fade = 0.f, fade_decr = 0.f, rotation = 0.f, scale = 1.f;
+        point_t position, speed;
+    };
+
+    std::array<flying_polyp, 40> table;
+    std::atomic_bool flag = false;
+
+    void step();
+
+    void draw(const graphics::core& gl) const;
+};
 
 struct room
 {
     using gui_t = gui::interface
         <
-            landing_button<0, 20, 120>
+#ifdef IDLE_COMPILE_GALLERY
+            landing_button<function::model, 0, 100, 120, 38>,
+#endif
+            landing_button<function::start, 0, -20, 120, 38>,
+            landing_button<function::cont, 0, 40, 120, 38>
         >;
     gui_t gui;
 
     std::minstd_rand fast_random_device{ std::random_device{}() };
     std::array<float, 2> noise_seed;
+    std::array<float, 3> menu_visual_noise;
+    function focus = function::none;
     bool clicked_during_intro = false;
     std::optional<keyring::variant> destination;
     great_crimson_thing thing;
+    luminous_cloud polyps;
 
     void on_resize(point_t);
 
