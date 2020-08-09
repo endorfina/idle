@@ -39,7 +39,6 @@ void spark(luminous_cloud& cloud, point_t position, Rando& rando)
         it.fade_decr = (dist_float3(rando) - 1.f) * .00244f - .003921f;
         it.position = position + point_t{ dist_float3(rando) * rX, dist_float3(rando) * rY };
         it.speed = point_t{ dist_float3(rando) * .5f, dist_float3(rando) * .3f };
-        it.rotation = (dist_float3(rando) + 1.f) * F_TAU_4;
         it.scale = (dist_float3(rando) + 1.f) * 6.f + 18.f;
         it.fade = 1.f;
     }
@@ -238,8 +237,8 @@ std::optional<keyring::variant> room::step(const pointer_wrapper& pointer)
 
 void luminous_cloud::draw(const graphics::core& gl) const
 {
-    constexpr color_t not_white{ 1, .81f, .92f, 1 };
-    constexpr color_t not_red{ .9f, .5, .7f, 0 };
+    constexpr color_t not_white{ 1, .91f, .96f, 1 };
+    constexpr color_t not_red{ .9f, .5, .65f, 0 };
     gl.prog.gradient.use();
     gl.prog.gradient.set_color(not_red);
 
@@ -279,7 +278,7 @@ void luminous_cloud::draw(const graphics::core& gl) const
 
             gl.view_mask();
             gl.prog.gradient.set_secondary_color(not_white, alpha * .5f);
-            gl.prog.gradient.set_view_transform(math::matrices::rotate<float>(it.rotation) * math::matrices::translate<float>(it.position));
+            gl.prog.gradient.set_view_transform(math::matrices::translate<float>(it.position));
             gl.prog.gradient.set_transform(math::matrices::uniform_scale<float>(it.scale - it.fade * 5.f));
 
             gl::DrawArrays(gl::TRIANGLE_FAN, 0, blob_array_len);
@@ -382,11 +381,11 @@ void room::draw(const graphics::core& gl) const
 
     gl.view_normal();
 
-    if (alpha_sine > .95f && fadeout_alpha_sine > .8f)
+    if (thing.alpha > .8f && fadeout_alpha_sine > .6f)
     {
         const button_state menu_state
         {
-            .alpha = 20.f * (alpha_sine - .95f) * (fadeout_alpha_sine - .9f) / .1f,
+            .alpha = std::min<float>((thing.alpha - .8f) / .2f, 1.f) * ((fadeout_alpha_sine - .6f) / .4f),
             .focus = focus,
             .noise = menu_visual_noise.data()
         };

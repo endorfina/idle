@@ -21,6 +21,7 @@
 #include "application.hpp"
 
 #ifdef __ANDROID__
+#include "platform/asset_access.hpp"
 
 void android_main(android_app * android_internal_state)
 {

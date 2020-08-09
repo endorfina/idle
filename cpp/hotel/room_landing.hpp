@@ -102,7 +102,7 @@ struct luminous_cloud
 {
     struct flying_polyp
     {
-        float fade = 0.f, fade_decr = 0.f, rotation = 0.f, scale = 1.f;
+        float fade = 0.f, fade_decr = 0.f, scale = 1.f;
         point_t position, speed;
     };
 

@@ -226,7 +226,7 @@ bool core::setup_graphics()
 {
     gl::Disable(gl::CULL_FACE);
     gl::Disable(gl::DEPTH_TEST);
-    gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
+    gl::BlendFuncSeparate(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA, gl::ONE, gl::ONE_MINUS_SRC_ALPHA);
     gl::Enable(gl::BLEND);
 
     if (!compile_shaders(prog))

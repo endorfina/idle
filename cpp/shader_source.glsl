@@ -140,7 +140,7 @@ uniform vec4 uCol, uCo2;
 varying float vA;
 
 void main() {
-  gl_FragColor = uCol + (uCo2 - uCol) * vA;
+    gl_FragColor = uCol + (uCo2 - uCol) * vA;
 }
 
 @@ doublesolidv

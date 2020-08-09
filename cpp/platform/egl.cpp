@@ -109,7 +109,7 @@ std::optional<resize_request_t> create_window(egl_display& egl)
                     }
                 }
             }
-            LOGI("Picked the first config");
+            LOGW("Picked the first config");
             return supportedConfigs.front();
         }();
 
