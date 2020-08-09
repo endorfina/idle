@@ -64,13 +64,13 @@ struct landing_button : gui::shapes::buttonless<gui::positions::from_center<X, Y
             switch(Id)
             {
                 case function::start:
-                    return "start";
+                    return "Start";
 
                 case function::cont:
-                    return "continue";
+                    return "Continue";
 
                 case function::model:
-                    return "gallery";
+                    return "Gallery";
 
                 default:
                     return "???";
@@ -119,10 +119,10 @@ struct room
     using gui_t = gui::interface
         <
 #ifdef IDLE_COMPILE_GALLERY
-            landing_button<function::model, 0, 100, 120, 38>,
+            landing_button<function::model, 0, 120, 120, 38>,
 #endif
-            landing_button<function::start, 0, -20, 120, 38>,
-            landing_button<function::cont, 0, 40, 120, 38>
+            landing_button<function::start, 0, -20, 100, 38>,
+            landing_button<function::cont, 0, 50, 100, 38>
         >;
     gui_t gui;
 

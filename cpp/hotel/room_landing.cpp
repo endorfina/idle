@@ -197,7 +197,7 @@ std::optional<keyring::variant> room::step(const pointer_wrapper& pointer)
     {
         thing.alpha = std::min<float>(thing.alpha + .002f, 2.f);
 
-        if (thing.alpha >= 2.f)
+        if (thing.alpha > 1.833f)
         {
             return std::move(destination);
         }
@@ -239,7 +239,7 @@ std::optional<keyring::variant> room::step(const pointer_wrapper& pointer)
 void luminous_cloud::draw(const graphics::core& gl) const
 {
     constexpr color_t not_white{ 1, .81f, .92f, 1 };
-    constexpr color_t not_red{ .9f, 0, .2f, 0 };
+    constexpr color_t not_red{ .9f, .5, .7f, 0 };
     gl.prog.gradient.use();
     gl.prog.gradient.set_color(not_red);
 
