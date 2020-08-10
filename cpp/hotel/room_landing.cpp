@@ -145,7 +145,7 @@ void luminous_cloud::spark(point_t position, Rando& rando)
 template<function Id, int X, int Y, unsigned width, unsigned height, typename Rando>
 static void spark(luminous_cloud& cloud, const landing_button<Id, X, Y, width, height>& focus, Rando& rando)
 {
-    cloud.spark<width / 2, height / 2>(focus.pos, rando);
+    cloud.spark<width / 3, height / 4>(focus.pos, rando);
 }
 
 template<typename Rando>
@@ -261,7 +261,7 @@ std::optional<keyring::variant> room::step(const pointer_wrapper& pointer)
 void luminous_cloud::draw(const graphics::core& gl) const
 {
     constexpr color_t not_white{ 1, .91f, .91f, 0 };
-    constexpr color_t not_red{ .82f, .15f, .31f, 0 };
+    constexpr color_t not_red{ 1.f, .15f, .31f, 0 };
     gl.prog.gradient.use();
 
     constexpr unsigned blob_array_len = 16;
@@ -308,7 +308,7 @@ void luminous_cloud::draw(const graphics::core& gl) const
 
             gl.view_normal();
             gl.prog.gradient.set_color(not_red);
-            gl.prog.gradient.set_secondary_color(not_red, alpha);
+            gl.prog.gradient.set_secondary_color(not_red * color_t::greyscale(it.fade), alpha);
             gl.prog.gradient.set_transform(math::matrices::uniform_scale<float>(scale / 6));
             gl::DrawArrays(gl::TRIANGLE_FAN, 0, blob_array_len);
         }

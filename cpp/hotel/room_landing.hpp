@@ -126,10 +126,10 @@ struct room
     using gui_t = gui::interface
         <
 #ifdef IDLE_COMPILE_GALLERY
-            landing_button<function::model, 0, 120, 120, 38>,
+            landing_button<function::model, 0, 120, 110, 38>,
 #endif
-            landing_button<function::start, 0, -20, 100, 38>,
-            landing_button<function::cont, 0, 50, 100, 38>
+            landing_button<function::start, 0, -20, 90, 38>,
+            landing_button<function::cont, 0, 50, 130, 38>
         >;
     gui_t gui;
 
