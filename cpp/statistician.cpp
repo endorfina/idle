@@ -19,6 +19,7 @@
 
 #include <cstdio>
 #include "statistician.hpp"
+#include "draw_text.hpp"
 
 namespace idle::stats
 {
@@ -50,11 +51,6 @@ void statistician::draw_fps(const graphics::core& gl) const
     gl::DrawArrays(gl::LINE_STRIP, 0, frame_count.size());
 }
 
-void wall_clock::measure_only()
-{
-    last_fps_measurement = std::chrono::time_point_cast<duration_type>(std::chrono::steady_clock::now());
-}
-
 void wall_clock::tick()
 {
     if (iter++ >= application_frames_per_second)
@@ -78,9 +74,13 @@ void wall_clock::tick()
     }
 }
 
-std::string_view wall_clock::get_fps() const
+void wall_clock::draw_fps(const graphics::core& gl) const
 {
-    return view;
+    constexpr point_t fps_draw_point{10.f, 10.f};
+    gl.prog.text.use();
+    gl.prog.text.set_color({1, .733f, .796f, .88f});
+    draw_text<text_align::near, text_align::near>(
+            *gl.fonts.title, gl.prog.text, view, fps_draw_point, 14);
 }
 
 }  // namespace idle::stats

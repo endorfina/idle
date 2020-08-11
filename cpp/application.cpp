@@ -40,10 +40,6 @@ namespace
 ::idle::controller room_ctrl;
 ::graphics::core opengl;
 
-#ifdef IDLE_COMPILE_FPS_COUNTERS
-::idle::stats::wall_clock fps_counter;
-#endif
-
 }  // namespace
 
 bool application::execute_commands(const bool is_nested)
@@ -165,7 +161,6 @@ GLint setup_unmasked_buffer_frame(const graphics::render_buffer_t& rb, const idl
 
     return default_frame_buffer;
 }
-
 void fill_frame_with_color(const idle::color_t& color)
 {
     opengl.prog.fill.use();
@@ -223,17 +218,6 @@ auto wait_one_frame_with_skipping(std::chrono::steady_clock::time_point new_time
     std::this_thread::sleep_until(new_time);
     return new_time;
 }
-
-#ifdef IDLE_COMPILE_FPS_COUNTERS
-void draw_fps()
-{
-    constexpr idle::point_t fps_draw_point{10.f, 10.f};
-    opengl.prog.text.use();
-    opengl.prog.text.set_color({1, .733f, .796f, .8f});
-    idle::draw_text<idle::text_align::near, idle::text_align::near>(
-            *opengl.fonts.title, opengl.prog.text, fps_counter.get_fps(), fps_draw_point, 16);
-}
-#endif
 
 }  // namespace
 
@@ -337,7 +321,7 @@ void application::draw()
 
 #ifdef IDLE_COMPILE_FPS_COUNTERS
         room_ctrl.teller.draw_fps(opengl);
-        draw_fps();
+        room_ctrl.tick_counter.draw_fps(opengl);
 #endif
     }
     else
@@ -347,7 +331,7 @@ void application::draw()
 
 #ifdef IDLE_COMPILE_FPS_COUNTERS
         room_ctrl.teller.draw_fps(opengl);
-        draw_fps();
+        room_ctrl.tick_counter.draw_fps(opengl);
 #endif
     }
     window.buffer_swap();

@@ -69,6 +69,7 @@ class controller
 public:
 #ifdef IDLE_COMPILE_FPS_COUNTERS
     stats::statistician teller;
+    stats::wall_clock tick_counter;
 #endif
     std::atomic<platform::pointer> cached_cursor;
     crash_handler haiku;

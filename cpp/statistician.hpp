@@ -53,11 +53,9 @@ class wall_clock
     std::string_view view;
 
 public:
-    void measure_only();
-
     void tick();
 
-    std::string_view get_fps() const;
+    void draw_fps(const graphics::core& gl) const;
 };
 
 }  // namespace idle::stats
