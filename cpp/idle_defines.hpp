@@ -33,7 +33,9 @@ using rect_t = math::rect<GLfloat>;
 
 enum class text_align { near, center, far };
 
-constexpr unsigned application_frames_per_second = 60;
+constexpr unsigned long application_frames_per_second = 60;
+
+constexpr float uni_time_factor = 60.f / static_cast<float>(application_frames_per_second);
 
 constexpr float square_coordinates[8]
 {

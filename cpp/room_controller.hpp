@@ -29,6 +29,7 @@
 #include "gl.hpp"
 #include "hotel/variant.hpp"
 #include "hotel/service.hpp"
+#include "statistician.hpp"
 #include "crash_handler.hpp"
 
 namespace idle
@@ -66,6 +67,9 @@ class controller
     std::mutex mutability;
 
 public:
+#ifdef IDLE_COMPILE_FPS_COUNTERS
+    stats::statistician teller;
+#endif
     std::atomic<platform::pointer> cached_cursor;
     crash_handler haiku;
 

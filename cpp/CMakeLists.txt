@@ -21,6 +21,7 @@ set(${PROJECT_NAME}-files
         spinlock.cpp
         drawable.cpp
         crash_handler.cpp
+        statistician.cpp
         hotel/service.cpp
         hotel/room_landing.cpp
         room_controller.cpp
@@ -43,6 +44,8 @@ option(PRUNE_SYMBOLS "Removes symbols at build time" ON)
 option(MAKESHIFT_UNITY "Tries to build the main library in unity mode, when cmake doesn't provide one" ON)
 
 option(COMPILE_GALLERY "Rig testing gallery" OFF)
+
+option(COMPILE_FPS_COUNTERS "Performance measurement" OFF)
 
 option(COMPILE_FONT_DEBUG_SCREEN "Shows a 5s splash of the entire loaded font texture" OFF)
 
@@ -87,6 +90,10 @@ target_include_directories(${PROJECT_NAME}-obj PRIVATE "${CMAKE_BINARY_DIR}/${PR
 if(COMPILE_GALLERY)
     list(APPEND ${PROJECT_NAME}-files hotel/room_model.cpp)
     target_compile_definitions(${PROJECT_NAME}-obj PRIVATE IDLE_COMPILE_GALLERY)
+endif()
+
+if(COMPILE_FPS_COUNTERS)
+    target_compile_definitions(${PROJECT_NAME}-obj PRIVATE IDLE_COMPILE_FPS_COUNTERS)
 endif()
 
 if(COMPILE_FONT_DEBUG_SCREEN)

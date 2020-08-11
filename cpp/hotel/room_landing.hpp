@@ -121,15 +121,25 @@ struct luminous_cloud
     void draw(const graphics::core& gl) const;
 };
 
+constexpr int menu_item_offset(const unsigned i)
+{
+#ifdef IDLE_COMPILE_GALLERY
+    constexpr unsigned short diff = 65;
+#else
+    constexpr unsigned short diff = 85;
+#endif
+    return static_cast<int>(diff * i) - 40;
+}
+
 struct room
 {
     using gui_t = gui::interface
         <
 #ifdef IDLE_COMPILE_GALLERY
-            landing_button<function::model, 0, 120, 110, 38>,
+            landing_button<function::model, 0, menu_item_offset(2), 110, 38>,
 #endif
-            landing_button<function::start, 0, -20, 90, 38>,
-            landing_button<function::cont, 0, 50, 130, 38>
+            landing_button<function::start, 0, menu_item_offset(0), 90, 38>,
+            landing_button<function::cont, 0, menu_item_offset(1), 130, 38>
         >;
     gui_t gui;
 

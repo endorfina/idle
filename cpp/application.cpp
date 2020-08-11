@@ -27,6 +27,7 @@
 #include "freetype_glue.hpp"
 #include "assets_config.hpp"
 #include "platform/asset_access.hpp"
+#include "statistician.hpp"
 
 namespace outside
 {
@@ -38,6 +39,10 @@ namespace
 
 ::idle::controller room_ctrl;
 ::graphics::core opengl;
+
+#ifdef IDLE_COMPILE_FPS_COUNTERS
+::idle::stats::wall_clock fps_counter;
+#endif
 
 }  // namespace
 
@@ -207,21 +212,28 @@ public:
 
 auto wait_one_frame_with_skipping(std::chrono::steady_clock::time_point new_time)
 {
-    using namespace std::chrono_literals;
-    constexpr auto minimum_elapsed_duration = std::chrono::duration_cast<
-                        std::chrono::steady_clock::time_point::duration>(1.0s / idle::application_frames_per_second);
+    using clock_type = std::chrono::steady_clock;
 
-    if (std::chrono::steady_clock::now() - new_time < 1.0s)
+    do
     {
-        new_time += minimum_elapsed_duration;
-        std::this_thread::sleep_until(new_time);
+        new_time += idle::stats::time_minimum_elapsed;
     }
-    else
-    {
-        new_time += minimum_elapsed_duration * idle::application_frames_per_second;
-    }
+    while(new_time < clock_type::now());
+
+    std::this_thread::sleep_until(new_time);
     return new_time;
 }
+
+#ifdef IDLE_COMPILE_FPS_COUNTERS
+void draw_fps()
+{
+    constexpr idle::point_t fps_draw_point{10.f, 10.f};
+    opengl.prog.text.use();
+    opengl.prog.text.set_color({1, .733f, .796f, .8f});
+    idle::draw_text<idle::text_align::near, idle::text_align::near>(
+            *opengl.fonts.title, opengl.prog.text, fps_counter.get_fps(), fps_draw_point, 16);
+}
+#endif
 
 }  // namespace
 
@@ -322,11 +334,21 @@ void application::draw()
     {
         render_guard rg;
         pause->draw();
+
+#ifdef IDLE_COMPILE_FPS_COUNTERS
+        room_ctrl.teller.draw_fps(opengl);
+        draw_fps();
+#endif
     }
     else
     {
         render_guard rg;
         room_ctrl.draw_frame(opengl);
+
+#ifdef IDLE_COMPILE_FPS_COUNTERS
+        room_ctrl.teller.draw_fps(opengl);
+        draw_fps();
+#endif
     }
     window.buffer_swap();
 }
@@ -338,9 +360,9 @@ int application::real_main()
     application app;
 
 #ifdef __clang__
-    LOGD("%s", "### CLANG " __clang_version__);
+    LOGI("%s", "### clang " __clang_version__);
 #elif __GNUC__
-    LOGD("### GCC %d.%d", __GNUC__, __GNUC_MINOR__);
+    LOGI("### gcc %d.%d", __GNUC__, __GNUC_MINOR__);
 #endif
 
     PRINT_SIZE(platform::context);
@@ -383,6 +405,9 @@ int application::real_main()
         }
 
         app.clock = wait_one_frame_with_skipping(app.clock);
+#ifdef IDLE_COMPILE_FPS_COUNTERS
+        fps_counter.tick();
+#endif
     }
     return 0;
 }
@@ -442,7 +467,7 @@ fonts::font_t make_font(fonts::ft_data_t font_data)
 bool application::load()
 {
     using namespace std::chrono_literals;
-    constexpr auto minimum_elapsed = 1.0s / (idle::application_frames_per_second / 2 + 5);
+    constexpr auto minimum_elapsed = std::chrono::duration_cast<std::chrono::microseconds>(1.0s) / (idle::application_frames_per_second / 2 + 5);
 
     room_ctrl.sleep();
 
@@ -456,7 +481,7 @@ bool application::load()
         idle::image_t::load_from_assets_immediate("space-1.png")
     };
 
-    std::chrono::time_point<std::chrono::steady_clock> lt = std::chrono::steady_clock::now();
+    auto lt = std::chrono::steady_clock::now();
     bool success {false};
 
     std::thread loader_thread {
@@ -497,7 +522,7 @@ bool application::load()
         {
             if (update_display && std::chrono::steady_clock::now() - lt > minimum_elapsed)
             {
-                lt += std::chrono::duration_cast<std::chrono::steady_clock::time_point::duration>(minimum_elapsed);
+                lt += minimum_elapsed;
                 {
                     render_guard rg;
                     la.draw(opengl);

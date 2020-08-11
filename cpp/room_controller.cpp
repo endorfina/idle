@@ -31,11 +31,7 @@ namespace
 
 auto wait_one_frame(std::chrono::steady_clock::time_point new_time)
 {
-    using namespace std::chrono_literals;
-    constexpr auto minimum_elapsed_duration = std::chrono::duration_cast<
-                        std::chrono::steady_clock::time_point::duration>(1.0s / application_frames_per_second);
-
-    new_time += minimum_elapsed_duration;
+    new_time += stats::time_minimum_elapsed;
     std::this_thread::sleep_until(new_time);
     return new_time;
 }
@@ -104,8 +100,7 @@ void controller::draw_frame(const graphics::core& gl)
 void controller::awaken(const std::chrono::steady_clock::time_point clock)
 {
     using namespace std::chrono_literals;
-    constexpr auto skip_a_beat = std::chrono::duration_cast<
-                        std::chrono::steady_clock::time_point::duration>(1.5s / application_frames_per_second);
+    constexpr auto skip_a_beat = std::chrono::duration_cast<std::chrono::microseconds>(1.5s) / application_frames_per_second;
     worker.stop();
 
     if (!haiku.has_crashed())
@@ -118,7 +113,13 @@ void controller::awaken(const std::chrono::steady_clock::time_point clock)
 
                 while (worker.is_active())
                 {
+#ifdef IDLE_COMPILE_FPS_COUNTERS
+                    const auto before_waiting = std::chrono::high_resolution_clock::now();
+#endif
                     step = wait_one_frame(step);
+#ifdef IDLE_COMPILE_FPS_COUNTERS
+                    teller.count_fps(before_waiting);
+#endif
 
                     if (const auto maybe_action = do_step(pointer.get()))
                     {
