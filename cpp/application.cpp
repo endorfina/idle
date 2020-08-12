@@ -390,7 +390,7 @@ int application::real_main()
 
         app.clock = wait_one_frame_with_skipping(app.clock);
 #ifdef IDLE_COMPILE_FPS_COUNTERS
-        fps_counter.tick();
+        room_ctrl.tick_counter.tick();
 #endif
     }
     return 0;

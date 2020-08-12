@@ -46,6 +46,6 @@ Add the `-n` flag if you have a *need* for more speed. 😁
 
 ![GPLv3](https://www.gnu.org/graphics/gplv3-88x31.png) [![CC-BY-SA](https://i.creativecommons.org/l/by-sa/4.0/88x31.png)](http://creativecommons.org/licenses/by-sa/4.0/)
 
-idle is licensed under **GPL version 3**.
-Every asset distributed alongside the software (i.e. images, music, etc.) is licensed under [Creative Commons Attribution-ShareAlike 4.0 International License](http://creativecommons.org/licenses/by-sa/4.0/) unless otherwise stated.
+idle is licensed under **GNU General Public License version 3**.
+Every asset of my authorship that's distributed alongside this software (i.e. images, music, etc.) is licensed under [Creative Commons Attribution-ShareAlike 4.0 International License](http://creativecommons.org/licenses/by-sa/4.0/) unless otherwise stated.
 

@@ -40,7 +40,7 @@ CM_LOG_LEVEL=2 # default: 2 (warnings)
 if [[ $# -gt 0 && $1 == dev ]]
 then
   shift
-  set -- '-ncgSl' "$@"
+  set -- '-ncgSlp' "$@"
 fi
 
 for CLI_ARG in "$@"
@@ -57,7 +57,7 @@ do
         BUILD_TYPE='Debug'
         ;;
 
-      +)
+      C)
         CM_OPTS+=('-DCMAKE_CXX_COMPILER=clang++')
         CM_OPTS_CXX+=('-stdlib=libc++')
         ;;
@@ -88,6 +88,10 @@ do
 
       g)
         CM_OPTS+=('-DCOMPILE_GALLERY=ON')
+        ;;
+
+      p)
+        CM_OPTS+=('-DCOMPILE_FPS_COUNTERS=ON')
         ;;
 
       X)
@@ -177,6 +181,22 @@ cmake "${ARGS[@]}" || die "CMake configuration failed. Verbatim CLI arguments: \
 [[ ! -f "$SOURCE_DIR/$COMPC_FILE" \
   && -f "$BUILD_DIR/$COMPC_FILE" ]] \
   && ln -s "../$BUILD_DIR/$COMPC_FILE" "$SOURCE_DIR/$COMPC_FILE"
+
+readonly filehost=http://endorfina.dev
+
+download_file()
+{
+  if [[ ! -f assets/$1 ]]
+  then
+    echo -n " 🌠  Fetching asset '$color_blue$1$color_norm'" && \
+    curl -L -o "assets/$1" "$filehost/$1" && \
+    echo '--'
+  fi
+}
+
+: && download_file 'space-1.png' \
+  && download_file 'path4368.png' \
+  || die "Failed to download an asset."
 
 # required by GNU make
 readonly INDENT=$'\t'
