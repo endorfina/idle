@@ -567,8 +567,8 @@ struct point3
 
     using value_type = T;
     value_type x, y, z;
-    constexpr point3() : x(0), y(0), z(0) {};
-    constexpr point3(value_type a, value_type b, value_type c) : x(a), y(b), z(c) {}
+    constexpr point3() noexcept : x(0), y(0), z(0) {};
+    constexpr point3(value_type a, value_type b, value_type c) noexcept : x(a), y(b), z(c) {}
 
     constexpr point3& operator+=(const point3& other)
     {
@@ -728,9 +728,9 @@ struct color
 
     using value_type = T;
     value_type r, g, b, a;
-    constexpr color() = default;
-    constexpr color(value_type _r, value_type _g, value_type _b) : r(_r), g(_g), b(_b), a(1) {}
-    constexpr color(value_type _r, value_type _g, value_type _b, value_type _a) : r(_r), g(_g), b(_b), a(_a) {}
+    constexpr color() noexcept = default;
+    constexpr color(value_type _r, value_type _g, value_type _b) noexcept : r(_r), g(_g), b(_b), a(1) {}
+    constexpr color(value_type _r, value_type _g, value_type _b, value_type _a) noexcept : r(_r), g(_g), b(_b), a(_a) {}
 
     constexpr static color greyscale(value_type x, value_type a = 1)
     {
@@ -755,10 +755,10 @@ struct rect {
 
     value_type left, top, right, bottom;
 
-    constexpr rect() = default;
-    constexpr rect(value_type _l, value_type _t, value_type _r, value_type _b)
+    constexpr rect() noexcept = default;
+    constexpr rect(value_type _l, value_type _t, value_type _r, value_type _b) noexcept
         : left(_l), top(_t), right(_r), bottom(_b) {}
-    constexpr rect(point2<value_type> _a, point2<value_type> _b)
+    constexpr rect(point2<value_type> _a, point2<value_type> _b) noexcept
         : left(_a.x), top(_a.y), right(_b.x), bottom(_b.y) {}
 };
 
@@ -939,9 +939,9 @@ struct matrix4x4_bare
 
     table_type values;
 
-    constexpr matrix4x4_bare() : values{1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1} {}
+    constexpr matrix4x4_bare() noexcept : values{1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1} {}
 
-    constexpr matrix4x4_bare(const table_type& table) : values{table} {}
+    constexpr matrix4x4_bare(const table_type& table) noexcept : values{table} {}
 
     constexpr explicit operator const value_type *() const { return values.data(); }
 
