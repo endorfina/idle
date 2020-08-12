@@ -138,6 +138,7 @@ if(ANDROID)
 else()
     find_package(Freetype REQUIRED)
     target_link_libraries(${PROJECT_NAME}-ft PRIVATE Freetype::Freetype)
+    target_link_libraries(${PROJECT_NAME}-obj PRIVATE atomic)
 
     add_subdirectory(test)
 endif()

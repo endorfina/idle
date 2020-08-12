@@ -487,8 +487,8 @@ struct point2
 
     using value_type = T;
     value_type x, y;
-    constexpr point2() : x(0), y(0) {};
-    constexpr point2(value_type a, value_type b) : x(a), y(b) {}
+    constexpr point2() noexcept : x(0), y(0) {};
+    constexpr point2(value_type a, value_type b) noexcept : x(a), y(b) {}
 
     constexpr point2& operator+=(const point2& other)
     {

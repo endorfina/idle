@@ -84,7 +84,7 @@ else()
     find_package(OpenGL REQUIRED)
 
     add_executable(${PROJECT_NAME} "x.cpp")
-    target_link_libraries(${PROJECT_NAME} PRIVATE X11::X11 OpenGL::GL Threads::Threads atomic)
+    target_link_libraries(${PROJECT_NAME} PRIVATE X11::X11 OpenGL::GL Threads::Threads)
 
     if (X11_USE_CLIENTMESSAGE)
         target_compile_definitions(${PROJECT_NAME} PRIVATE X11_USE_CLIENTMESSAGE)
