@@ -16,17 +16,17 @@ Additionally, idle includes a slightly modified [SoLoud](http://sol.gfxile.net/s
 
 Installing dependencies on **Solus**:
 ```sh
-sudo eopkg it libx11-devel alsa-lib-devel mesalib-devel freetype2-devel zlib-devel
+sudo eopkg it cmake libx11-devel alsa-lib-devel mesalib-devel freetype2-devel zlib-devel
 ```
 
 Installing dependencies on **Ubuntu**:
 ```sh
-sudo apt-get install libx11-dev libasound2-dev libgl1-mesa-dev libfreetype6-dev libz-dev
+sudo apt-get install cmake libx11-dev libasound2-dev libgl1-mesa-dev libfreetype6-dev libz-dev
 ```
 
 Installing dependencies on **Fedora**:
 ```sh
-sudo dnf install libX11-devel alsa-lib-devel mesa-libGL-devel freetype-devel zlib-devel
+sudo dnf install cmake libX11-devel alsa-lib-devel mesa-libGL-devel freetype-devel zlib-devel
 ```
 
 ### Building
