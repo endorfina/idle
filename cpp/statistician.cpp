@@ -32,7 +32,7 @@ void statistician::count_fps(const std::chrono::high_resolution_clock::time_poin
     auto& it = frame_count[iter++];
     it.x = static_cast<float>(iter) / static_cast<float>(frame_count.size() - 1);
     const auto now = std::chrono::high_resolution_clock::now();
-    it.y = static_cast<float>(std::chrono::duration_cast<std::chrono::duration<double, std::micro>>(now - start_point) / time_minimum_elapsed);
+    it.y = static_cast<float>(std::chrono::duration_cast<std::chrono::duration<double, std::micro>>(now - start_point) / time_minimum_elapsed) * .999f;
 }
 
 void statistician::draw_fps(const graphics::core& gl) const

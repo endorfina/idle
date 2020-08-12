@@ -182,7 +182,7 @@ cmake "${ARGS[@]}" || die "CMake configuration failed. Verbatim CLI arguments: \
   && -f "$BUILD_DIR/$COMPC_FILE" ]] \
   && ln -s "../$BUILD_DIR/$COMPC_FILE" "$SOURCE_DIR/$COMPC_FILE"
 
-readonly filehost=http://endorfina.dev
+readonly filehost=http://idle.endorfina.dev
 
 download_file()
 {
