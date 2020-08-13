@@ -98,6 +98,10 @@ do
         CM_OPTS+=('-DX11_USE_CLIENTMESSAGE=OFF')
         ;;
 
+      o)
+        CM_OPTS+=("-DOUTPUT_DIR=$(pwd)")
+        ;;
+
       v)
         CM_OPTS+=('-DCMAKE_VERBOSE_MAKEFILE=ON')
         ;;
@@ -219,6 +223,9 @@ ${INDENT}cmake --build '../${BUILD_DIR}' --target '${PROJECT_NAME}-test-run'
 clean:
 ${INDENT}cmake --build '../${BUILD_DIR}' --target 'clean'
 
+erase:
+${INDENT}rm -rf '../${BUILD_DIR}'
+
 exec:
 $(cmake -N -L --build "$BUILD_DIR" 2>/dev/null | sed -nE "$RUN_SED_FILTER")
 
@@ -228,6 +235,6 @@ perf:
 $(cmake -N -L --build "$BUILD_DIR" 2>/dev/null \
     | sed -nE "${RUN_SED_FILTER/'p;q'/'s~\([[:space:]]*('"'[^']*'"')[^)]*\)$~perf stat \1~;p;q'}")
 
-.PHONY: ${PROJECT_NAME} test clean run exec vars
+.PHONY: ${PROJECT_NAME} test clean erase run exec vars
 _EOF
 

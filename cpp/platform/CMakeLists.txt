@@ -73,7 +73,7 @@ if(ANDROID)
     target_link_libraries(${PROJECT_NAME} PRIVATE android log EGL GLESv2)
 
 else()
-    get_filename_component(OUTPUT_PATH "${CMAKE_BINARY_DIR}/out" REALPATH CACHE)
+    get_filename_component(OUTPUT_DIR "${CMAKE_BINARY_DIR}/out" REALPATH CACHE)
 
     option(X11_USE_CLIENTMESSAGE "Makes x11 handle closing in a cleaner manner by intercepting close calls from your WM" ON)
 
@@ -90,12 +90,12 @@ else()
         target_compile_definitions(${PROJECT_NAME} PRIVATE X11_USE_CLIENTMESSAGE)
     endif()
 
-    file(MAKE_DIRECTORY "${OUTPUT_PATH}")
-    set_target_properties(${PROJECT_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${OUTPUT_PATH}")
+    file(MAKE_DIRECTORY "${OUTPUT_DIR}")
+    set_target_properties(${PROJECT_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${OUTPUT_DIR}")
 
     get_filename_component(IDLE_WORKING_DIR "${CMAKE_SOURCE_DIR}/.." REALPATH)
 
-    string(REGEX REPLACE "^${IDLE_WORKING_DIR}/" "" IDLE_OUTPUT_PATH "${OUTPUT_PATH}/${PROJECT_NAME}")
+    string(REGEX REPLACE "^${IDLE_WORKING_DIR}/" "./" IDLE_OUTPUT_PATH "${OUTPUT_DIR}/${PROJECT_NAME}")
 
     set(CLI_RUN_COMMAND "cd '${IDLE_WORKING_DIR}' && test -x '${IDLE_OUTPUT_PATH}' && ( '${IDLE_OUTPUT_PATH}' || true )" CACHE STRING "A command which can be used to boot ${PROJECT_NAME}" FORCE)
 endif()
