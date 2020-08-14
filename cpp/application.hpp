@@ -30,6 +30,7 @@ struct pause_menu
 {
     std::unique_ptr<const graphics::render_buffer_t> buffers[2];
     float fadein_alpha = 0, shift = 0;
+    std::chrono::steady_clock::time_point finish_time;
 
     pause_menu(unsigned blur_downscale);
 

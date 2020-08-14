@@ -255,7 +255,7 @@ void room::draw(const graphics::core& gl) const
 std::optional<keyring::variant> room::step(const pointer_wrapper& cursor)
 {
     auto work_copy = model_anim.load(std::memory_order_relaxed);
-    timer += .12f / F_TAU_2;
+    timer += .12f / F_TAU_2 * uni_time_factor;
 
     if (timer >= 1.f)
     {

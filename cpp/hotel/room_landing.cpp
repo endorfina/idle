@@ -130,10 +130,10 @@ void luminous_cloud::spark(point_t position, Rando& rando)
         {
             return
             {
-                .fade_decr = (generator(rando) - 1.f) * .00244f - .00398f,
+                .fade_decr = ((generator(rando) - 1.f) * .00244f - .00398f) * uni_time_factor,
                 .scale = (generator(rando) + 1.f) * 10.f + 60.f,
                 .position = position + point_t{ generator(rando) * rX, generator(rando) * rY },
-                .speed = point_t{ generator(rando) * .5f, generator(rando) * .3f },
+                .speed = point_t{ generator(rando) * .5f, generator(rando) * .3f } * uni_time_factor,
                 .noise = 0.f,
                 .fade = 1.f
             };
@@ -188,13 +188,15 @@ std::optional<keyring::variant> room::step(const pointer_wrapper& pointer)
 
     for (unsigned i = 0; i < std::tuple_size<great_crimson_thing::arm_t>::value; ++i)
     {
-        thing.legs[1][i] += (thing.legs[0][i] - thing.legs[1][i]) / application_frames_per_second * .3f;
+        thing.legs[1][i] += (thing.legs[0][i] - thing.legs[1][i]) * (.005f * uni_time_factor);
     }
 
     random_float dist_float2{ 5000.f, 43758.5453f };
-    std::generate(noise_seed.begin(), noise_seed.end(), [this, &dist_float2](){ return dist_float2(fast_random_device); });
+    std::generate(noise_seed.begin(), noise_seed.end(),
+            [this, &dist_float2](){ return dist_float2(fast_random_device); });
     random_float dist_float4{ -1.f, 1.f };
-    std::generate(menu_visual_noise.begin(), menu_visual_noise.end(), [this, &dist_float4](){ return dist_float4(fast_random_device); });
+    std::generate(menu_visual_noise.begin(), menu_visual_noise.end(),
+            [this, &dist_float4](){ return dist_float4(fast_random_device); });
 
     if (polyps.flag.load(std::memory_order_relaxed))
     {
@@ -203,12 +205,12 @@ std::optional<keyring::variant> room::step(const pointer_wrapper& pointer)
 
     if (thing.alpha < 1.f)
     {
-        thing.alpha = std::min<float>(thing.alpha + (impatient ? .0088f : .00059f), 1.f);
+        thing.alpha = std::min<float>(thing.alpha + (impatient ? .0088f : .00059f) * uni_time_factor, 1.f);
     }
 
     if (destination)
     {
-        thing.alpha = std::min<float>(thing.alpha + (impatient ? .0029f : .0017f), 2.f);
+        thing.alpha = std::min<float>(thing.alpha + (impatient ? .0033f : .0017f) * uni_time_factor, 2.f);
 
         if (thing.alpha > 1.811f)
         {

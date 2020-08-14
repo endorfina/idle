@@ -280,6 +280,10 @@ pause_menu::pause_menu(const unsigned blur_downscale)
     {
         opengl.new_render_buffer(),
         opengl.new_render_buffer(blur_downscale)
+    },
+    finish_time
+    {
+        std::chrono::steady_clock::now() + std::chrono::seconds(2)
     }
 {
     const graphics::render_buffer_t intermediate_buffer(opengl.render_buffer_masked->internal_size, opengl.render_quality);
@@ -371,9 +375,12 @@ int application::real_main()
                 }
             }
 
-            app.pause->fadein_alpha += (1 - app.pause->fadein_alpha) / 30;
+            app.pause->fadein_alpha
+                = app.clock < app.pause->finish_time
+                ? std::cos(static_cast<float>((app.pause->finish_time - app.clock) / std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::seconds(2))) * F_TAU_4)
+                : 1.f;
 
-            app.pause->shift += .029f;
+            app.pause->shift += .018f;
             if (app.pause->shift > F_TAU)
                 app.pause->shift -= F_TAU;
         }

@@ -40,7 +40,7 @@ void statistician::draw_fps(const graphics::core& gl) const
     gl::LineWidth(1.f);
 
     gl.prog.fill.use();
-    gl.prog.fill.set_color({1, 1, 1});
+    gl.prog.fill.set_color({1, 1, 1, 0.5f});
     gl.prog.fill.position_vertex(&frame_count.front().x);
     gl.prog.fill.set_transform(math::matrices::scale<float>(gl.draw_size));
     gl.prog.fill.set_view_identity();
@@ -78,9 +78,13 @@ void wall_clock::draw_fps(const graphics::core& gl) const
 {
     constexpr point_t fps_draw_point{10.f, 10.f};
     gl.prog.text.use();
-    gl.prog.text.set_color({1, .733f, .796f, .88f});
+    gl.prog.text.set_color({1, .733f, .496f, .91f});
+    gl.view_mask();
     draw_text<text_align::near, text_align::near>(
-            *gl.fonts.title, gl.prog.text, view, fps_draw_point, 14);
+            *gl.fonts.title, gl.prog.text, view, fps_draw_point, 10);
+    gl.view_normal();
+    draw_text<text_align::near, text_align::near>(
+            *gl.fonts.title, gl.prog.text, view, fps_draw_point, 10);
 }
 
 }  // namespace idle::stats
