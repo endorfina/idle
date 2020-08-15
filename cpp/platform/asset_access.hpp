@@ -24,13 +24,16 @@
 namespace platform
 {
 
+struct context;
+
 class asset
 {
 #ifdef __ANDROID__
-public:
     static struct android_app * android_activity;
 
-private:
+    friend void ::android_main(android_app *);
+    friend struct context;
+
     AAsset * file = nullptr;
     std::string_view data;
 
