@@ -194,7 +194,7 @@ std::optional<keyring::variant> room::step(const pointer_wrapper& pointer)
     random_float dist_float2{ 5000.f, 43758.5453f };
     std::generate(noise_seed.begin(), noise_seed.end(),
             [this, &dist_float2](){ return dist_float2(fast_random_device); });
-    random_float dist_float4{ -1.f, 1.f };
+    random_float dist_float4{ -.9f, .9f };
     std::generate(menu_visual_noise.begin(), menu_visual_noise.end(),
             [this, &dist_float4](){ return dist_float4(fast_random_device); });
 
