@@ -112,7 +112,7 @@ private:
 public:
     void prepare();
 
-    void set_offsets(GLfloat ratio1, GLfloat ratio2, GLfloat buffer_height) const;
+    void set_offsets(GLfloat ratio1, GLfloat ratio2, GLfloat buffer_height, GLfloat subbuffer_width) const;
 };
 
 struct core
@@ -169,6 +169,8 @@ struct core
     void view_normal() const;
 
     void view_mask() const;
+
+    void view_distortion() const;
 };
 
 

@@ -207,6 +207,71 @@ constexpr auto walking_muscle_digest = glass::muscle
 
 constexpr auto walking = skew<0, 45, 90, 135, 180, 225, 270, 315>(walking_muscle_digest);
 
+constexpr auto floating_muscle_digest = glass::muscle
+    {
+        std::make_tuple(
+            // [](glass::closet::humanoid h) { return h; },
+
+            [](glass::closet::humanoid h)
+            {
+                auto& [neck, face] = h.get_head().table;
+                neck.angle.y -= F_TAU_8 * .2f;
+                h.get_upperbody().root.angle.y -= F_TAU_8 *.8f;
+                h.get_lowerbody().root.angle.y -= F_TAU_8 *.7f;
+
+                auto& shoulders = h.get_shoulders();
+                // shoulders.right[1].angle.x += F_TAU_8 * .61f;
+                // shoulders.left[1].angle.x -= F_TAU_8 * .61f;
+                shoulders.right[0].angle.y -= F_TAU_8 * .1f;
+                shoulders.right[2].angle.y += F_TAU_8 * .1f;
+                shoulders.right[2].angle.z -= F_TAU_8 * .1f;
+                shoulders.left[0].angle.y += F_TAU_8 * .1f;
+                shoulders.left[2].angle.y += F_TAU_8 * .1f;
+                shoulders.left[2].angle.z += F_TAU_8 * .1f;
+
+                auto& hips = h.get_hips();
+                hips.right[0].angle.y += F_TAU_8 *.3f;
+                hips.right[1].angle.x += F_TAU_8 *.19f;
+                hips.right[2].angle.y -= F_TAU_8 *.1f;
+                hips.right[3].angle.y += F_TAU_8;
+                hips.left[0].angle.y += F_TAU_8 * .5f;
+                hips.left[1].angle.x -= F_TAU_8 *.19f;
+                hips.left[2].angle.y += F_TAU_8 * .5f;
+                hips.left[3].angle.y += F_TAU_8;
+
+                return h;
+            },
+
+            [](glass::closet::humanoid h)
+            {
+                auto& [neck, face] = h.get_head().table;
+                neck.angle.y -= F_TAU_8 * .001f;
+                h.get_upperbody().root.angle.y -= F_TAU_8 *.05f;
+                h.get_lowerbody().root.angle.y -= F_TAU_8 *.05f;
+
+                auto& shoulders = h.get_shoulders();
+                // shoulders.right[1].angle.x += F_TAU_8 * .61f;
+                // shoulders.left[1].angle.x -= F_TAU_8 * .61f;
+                shoulders.right[0].angle.y += F_TAU_8 * .01f;
+                shoulders.right[2].angle.y += F_TAU_8 * .4f;
+                shoulders.right[2].angle.z -= F_TAU_8 * .3f;
+                shoulders.left[0].angle.y -= F_TAU_8 * .01f;
+                shoulders.left[2].angle.y += F_TAU_8 * .4f;
+                shoulders.left[2].angle.z += F_TAU_8;
+
+                auto& hips = h.get_hips();
+                hips.right[0].angle.y += F_TAU_8 *.1f;
+                hips.right[2].angle.y += F_TAU_8 *.05f;
+                hips.left[0].angle.y -= F_TAU_8 * .2f;
+                hips.left[2].angle.y -= F_TAU_8 * .1f;
+
+                return h;
+            }
+        )
+    }.animate(hueman);
+
+constexpr auto floating = skew<0, 45, 90, 135, 180, 225, 270, 315>(floating_muscle_digest);
+
 template<typename Models>
 void draw_bones(const Models& models, const graphics::core& gl, const animation anim)
 {

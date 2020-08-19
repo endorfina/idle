@@ -184,6 +184,10 @@ GLint setup_drawing_buffer_frame(const graphics::render_buffer_t& rb, const idle
 
     fill_frame_with_color({1,1,1,1});
 
+    opengl.view_distortion();
+
+    fill_frame_with_color({.5f,.5f,.5f,1});
+
     opengl.view_normal();
     return default_frame_buffer;
 }

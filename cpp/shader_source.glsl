@@ -1,12 +1,12 @@
 @@ renderv
 
-attribute vec2 vPos;
-attribute vec2 aUV;
-varying vec2 vUV;
+attribute vec2 attr_pos;
+attribute vec2 attr_mapped_vec;
+varying vec2 var_mapped_vec;
 
 void main() {
-    vUV = aUV;
-    gl_Position = vec4(vPos, 0.0, 1.0);
+    var_mapped_vec = attr_mapped_vec;
+    gl_Position = vec4(attr_pos, 0.0, 1.0);
 }
 
 @@ renderf
@@ -14,11 +14,11 @@ void main() {
 #ifdef GL_ES
 precision mediump float;
 #endif
-uniform sampler2D uT;
-varying vec2 vUV;
+uniform sampler2D u_tex;
+varying vec2 var_mapped_vec;
 
 void main() {
-  gl_FragColor = texture2D(uT, vUV);
+  gl_FragColor = texture2D(u_tex, var_mapped_vec);
 }
 
 @@ maskedf
@@ -26,17 +26,29 @@ void main() {
 #ifdef GL_ES
 precision mediump float;
 #endif
-uniform sampler2D uT;
-varying vec2 vUV;
-uniform vec3 uO; // the uniform offsets
+uniform sampler2D u_tex;
+varying vec2 var_mapped_vec;
+uniform vec4 u_offset;
 
 void main() {
-  vec2 coords = vec2(vUV.x, vUV.y * uO.x);
-  vec4 raw = texture2D(uT, coords);
+  vec2 coords = vec2(var_mapped_vec.x, var_mapped_vec.y * u_offset.x);
+  vec2 dis_coords = coords * u_offset.y + vec2(u_offset.w, u_offset.z);
 
-  vec2 mask_coords = coords * uO.y;
-  mask_coords.y += uO.z;
-  vec4 mask = texture2D(uT, mask_coords);
+  vec4 dis = texture2D(u_tex, dis_coords);
+  vec2 dis_shift = vec2(dis.r - 0.5, (dis.g - 0.5) * u_offset.x) / 8.0;
+
+  coords = vec2(
+              max(0.0, min(1.0,
+                      coords.x + dis_shift.x)),
+              max(0.0, min(u_offset.x,
+                      coords.y + dis_shift.y))
+            );
+
+  vec2 mask_coords = coords * u_offset.y;
+  mask_coords.y += u_offset.z;
+
+  vec4 raw = texture2D(u_tex, coords);
+  vec4 mask = texture2D(u_tex, mask_coords);
 
   gl_FragColor = raw * mask;
 }
@@ -46,45 +58,45 @@ void main() {
 #ifdef GL_ES
 precision mediump float;
 #endif
-uniform sampler2D uT;
-varying vec2 vUV;
-uniform vec2 uDir;
-uniform float uRad, uRes;
+uniform sampler2D u_tex;
+varying vec2 var_mapped_vec;
+uniform vec2 u_direction;
+uniform float u_radius, u_resolution;
 
 void main() {
   vec4 sum = vec4(0.0);
-  vec2 tc = vUV;
+  vec2 tc = var_mapped_vec;
 
-  float blur = uRad * uRes;
+  float blur = u_radius * u_resolution;
 
-  float hstep = uDir.x * blur;
-  float vstep = uDir.y * blur;
+  float hstep = u_direction.x * blur;
+  float vstep = u_direction.y * blur;
 
-  sum += texture2D(uT, vec2(tc.x - 4.0 * hstep, tc.y - 4.0 * vstep)) * 0.0162162162;
-  sum += texture2D(uT, vec2(tc.x - 3.0 * hstep, tc.y - 3.0 * vstep)) * 0.0540540541;
-  sum += texture2D(uT, vec2(tc.x - 2.0 * hstep, tc.y - 2.0 * vstep)) * 0.1216216216;
-  sum += texture2D(uT, vec2(tc.x - hstep, tc.y - vstep)) * 0.1945945946;
+  sum += texture2D(u_tex, vec2(tc.x - 4.0 * hstep, tc.y - 4.0 * vstep)) * 0.0162162162;
+  sum += texture2D(u_tex, vec2(tc.x - 3.0 * hstep, tc.y - 3.0 * vstep)) * 0.0540540541;
+  sum += texture2D(u_tex, vec2(tc.x - 2.0 * hstep, tc.y - 2.0 * vstep)) * 0.1216216216;
+  sum += texture2D(u_tex, vec2(tc.x - hstep, tc.y - vstep)) * 0.1945945946;
 
-  sum += texture2D(uT, vec2(tc.x, tc.y)) * 0.2270270270;
+  sum += texture2D(u_tex, vec2(tc.x, tc.y)) * 0.2270270270;
 
-  sum += texture2D(uT, vec2(tc.x + hstep, tc.y + vstep)) * 0.1945945946;
-  sum += texture2D(uT, vec2(tc.x + 2.0 * hstep, tc.y + 2.0 * vstep)) * 0.1216216216;
-  sum += texture2D(uT, vec2(tc.x + 3.0 * hstep, tc.y + 3.0 * vstep)) * 0.0540540541;
-  sum += texture2D(uT, vec2(tc.x + 4.0 * hstep, tc.y + 4.0 * vstep)) * 0.0162162162;
+  sum += texture2D(u_tex, vec2(tc.x + hstep, tc.y + vstep)) * 0.1945945946;
+  sum += texture2D(u_tex, vec2(tc.x + 2.0 * hstep, tc.y + 2.0 * vstep)) * 0.1216216216;
+  sum += texture2D(u_tex, vec2(tc.x + 3.0 * hstep, tc.y + 3.0 * vstep)) * 0.0540540541;
+  sum += texture2D(u_tex, vec2(tc.x + 4.0 * hstep, tc.y + 4.0 * vstep)) * 0.0162162162;
 
   gl_FragColor = sum;
 }
 
 @@ normv
 
-attribute vec2 vPos;
-uniform mat4 uPM, uVM, uMM; // projection, view, model
-attribute vec2 aUV;
-varying vec2 vUV;
+attribute vec2 attr_pos;
+uniform mat4 u_projm, u_viewm, u_modelm; // projection, view, model
+attribute vec2 attr_mapped_vec;
+varying vec2 var_mapped_vec;
 
 void main() {
-    vUV = aUV;
-    gl_Position = uPM * uVM * uMM * vec4(vPos, 0.0, 1.0);
+    var_mapped_vec = attr_mapped_vec;
+    gl_Position = u_projm * u_viewm * u_modelm * vec4(attr_pos, 0.0, 1.0);
 }
 
 @@ normf
@@ -92,43 +104,25 @@ void main() {
 #ifdef GL_ES
 precision mediump float;
 #endif
-uniform sampler2D uT;
-// uniform bool drawT;
-uniform vec4 uCol;
-varying vec2 vUV;
+uniform sampler2D u_tex;
+
+uniform vec4 u_color;
+varying vec2 var_mapped_vec;
 
 void main() {
-  // if (drawHl) {
-  //     vec4 color = vec4(1, 1, 1, 0);
-  //     if (texture2D(uT, vUV).w < 0.95) {
-  // 		// ivec2 textureSize2d = textureSize(uT,0);
-  // 		// float ts = float((textureSize2d.x + textureSize2d.y) / 2);
-  // 		int sum = 0;
-  // 		for(int j=-1; j<=1; ++j)
-  // 		for(int i=-1; i<=1; ++i)
-  // 		if (i != j) {
-  // 			vec2 shift = vec2(float(i) * uTSx.x * 4.0, float(j) * uTSx.y
-  // * 4.0); 			float value = texture2D(uT, vUV + shift).w; 			color.w += value;
-  // 			++sum;
-  // 		}
-  // 		color.w /= float(sum);
-  // 	}
-  // 	gl_FragColor = color * vCol;
-  // }
-  // else
-  gl_FragColor = texture2D(uT, vUV) * uCol;
+  gl_FragColor = texture2D(u_tex, var_mapped_vec) * u_color;
 }
 
 @@ gradientv
 
-attribute vec2 vPos;
-uniform mat4 uPM, uVM, uMM; // projection, view, model
-attribute float aA;
-varying float vA;
+attribute vec2 attr_pos;
+uniform mat4 u_projm, u_viewm, u_modelm; // projection, view, model
+attribute float attr_gradient;
+varying float var_gradient;
 
 void main() {
-    vA = aA;
-    gl_Position = uPM * uVM * uMM * vec4(vPos, 0.0, 1.0);
+    var_gradient = attr_gradient;
+    gl_Position = u_projm * u_viewm * u_modelm * vec4(attr_pos, 0.0, 1.0);
 }
 
 @@ gradientf
@@ -136,44 +130,44 @@ void main() {
 #ifdef GL_ES
 precision lowp float;
 #endif
-uniform vec4 uCol, uCo2;
-varying float vA;
+uniform vec4 u_color, u_color_2;
+varying float var_gradient;
 
 void main() {
-    gl_FragColor = uCol + (uCo2 - uCol) * vA;
+    gl_FragColor = u_color + (u_color_2 - u_color) * var_gradient;
 }
 
 @@ doublesolidv
 
-attribute vec2 vPos, vDest;
-uniform mat4 uPM, uVM, uMM; // projection, view, model
-uniform float uIv;  // interpolate value (between 0 and 1)
+attribute vec2 attr_pos, attr_dest_pos;
+uniform mat4 u_projm, u_viewm, u_modelm; // projection, view, model
+uniform float u_inter;  // interpolate value (between 0 and 1)
 
 void main() {
-    vec2 pos = vPos + (vDest - vPos) * uIv;
-    gl_Position = uPM * uVM * uMM * vec4(pos, 0.0, 1.0);
+    vec2 pos = attr_pos + (attr_dest_pos - attr_pos) * u_inter;
+    gl_Position = u_projm * u_viewm * u_modelm * vec4(pos, 0.0, 1.0);
 }
 
 @@ doublenormv
 
-attribute vec2 vPos, vDest, aUV;
-uniform mat4 uPM, uVM, uMM; // projection, view, model
-uniform float uIv;  // interpolate value (between 0 and 1)
-varying vec2 vUV;
+attribute vec2 attr_pos, attr_dest_pos, attr_mapped_vec;
+uniform mat4 u_projm, u_viewm, u_modelm; // projection, view, model
+uniform float u_inter;  // interpolate value (between 0 and 1)
+varying vec2 var_mapped_vec;
 
 void main() {
-    vUV = aUV;
-    vec2 pos = vPos + (vDest - vPos) * uIv;
-    gl_Position = uPM * uVM * uMM * vec4(pos, 0.0, 1.0);
+    var_mapped_vec = attr_mapped_vec;
+    vec2 pos = attr_pos + (attr_dest_pos - attr_pos) * u_inter;
+    gl_Position = u_projm * u_viewm * u_modelm * vec4(pos, 0.0, 1.0);
 }
 
 @@ solidv
 
-attribute vec2 vPos;
-uniform mat4 uPM, uVM, uMM;
+attribute vec2 attr_pos;
+uniform mat4 u_projm, u_viewm, u_modelm;
 
 void main() {
-    gl_Position = uPM * uVM * uMM * vec4(vPos, 0.0, 1.0);
+    gl_Position = u_projm * u_viewm * u_modelm * vec4(attr_pos, 0.0, 1.0);
 }
 
 @@ solidf
@@ -181,10 +175,10 @@ void main() {
 #ifdef GL_ES
 precision lowp float;
 #endif
-uniform vec4 uCol;
+uniform vec4 u_color;
 
 void main() {
-    gl_FragColor = uCol;
+    gl_FragColor = u_color;
 }
 
 @@ noisef  // linked with normv
@@ -192,9 +186,9 @@ void main() {
 #ifdef GL_ES
 precision highp float;
 #endif
-uniform vec4 uCol, uCo2, uCo3;
-varying vec2 vUV;
-uniform vec2 uSeed;
+uniform vec4 u_color, u_color_2, u_color_3;
+varying vec2 var_mapped_vec;
+uniform vec2 u_seed;
 
 float snoise(vec2 co)  // straight up textbook rand
 {
@@ -207,23 +201,23 @@ float snoise(vec2 co)  // straight up textbook rand
 }
 
 void main() {
-    float dist = min(distance(vUV, vec2(0.5, 0.5)) * 1.49, 1.0);
-    vec4 sum_color = uCo2 + (uCo3 - uCo2) * dist;
-    vec2 seed = vUV * 5000.0 + uSeed;
-    gl_FragColor = uCol + (sum_color - uCol) * snoise(seed);
+    float dist = min(distance(var_mapped_vec, vec2(0.5, 0.5)) * 1.49, 1.0);
+    vec4 sum_color = u_color_2 + (u_color_3 - u_color_2) * dist;
+    vec2 seed = var_mapped_vec * 5000.0 + u_seed;
+    gl_FragColor = u_color + (sum_color - u_color) * snoise(seed);
 }
 
 @@ textv
 
-attribute vec2 vPos;
-uniform mat4 uPM, uVM, uMM; // projection, scale (font-size), model
-uniform vec2 uOf;
-attribute vec2 aUV;
-varying vec2 vUV;
+attribute vec2 attr_pos;
+uniform mat4 u_projm, u_viewm, u_modelm; // projection, scale (font-size), model
+uniform vec2 u_offset;
+attribute vec2 attr_mapped_vec;
+varying vec2 var_mapped_vec;
 
 void main() {
-    vUV = aUV;
-    gl_Position = uPM * uVM * uMM * vec4(vPos + uOf, 0.0, 1.0);
+    var_mapped_vec = attr_mapped_vec;
+    gl_Position = u_projm * u_viewm * u_modelm * vec4(attr_pos + u_offset, 0.0, 1.0);
 }
 
 @@ textf
@@ -231,14 +225,14 @@ void main() {
 #ifdef GL_ES
 precision mediump float;
 #endif
-uniform sampler2D uT;
-uniform vec4 uCol;
-varying vec2 vUV;
+uniform sampler2D u_tex;
+uniform vec4 u_color;
+varying vec2 var_mapped_vec;
 
 void main() {
-  float a = texture2D(uT, vUV).x;
+  float a = texture2D(u_tex, var_mapped_vec).x;
   float c = 0.8 + (a * 0.2);
-  gl_FragColor = vec4(c, c, c, a) * uCol; // swizzling won't work on earlier OpenGL
+  gl_FragColor = vec4(c, c, c, a) * u_color; // swizzling won't work on earlier OpenGL
 }
 
 @@ fullbgf
@@ -246,17 +240,16 @@ void main() {
 #ifdef GL_ES
 precision mediump float;
 #endif
-uniform sampler2D uT;
-uniform float uCol;
-uniform vec2 uR; // resolution
-// varying vec2 vUV;
-uniform float uI; // iterate
+uniform sampler2D u_tex;
+uniform float u_color;
+uniform vec2 u_resolution;
+uniform float u_speed;
 
 void main() {
     // between -1 & 1
-    vec2 uv = gl_FragCoord.xy / uR;
-    uv.x *= uR.x / uR.y;
-    uv.x -= uI;
-    uv.y += uI;
-    gl_FragColor = texture2D(uT, uv) * vec4(1, 1, 1, uCol);
+    vec2 uv = gl_FragCoord.xy / u_resolution;
+    uv.x *= u_resolution.x / u_resolution.y;
+    uv.x -= u_speed;
+    uv.y += u_speed;
+    gl_FragColor = texture2D(u_tex, uv) * vec4(1, 1, 1, u_color);
 }

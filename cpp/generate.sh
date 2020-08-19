@@ -44,7 +44,7 @@ namespace shaders
 {
 $NAMESPACE
 {
-enum source_info
+enum source_info : unsigned
 {
 _END
 

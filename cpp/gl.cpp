@@ -49,15 +49,18 @@ void detailed_report_opengl_errors(const char* op, const char *const file, const
 
 GLuint load_shader(const GLenum shaderType, const char* const pSource)
 {
-    GLuint shader = gl::CreateShader(shaderType);
-    if (shader)
+    if (const GLuint shader = gl::CreateShader(shaderType))
     {
         gl::ShaderSource(shader, 1, &pSource, nullptr);
         gl::CompileShader(shader);
         GLint compiled = 0;
         gl::GetShaderiv(shader, gl::COMPILE_STATUS, &compiled);
 
-        if (!compiled)
+        if (compiled)
+        {
+            return shader;
+        }
+        else
         {
             GLint infoLen = 0;
             gl::GetShaderiv(shader, gl::INFO_LOG_LENGTH, &infoLen);
@@ -67,25 +70,24 @@ GLuint load_shader(const GLenum shaderType, const char* const pSource)
                 char buf[infoLen];
                 gl::GetShaderInfoLog(shader, infoLen, nullptr, buf);
                 LOGE("Could not compile shader %d:\n%s", shaderType, buf);
-                gl::DeleteShader(shader);
-                shader = 0;
             }
+            gl::DeleteShader(shader);
         }
     }
-    return shader;
+    return 0;
 }
 
 GLuint create_program(const char* const pVertexSource, const char* const pFragmentSource)
 {
-    GLuint vertexShader = load_shader(gl::VERTEX_SHADER, pVertexSource);
+    const GLuint vertexShader = load_shader(gl::VERTEX_SHADER, pVertexSource);
     if (!vertexShader)
         return 0;
 
-    GLuint pixelShader = load_shader(gl::FRAGMENT_SHADER, pFragmentSource);
+    const GLuint pixelShader = load_shader(gl::FRAGMENT_SHADER, pFragmentSource);
     if (!pixelShader)
         return 0;
 
-    if (GLuint program = gl::CreateProgram())
+    if (const GLuint program = gl::CreateProgram())
     {
         gl::AttachShader(program, vertexShader);
         gl::AttachShader(program, pixelShader);
@@ -111,28 +113,34 @@ GLuint create_program(const char* const pVertexSource, const char* const pFragme
     return 0;
 }
 
-struct shader_compiler
+class shader_compiler
 {
-    using buffer_t = std::vector<unsigned char>;
+    using buffer_type = std::array<char, shaders::source_info::size_uncompressed>;
 
-    shader_compiler(std::string_view view, const size_t expected_size)
-        : buffer(filter(idle::zlib<buffer_t>(view, false, true), expected_size))
+    bool failed;
+    buffer_type buffer;
+
+public:
+    shader_compiler(const std::string_view view)
+        : failed(!decompress(view))
     {
     }
 
 private:
     const char * data(const unsigned int addr) const
     {
-        return reinterpret_cast<const char*>(buffer.data()) + addr;
+        return &buffer[addr];
     }
 
-    static buffer_t filter(std::optional<buffer_t>&& opt, const size_t expected_size)
+    bool decompress(const std::string_view source)
     {
-        if (opt && opt->size() == expected_size)
+        if (const auto buf = idle::zlib<std::vector<unsigned char>>(source, false, true);
+                    buf && buf->size() == buffer.size())
         {
-            return { std::move(*opt) };
+            ::memcpy(buffer.data(), buf->data(), buffer.size());
+            return true;
         }
-        return {};
+        return false;
     }
 
 public:
@@ -144,21 +152,15 @@ public:
             {
                 return r;
             }
-            else
-            {
-                buffer.clear();
-            }
+
+            failed = true;
         }
         return 0;
     }
 
-private:
-    buffer_t buffer;
-
-public:
     bool has_failed() const
     {
-        return buffer.empty();
+        return failed;
     }
 };
 
@@ -182,7 +184,7 @@ void apply_to_all(core::program_container_t& con, const Call& call)
 bool compile_shaders(core::program_container_t& prog)
 {
     using source = shaders::source_info;
-    shader_compiler sc{ shaders::get_view(), source::size_uncompressed };
+    shader_compiler sc{ shaders::get_view() };
 
     prog.render_final.program = sc.compile(source::pos_renderv, source::pos_renderf);
     prog.render_masked.program = sc.compile(source::pos_renderv, source::pos_maskedf);
@@ -218,6 +220,21 @@ buffer_size appropriate_size(const buffer_size size)
     while (u.x < size.x) u.x *= 2;
     while (u.y < size.y) u.y *= 2;
     return u;
+}
+
+GLuint load_attribute(const GLuint program, const char* const variable_name)
+{
+    const auto handle = static_cast<GLuint>(gl::GetAttribLocation(program, variable_name));
+    gl::EnableVertexAttribArray(handle);
+    report_opengl_errors(variable_name);
+    return handle;
+}
+
+GLint load_uniform(const GLuint program, const char* const variable_name)
+{
+    const auto handle = gl::GetUniformLocation(program, variable_name);
+    report_opengl_errors(variable_name);
+    return handle;
 }
 
 }  // namespace
@@ -307,7 +324,12 @@ bool core::resize(const buffer_size window_size)
             / draw_size.y);
 
     prog.render_masked.use();
-    prog.render_masked.set_offsets(3.f / 4.f, 1.f / 3.f, render_buffer_masked->texture_h * (3.f / 4.f));
+    prog.render_masked.set_offsets(
+            3.f / 4.f,
+            1.f / 3.f,
+            render_buffer_masked->texture_h * (3.f / 4.f), // y offset
+            render_buffer_masked->texture_w * (1.f / 3.f) // x offset
+        );
 
     return true;
 }
@@ -445,53 +467,44 @@ void blur_render_program_t::set_resolution(const GLfloat res) const
     gl::Uniform1f(resolution_handle, res);
 }
 
-void masked_render_program_t::set_offsets(const GLfloat ratio1, const GLfloat ratio2, const GLfloat buffer_height) const
+void masked_render_program_t::set_offsets(const GLfloat ratio1, const GLfloat ratio2, const GLfloat buffer_height, const GLfloat subbuffer_width) const
 {
-    gl::Uniform3f(mask_offset_handle, ratio1, ratio2, buffer_height);
+    gl::Uniform4f(mask_offset_handle, ratio1, ratio2, buffer_height, subbuffer_width);
 }
-
 
 void render_program_t::prepare()
 {
-    position_handle = static_cast<GLuint>(gl::GetAttribLocation(program, "vPos"));
-    texture_position_handle = static_cast<GLuint>(gl::GetAttribLocation(program, "aUV"));
-
     use();
-
-    gl::EnableVertexAttribArray(position_handle);
-    gl::EnableVertexAttribArray(texture_position_handle);
-    report_opengl_errors("render_program_t::prepare()");
+    position_handle = load_attribute(program, "attr_pos");
+    texture_position_handle = load_attribute(program, "attr_mapped_vec");
 }
 
 void program_t::prepare()
 {
-    position_handle = static_cast<GLuint>(gl::GetAttribLocation(program_id, "vPos"));
-    model_handle = gl::GetUniformLocation(program_id, "uMM");
-    view_handle = gl::GetUniformLocation(program_id, "uVM");
-    color_handle = gl::GetUniformLocation(program_id, "uCol");
-
     use();
+    position_handle = load_attribute(program_id, "attr_pos");
+    model_handle = load_uniform(program_id, "u_modelm");
+    view_handle = load_uniform(program_id, "u_viewm");
+    color_handle = load_uniform(program_id, "u_color");
+
     set_identity();
     set_view_identity();
-    gl::EnableVertexAttribArray(position_handle);
     report_opengl_errors("program_t::prepare()");
 }
 
 void textured_program_t::prepare()
 {
     program_t::prepare();
-    texture_position_handle = static_cast<GLuint>(gl::GetAttribLocation(program_id,"aUV"));
-
-    gl::EnableVertexAttribArray(texture_position_handle);
+    texture_position_handle = load_attribute(program_id,"attr_mapped_vec");
     report_opengl_errors("textured_program_t::prepare()");
 }
 
 void noise_program_t::prepare()
 {
     textured_program_t::prepare();
-    secondary_color_handle = gl::GetUniformLocation(program_id, "uCo2");
-    tertiary_color_handle = gl::GetUniformLocation(program_id, "uCo3");
-    noise_seed_handle = gl::GetUniformLocation(program_id, "uSeed");
+    secondary_color_handle = load_uniform(program_id, "u_color_2");
+    tertiary_color_handle = load_uniform(program_id, "u_color_3");
+    noise_seed_handle = load_uniform(program_id, "u_seed");
 
     report_opengl_errors("noise_program_t::prepare()");
 }
@@ -499,25 +512,23 @@ void noise_program_t::prepare()
 void gradient_program_t::prepare()
 {
     program_t::prepare();
-    secondary_color_handle = gl::GetUniformLocation(program_id, "uCo2");
-    interpolation_handle = static_cast<GLuint>(gl::GetAttribLocation(program_id,"aA"));
-
-    gl::EnableVertexAttribArray(interpolation_handle);
+    secondary_color_handle = load_uniform(program_id, "u_color_2");
+    interpolation_handle = load_attribute(program_id,"attr_gradient");
     report_opengl_errors("gradient_program_t::prepare()");
 }
 
 void text_program_t::prepare()
 {
     textured_program_t::prepare();
-    font_offset_handle = gl::GetUniformLocation(program_id, "uOf");
+    font_offset_handle = load_uniform(program_id, "u_offset");
     report_opengl_errors("text_program_t::prepare()");
 }
 
 void fullbg_program_t::prepare()
 {
     program_t::prepare();
-    offset_handle = gl::GetUniformLocation(program_id, "uI");
-    resolution_handle = gl::GetUniformLocation(program_id, "uR");
+    offset_handle = load_uniform(program_id, "u_speed");
+    resolution_handle = load_uniform(program_id, "u_resolution");
 
     set_offset(0);
     report_opengl_errors("fullbg_program_t::prepare()");
@@ -525,8 +536,8 @@ void fullbg_program_t::prepare()
 
 void double_base_program_t::prepare_headless(const GLuint prog)
 {
-    destination_handle = static_cast<GLuint>(gl::GetAttribLocation(prog,"vDest"));
-    interpolation_handle = gl::GetUniformLocation(prog, "uIv");
+    destination_handle = load_attribute(prog,"attr_dest_pos");
+    interpolation_handle = load_uniform(prog, "u_inter");
 
     set_interpolation(0);
     gl::EnableVertexAttribArray(destination_handle);
@@ -548,9 +559,9 @@ void double_vertex_program_t::prepare()
 void blur_render_program_t::prepare()
 {
     render_program_t::prepare();
-    direction_handle = gl::GetUniformLocation(program, "uDir");
-    resolution_handle = gl::GetUniformLocation(program, "uRes");
-    radius_handle = gl::GetUniformLocation(program, "uRad");
+    direction_handle = load_uniform(program, "u_direction");
+    resolution_handle = load_uniform(program, "u_resolution");
+    radius_handle = load_uniform(program, "u_radius");
 
     set_direction(1, 0);
     set_radius(1.f);
@@ -559,7 +570,7 @@ void blur_render_program_t::prepare()
 void masked_render_program_t::prepare()
 {
     render_program_t::prepare();
-    mask_offset_handle = gl::GetUniformLocation(program, "uO");
+    mask_offset_handle = load_uniform(program, "u_offset");
 }
 
 void render_program_t::draw_buffer(const render_buffer_t& src) const
@@ -592,7 +603,7 @@ void render_program_t::draw_buffer(const render_buffer_t& src) const
 static void set_projection_matrix(const program_t& prog, const idle::mat4x4_noopt_t& mat)
 {
     prog.use();
-    gl::UniformMatrix4fv(gl::GetUniformLocation(prog.program_id, "uPM"), 1, gl::FALSE_, static_cast<const GLfloat*>(mat));
+    gl::UniformMatrix4fv(load_uniform(prog.program_id, "u_projm"), 1, gl::FALSE_, static_cast<const GLfloat*>(mat));
 }
 
 void core::copy_projection_matrix(const idle::mat4x4_noopt_t& projection_matrix) const
@@ -672,6 +683,11 @@ void core::view_normal() const
 void core::view_mask() const
 {
     gl::Viewport(0, viewport_size.y, viewport_size.x / 3, viewport_size.y / 3);
+}
+
+void core::view_distortion() const
+{
+    gl::Viewport(viewport_size.x / 3, viewport_size.y, viewport_size.x / 3, viewport_size.y / 3);
 }
 
 unique_texture::unique_texture(const GLuint val) : value{val}
