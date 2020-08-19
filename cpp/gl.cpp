@@ -113,9 +113,10 @@ GLuint create_program(const char* const pVertexSource, const char* const pFragme
     return 0;
 }
 
+template<std::size_t Size> // shaders::source_info::size_uncompressed
 class shader_compiler
 {
-    using buffer_type = std::array<char, shaders::source_info::size_uncompressed>;
+    using buffer_type = std::array<char, Size>;
 
     bool failed;
     buffer_type buffer;
@@ -135,9 +136,9 @@ private:
     bool decompress(const std::string_view source)
     {
         if (const auto buf = idle::zlib<std::vector<unsigned char>>(source, false, true);
-                    buf && buf->size() == buffer.size())
+                    buf && buf->size() == Size)
         {
-            ::memcpy(buffer.data(), buf->data(), buffer.size());
+            ::memcpy(buffer.data(), buf->data(), Size);
             return true;
         }
         return false;
@@ -184,7 +185,7 @@ void apply_to_all(core::program_container_t& con, const Call& call)
 bool compile_shaders(core::program_container_t& prog)
 {
     using source = shaders::source_info;
-    shader_compiler sc{ shaders::get_view() };
+    shader_compiler<source::size_uncompressed> sc{ shaders::get_view() };
 
     prog.render_final.program = sc.compile(source::pos_renderv, source::pos_renderf);
     prog.render_masked.program = sc.compile(source::pos_renderv, source::pos_maskedf);
