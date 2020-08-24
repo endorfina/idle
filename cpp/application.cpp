@@ -27,7 +27,7 @@
 #include "freetype_glue.hpp"
 #include "assets_config.hpp"
 #include "platform/asset_access.hpp"
-#include "statistician.hpp"
+#include <cr/statistician.hpp>
 
 namespace outside
 {

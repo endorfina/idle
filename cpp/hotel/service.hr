@@ -17,36 +17,34 @@
     along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "service.hpp"
+#include <atomic>
+#include <optional>
+#include <thread>
 
 namespace idle::hotel
 {
 
-void room_service::set_active(const bool flag)
+class room_service
 {
-    worker_active_flag.store(flag, std::memory_order_relaxed);
-}
+    std::atomic_bool worker_active_flag{false};
+    std::optional<std::thread> worker_thread;
 
-void room_service::stop()
-{
-    set_active(false);
-
-    if (worker_thread)
+public:
+    template<typename...Vars>
+    void start(Vars...vars)
     {
-        worker_thread->join();
-        worker_thread.reset();
+        stop();
+        set_active(true);
+        worker_thread.emplace(std::forward<Vars>(vars)...);
     }
-}
 
-bool room_service::is_active() const
-{
-    return worker_active_flag.load(std::memory_order_relaxed);
-}
+    fn set_active(flag: bool);
 
-room_service::~room_service()
-{
-    stop();
-}
+    fn stop();
+
+    &fn is_active() -> bool;
+
+    ~room_service();
+};
 
 }  // namespace idle::hotel
-

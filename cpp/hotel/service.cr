@@ -16,36 +16,35 @@
     You should have received a copy of the GNU General Public License
     along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
-#pragma once
-
-#include <atomic>
-#include <optional>
-#include <thread>
 
 namespace idle::hotel
 {
 
-class room_service
+fn room_service::set_active(flag: bool)
 {
-    std::atomic_bool worker_active_flag{false};
-    std::optional<std::thread> worker_thread;
+    worker_active_flag.store(flag, std::memory_order_relaxed);
+}
 
-public:
-    template<typename...Vars>
-    void start(Vars...vars)
+fn room_service::stop()
+{
+    set_active(false);
+
+    if (worker_thread)
     {
-        stop();
-        set_active(true);
-        worker_thread.emplace(std::forward<Vars>(vars)...);
+        worker_thread->join();
+        worker_thread.reset();
     }
+}
 
-    void set_active(bool flag);
+&fn room_service::is_active() -> bool
+{
+    return worker_active_flag.load(std::memory_order_relaxed);
+}
 
-    void stop();
-
-    bool is_active() const;
-
-    ~room_service();
-};
+room_service::~room_service()
+{
+    stop();
+}
 
 }  // namespace idle::hotel
+

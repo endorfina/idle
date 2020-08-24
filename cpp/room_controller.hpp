@@ -28,8 +28,8 @@
 
 #include "gl.hpp"
 #include "hotel/variant.hpp"
-#include "hotel/service.hpp"
-#include "statistician.hpp"
+#include <cr/hotel/service.hpp>
+#include <cr/statistician.hpp>
 #include "crash_handler.hpp"
 
 namespace idle

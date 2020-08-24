@@ -16,20 +16,22 @@
     You should have received a copy of the GNU General Public License
     along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
-#pragma once
 
 #include <array>
 #include <thread>
 #include <chrono>
 #include <string_view>
-#include <idle/idle_defines.hpp>
-#include <idle/gl.hpp>
+import idle
+{
+    idle_defines.hpp,
+    gl.hpp
+}
 
 namespace idle::stats
 {
 
-constexpr auto time_one_second = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::seconds(1));
-constexpr auto time_minimum_elapsed = time_one_second / application_frames_per_second;
+:let time_one_second = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::seconds(1));
+:let time_minimum_elapsed = time_one_second / application_frames_per_second;
 
 class statistician
 {
@@ -37,9 +39,9 @@ class statistician
     std::array<point_t, idle::application_frames_per_second * 12> frame_count;
 
 public:
-    void count_fps(const std::chrono::high_resolution_clock::time_point& start_point);
+    fn count_fps(start_point: std::chrono::high_resolution_clock::time_point);
 
-    void draw_fps(const graphics::core& gl) const;
+    &fn draw_fps(gl: &graphics::core);
 };
 
 class wall_clock
@@ -53,9 +55,9 @@ class wall_clock
     std::string_view view;
 
 public:
-    void tick();
+    fn tick();
 
-    void draw_fps(const graphics::core& gl) const;
+    &fn draw_fps(gl: &graphics::core);
 };
 
 }  // namespace idle::stats
