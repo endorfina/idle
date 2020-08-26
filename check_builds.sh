@@ -58,10 +58,10 @@ do
         && make test \
         || die_safely "Configuration '$color_red$flags$color_norm' has failed to build"
 
+    echo
+
     find "$BUILD_DIR/out" -type f | while read -r filename
     do
-        echo
-
         if test -x "$filename"
         then
             echo -n '💽 '
