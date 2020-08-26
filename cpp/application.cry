@@ -19,15 +19,18 @@
 
 #include <cstdio>
 #include <future>
-#include "application.hpp"
-#include "drawable.hpp"
-#include "draw_text.hpp"
-#include "room_controller.hpp"
-#include "lodge.hpp"
-#include "freetype_glue.hpp"
-#include "assets_config.hpp"
-#include "platform/asset_access.hpp"
-#include <cr/statistician.hpp>
+
+import idle {
+    drawable.hpp,
+    draw_text.hpp,
+    room_controller.hpp,
+    freetype_glue.hpp,
+    assets_config.hpp,
+    platform/asset_access.hpp
+}
+
+import lodge
+import statistician
 
 namespace outside
 {
@@ -42,7 +45,7 @@ namespace
 
 }  // namespace
 
-bool application::execute_commands(const bool is_nested)
+fn application::execute_commands(is_nested: bool) -> bool
 {
     window.event_loop_back(!update_display);
 
@@ -51,7 +54,7 @@ bool application::execute_commands(const bool is_nested)
 
     if (!!window.commands.size())
     {
-        [[maybe_unused]] constexpr auto log_prefix = "command::%s";
+        [[maybe_unused]] :let log_prefix = "command::%s";
 
         for (const auto cmd : window.commands)
             switch (cmd)
@@ -123,14 +126,14 @@ bool application::execute_commands(const bool is_nested)
 
     if (window.resize_request)
     {
-        const auto now = std::chrono::system_clock::now();
+        let now = std::chrono::system_clock::now();
 
         if (now > earliest_available_resize)
         {
-            const auto request = std::move(*window.resize_request);
+            let request = std::move(*window.resize_request);
             window.resize_request.reset();
 
-            const auto resize_result = opengl.resize({request.w, request.h});
+            let resize_result = opengl.resize({request.w, request.h});
 
             blank_display = !resize_result;
 
@@ -149,7 +152,7 @@ bool application::execute_commands(const bool is_nested)
 namespace
 {
 
-GLint setup_unmasked_buffer_frame(const graphics::render_buffer_t& rb, const idle::color_t& bg)
+fn setup_unmasked_buffer_frame(rb: &graphics::render_buffer_t, bg: &idle::color_t) -> GLint
 {
     GLint default_frame_buffer;
     gl::GetIntegerv(gl::FRAMEBUFFER_BINDING, &default_frame_buffer);
@@ -161,7 +164,8 @@ GLint setup_unmasked_buffer_frame(const graphics::render_buffer_t& rb, const idl
 
     return default_frame_buffer;
 }
-void fill_frame_with_color(const idle::color_t& color)
+
+fn fill_frame_with_color(color: &idle::color_t)
 {
     opengl.prog.fill.use();
     opengl.prog.fill.set_identity();
@@ -227,8 +231,8 @@ auto wait_one_frame_with_skipping(std::chrono::steady_clock::time_point new_time
 
 void pause_menu::draw() const
 {
-    const float glare = std::sin(shift);
-    const float glare_sqr = math::sqr(glare);
+    let glare: float = std::sin(shift);
+    let glare_sqr = math::sqr(glare);
 
     opengl.prog.normal.use();
     opengl.prog.normal.set_identity();
@@ -262,7 +266,7 @@ void pause_menu::draw() const
     opengl.prog.normal.texture_vertex(tb);
     gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
 
-    const float y_shift = opengl.draw_size.y / 2 - 60.f + (1 - fadein_alpha) * 20;
+    let y_shift = opengl.draw_size.y / 2 - 60.f + (1 - fadein_alpha) * 20;
 
     opengl.prog.text.use();
     opengl.prog.text.set_color({1, .733f, .796f, fadein_alpha});
@@ -291,8 +295,8 @@ pause_menu::pause_menu(const unsigned blur_downscale)
     }
 {
     const graphics::render_buffer_t intermediate_buffer(opengl.render_buffer_masked->internal_size, opengl.render_quality);
-    const auto intermediate_masked_buffer = opengl.new_render_buffer(blur_downscale);
-    const auto def = setup_drawing_buffer_frame(intermediate_buffer, platform::background);
+    let intermediate_masked_buffer = opengl.new_render_buffer(blur_downscale);
+    let def = setup_drawing_buffer_frame(intermediate_buffer, platform::background);
 
     room_ctrl.draw_frame(opengl);
 
@@ -315,7 +319,7 @@ pause_menu::pause_menu(const unsigned blur_downscale)
     gl::BindFramebuffer(gl::FRAMEBUFFER, def);
 }
 
-void application::draw()
+fn application::draw()
 {
     if (blank_display)
     {
@@ -347,7 +351,7 @@ void application::draw()
 
 #define PRINT_SIZE(obj) LOGD("# sizeof " #obj " = %zu", sizeof(obj))
 
-int application::real_main()
+fn application::real_main() -> int
 {
     application app;
 
@@ -367,7 +371,7 @@ int application::real_main()
         {
             if (app.window.cursor.pressed)
             {
-                const auto p = app.window.cursor.pos * opengl.translate_vector;
+                let p = app.window.cursor.pos * opengl.translate_vector;
                 app.window.cursor.pressed = false;
 
                 if (fabsf(p.x - opengl.draw_size.x / 2) < 150.f
@@ -410,19 +414,19 @@ int application::real_main()
 namespace
 {
 
-constexpr bool ext_ascii_plus_math(const unsigned long c)
+:fn ext_ascii_plus_math(c: unsigned long) -> bool
 {
     return (c >= 0x20 && c < 0x17f) || (c >= 0x20b && c < 0x370) || (c > 0x390 && c <= 0x3fc);
 }
 
-constexpr bool ext_ascii(const unsigned long c)
+:fn ext_ascii(c: unsigned long) -> bool
 {
     return (c >= 0x20 && c < 0x17f);
 }
 
-fonts::font_t make_font(fonts::ft_data_t font_data)
+fn make_font(font_data: mut fonts::ft_data_t) -> fonts::font_t
 {
-    auto image = graphics::unique_texture(idle::image_t::load_from_memory(
+    let mut image = graphics::unique_texture(idle::image_t::load_from_memory(
                 font_data.width, font_data.width,
 #ifdef __ANDROID__
                 gl::LUMINANCE, gl::LUMINANCE,
@@ -431,15 +435,15 @@ fonts::font_t make_font(fonts::ft_data_t font_data)
 #endif
                 gl::LINEAR, gl::CLAMP_TO_EDGE, std::move(font_data.pixels)).release());
 
-    const auto min_y = std::min_element(font_data.map.begin(), font_data.map.end(),
-            [](const auto& left, const auto& right)
+    let min_y = std::min_element(font_data.map.begin(), font_data.map.end(),
+            |left: &auto, right: &auto|
             {
                 return left.second.offset.y < right.second.offset.y;
 
             })->second.offset.y;
 
-    const auto max_y = std::max_element(font_data.map.begin(), font_data.map.end(),
-            [](const auto& left, const auto& right)
+    let max_y = std::max_element(font_data.map.begin(), font_data.map.end(),
+            |left: &auto, right: &auto|
             {
                 return left.second.offset.y < right.second.offset.y;
 
@@ -459,7 +463,7 @@ fonts::font_t make_font(fonts::ft_data_t font_data)
 }  // namespace
 
 
-bool application::load()
+fn application::load() -> bool
 {
     using namespace std::chrono_literals;
     constexpr auto minimum_elapsed = std::chrono::duration_cast<std::chrono::microseconds>(1.0s) / (idle::application_frames_per_second / 2 + 5);
@@ -476,7 +480,7 @@ bool application::load()
         idle::image_t::load_from_assets_immediate("space-1.png")
     };
 
-    auto lt = std::chrono::steady_clock::now();
+    let mut lt = std::chrono::steady_clock::now();
     bool success {false};
 
     std::thread loader_thread {
@@ -484,17 +488,17 @@ bool application::load()
         {
             const fonts::freetype_glue freetype;
 
-            if (const auto unicode_font = platform::asset::hold(idle::config::regular_font_asset))
+            if (let unicode_font = platform::asset::hold(idle::config::regular_font_asset))
             {
-                if (auto ft = freetype(ext_ascii_plus_math, unicode_font.view(), fonts::texture_quality::ok))
+                if (let mut ft = freetype(ext_ascii_plus_math, unicode_font.view(), fonts::texture_quality::ok))
                 {
                     opengl.fonts.regular.emplace(make_font(std::move(*ft)));
                 }
             }
 
-            if (const auto title_font = platform::asset::hold(idle::config::title_font_asset))
+            if (let title_font = platform::asset::hold(idle::config::title_font_asset))
             {
-                if (auto ft = freetype(ext_ascii, title_font.view(), fonts::texture_quality::poor))
+                if (let mut ft = freetype(ext_ascii, title_font.view(), fonts::texture_quality::poor))
                 {
                     opengl.fonts.title.emplace(make_font(std::move(*ft)));
                 }

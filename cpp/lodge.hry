@@ -16,32 +16,35 @@
     You should have received a copy of the GNU General Public License
     along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
-#pragma once
 
-#include "platform/pointer.hpp"
-#include "idle_defines.hpp"
+#include <atomic>
+
+import idle {
+    drawable.hpp,
+    gl.hpp
+}
 
 namespace idle
 {
-
-struct pointer_wrapper
+class lodge
 {
-    platform::pointer cursor;
-    bool single_press = false, double_tap = false;
-    float touch = 0.f;
+    idle::image_t picture, background;
+    float alpha = 0;
+
+  public:
+    std::atomic_bool load_status { false };
+
+    template<typename Im1, typename Im2>
+    lodge(Im1&& i1, Im2&& i2)
+        : picture(std::forward<Im1>(i1)), background(std::forward<Im2>(i2))
+    {
+    }
+
+    fn tick();
+
+    &fn draw(gl: &graphics::core);
+
+    &fn is_done() -> bool;
 };
 
-struct pointer_keeper
-{
-    pointer_wrapper pointer;
-
-private:
-    int single_press_previous_state = 0, double_tap_timer = 0;
-
-public:
-    void advance(const platform::pointer& cur);
-
-    const pointer_wrapper& get() const;
-};
-
-}  // namepsace idle
+}  //namespace idle

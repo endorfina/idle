@@ -17,12 +17,10 @@
     along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "pointer_wrapper.hpp"
-
 namespace idle
 {
 
-void pointer_keeper::advance(const platform::pointer& cur)
+fn pointer_keeper::advance(cur: &platform::pointer)
 {
     pointer.cursor = cur;
 
@@ -56,7 +54,7 @@ void pointer_keeper::advance(const platform::pointer& cur)
         --double_tap_timer;
 }
 
-const pointer_wrapper& pointer_keeper::get() const
+&fn pointer_keeper::get() -> &pointer_wrapper
 {
     return pointer;
 }

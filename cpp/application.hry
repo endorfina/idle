@@ -16,12 +16,15 @@
     You should have received a copy of the GNU General Public License
     along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
-#pragma once
+
 #include <chrono>
 #include <optional>
 #include <memory>
-#include "gl.hpp"
-#include "platform/context.hpp"
+
+import idle {
+    gl.hpp,
+    platform/context.hpp
+}
 
 namespace outside
 {
@@ -34,7 +37,7 @@ struct pause_menu
 
     pause_menu(unsigned blur_downscale);
 
-    void draw() const;
+    &fn draw();
 };
 
 struct application
@@ -52,14 +55,14 @@ public:
 private:
     application() = default;
 
-    bool execute_commands(bool nested);
+    fn execute_commands(nested: bool) -> bool;
 
 public:
-    static int real_main();
+    static fn real_main() -> int;
 
-    bool load();
+    fn load() -> bool;
 
-    void draw();
+    fn draw();
 };
 
 }  // namespace outside

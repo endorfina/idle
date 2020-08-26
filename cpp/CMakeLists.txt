@@ -21,15 +21,15 @@ set(${PROJECT_NAME}-files
         spinlock.cpp
         drawable.cpp
         crash_handler.cpp
-        statistician.cr
-        hotel/service.cr
+        statistician.cry
+        hotel/service.cry
         hotel/room_landing.cpp
         room_controller.cpp
-        lodge.cpp
+        lodge.cry
         gl.cpp
         fonts.cpp
-        pointer_wrapper.cpp
-        application.cpp
+        pointer_wrapper.cry
+        application.cry
         main_wrapper.cpp)
 
 set(SHADER_OUTPUT_BASENAME "embedded_shaders.hpp")
@@ -67,18 +67,18 @@ endfunction()
 set(CHERRY_DIR "${CMAKE_SOURCE_DIR}/cherry")
 set(CHERRY_SH "${CHERRY_DIR}/cherry.sh")
 set(CHERRY_SED "${CHERRY_DIR}/scr/digest.sed")
-set(CHERRY_INTERNAL_DIR "${CMAKE_BINARY_DIR}/${PROJECT_NAME}-include/cr")
+set(CHERRY_INTERNAL_DIR "${CMAKE_BINARY_DIR}/${PROJECT_NAME}-include/chry")
 
 set(CHERRY_FILE_LIST "${${PROJECT_NAME}-files}")
 set(CHERRY_BYPRODUCTS "")
-list(FILTER ${PROJECT_NAME}-files EXCLUDE REGEX "\\.[ch]r$")
-list(FILTER CHERRY_FILE_LIST INCLUDE REGEX "\\.[ch]r$")
+list(FILTER ${PROJECT_NAME}-files EXCLUDE REGEX "\\.[ch]ry$")
+list(FILTER CHERRY_FILE_LIST INCLUDE REGEX "\\.[ch]ry$")
 
 file(MAKE_DIRECTORY "${CHERRY_INTERNAL_DIR}")
 
 foreach(FF IN LISTS CHERRY_FILE_LIST)
     set(CHERRY_FILE "${FF}")
-    string(REGEX REPLACE "\\.([ch])r$" ".\\1pp" CHERRY_FILE "${CHERRY_INTERNAL_DIR}/${CHERRY_FILE}")
+    string(REGEX REPLACE "\\.([ch])ry$" ".\\1pp" CHERRY_FILE "${CHERRY_INTERNAL_DIR}/${CHERRY_FILE}")
     list(APPEND CHERRY_BYPRODUCTS "${CHERRY_FILE}")
 
     string(REGEX REPLACE "/[^/]+$" "" CHERRY_FILE_PARENT_DIR "${CHERRY_FILE}")
@@ -96,7 +96,7 @@ list(APPEND ${PROJECT_NAME}-files ${CHERRY_BYPRODUCTS})
 add_custom_target(${PROJECT_NAME}-cherry
     COMMAND make -s -C "${CHERRY_DIR}" && "${CHERRY_SH}" -h -f "${CHERRY_SED}" -s "${CMAKE_SOURCE_DIR}" -o "${CHERRY_INTERNAL_DIR}" ${CHERRY_FILE_LIST}
     BYPRODUCTS ${CHERRY_BYPRODUCTS}
-    COMMENT "Cherry-translate"
+    COMMENT ".[ch]ry translate"
     VERBATIM)
 
 add_library(lodepng STATIC "lodepng/lodepng.cpp")

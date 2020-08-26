@@ -23,7 +23,7 @@
 #include <optional>
 #include <idle/gl.hpp>
 #include <idle/draw_text.hpp>
-#include <idle/pointer_wrapper.hpp>
+#include <chry/pointer_wrapper.hpp>
 #include "gui.hpp"
 #include "keys.hpp"
 

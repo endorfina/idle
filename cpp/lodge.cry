@@ -19,8 +19,6 @@
 
 #include <math.hpp>
 
-#include "lodge.hpp"
-
 namespace idle
 {
 

@@ -18,7 +18,7 @@
 */
 
 #include <log.hpp>
-#include "application.hpp"
+#include <chry/application.hpp>
 
 #ifdef __ANDROID__
 #include "platform/asset_access.hpp"
