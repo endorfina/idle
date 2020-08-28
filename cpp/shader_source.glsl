@@ -204,6 +204,7 @@ void main() {
     float dist = min(distance(var_mapped_vec, vec2(0.5, 0.5)) * 1.49, 1.0);
     vec4 sum_color = u_color_2 + (u_color_3 - u_color_2) * dist;
     vec2 seed = var_mapped_vec * 5000.0 + u_seed;
+    // regular u_color is the base
     gl_FragColor = u_color + (sum_color - u_color) * snoise(seed);
 }
 
