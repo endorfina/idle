@@ -200,6 +200,7 @@ download_file()
 
 : && download_file 'space-1.png' \
   && download_file 'path4368.png' \
+  && download_file 'icon.png' \
   || die "Failed to download an asset."
 
 # required by GNU make

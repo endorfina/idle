@@ -92,7 +92,7 @@ endforeach()
 list(APPEND ${PROJECT_NAME}-files ${CHERRY_BYPRODUCTS})
 
 add_custom_target(${PROJECT_NAME}-cherry
-    COMMAND ./cherry.sh --regen scr -h -f scr/digest.sed -s "${CMAKE_CURRENT_SOURCE_DIR}" -o "${CHERRY_INTERNAL_DIR}" ${CHERRY_FILE_LIST}
+    COMMAND ./cherry.sh --regen scr -h -s "${CMAKE_CURRENT_SOURCE_DIR}" -o "${CHERRY_INTERNAL_DIR}" ${CHERRY_FILE_LIST}
     BYPRODUCTS ${CHERRY_BYPRODUCTS}
     WORKING_DIRECTORY "${CHERRY_DIR}"
     COMMENT ".[ch]ry translate"
