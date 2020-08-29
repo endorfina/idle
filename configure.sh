@@ -140,7 +140,7 @@ readonly ARGS
 # READY TO BOOT
 # There should be no side effects before this line
 
-[[ ! -r $SOURCE_DIR/lodepng/lodepng.h ]] && git submodule update --init --recursive
+git submodule update --init --depth 1 -j 2
 
 if [[ -d $BUILD_DIR ]]
 then
