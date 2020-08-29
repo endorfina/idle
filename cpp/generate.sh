@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # (ɔ) 2020 endorfina <dev.endorfina@outlook.com>
 # GPLv3
