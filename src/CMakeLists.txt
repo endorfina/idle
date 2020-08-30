@@ -22,8 +22,9 @@ set(${PROJECT_NAME}-files
         drawable.cpp
         crash_handler.cpp
         statistician.cry
+        hotel/variant.hry
         hotel/service.cry
-        hotel/room_landing.cpp
+        hotel/room_landing.cry
         room_controller.cpp
         lodge.cry
         gl.cpp
@@ -74,18 +75,21 @@ list(FILTER CHERRY_FILE_LIST INCLUDE REGEX "\\.[ch]ry$")
 
 file(MAKE_DIRECTORY "${CHERRY_INTERNAL_DIR}")
 
-foreach(FF IN LISTS CHERRY_FILE_LIST)
-    set(CHERRY_FILE "${FF}")
+foreach(CHERRY_FILE IN LISTS CHERRY_FILE_LIST)
     string(REGEX REPLACE "\\.([ch])ry$" ".\\1pp" CHERRY_FILE "${CHERRY_INTERNAL_DIR}/${CHERRY_FILE}")
     list(APPEND CHERRY_BYPRODUCTS "${CHERRY_FILE}")
-
-    string(REGEX REPLACE "/[^/]+$" "" CHERRY_FILE_PARENT_DIR "${CHERRY_FILE}")
-    file(MAKE_DIRECTORY "${CHERRY_FILE_PARENT_DIR}")
-    file(TOUCH "${CHERRY_FILE}")
 
     if(CHERRY_FILE MATCHES "\\.cpp$")
         string(REGEX REPLACE "\\.cpp$" ".hpp" CHERRY_FILE "${CHERRY_FILE}")
         list(APPEND CHERRY_BYPRODUCTS "${CHERRY_FILE}")
+    endif()
+endforeach()
+
+foreach(FF IN LISTS CHERRY_BYPRODUCTS)
+    if(NOT EXISTS "${FF}")
+        string(REGEX REPLACE "/[^/]+$" "" CHERRY_FILE_PARENT_DIR "${FF}")
+        file(MAKE_DIRECTORY "${CHERRY_FILE_PARENT_DIR}")
+        file(TOUCH "${CHERRY_FILE}")
     endif()
 endforeach()
 

@@ -140,7 +140,7 @@ readonly ARGS
 # READY TO BOOT
 # There should be no side effects before this line
 
-git submodule update --init --depth 1 -j 2
+[[ -r $SOURCE_DIR/cherry/cherry.sh ]] || git submodule update --init -j 2
 
 if [[ -d $BUILD_DIR ]]
 then

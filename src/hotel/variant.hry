@@ -16,12 +16,11 @@
     You should have received a copy of the GNU General Public License
     along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
-#pragma once
 #include <variant>
 
-#include "room_landing.hpp"
+import room_landing
 // #include "room_red.hpp"
-#include "room_model.hpp"
+import idle/hotel/room_model.hpp
 
 namespace idle::hotel
 {

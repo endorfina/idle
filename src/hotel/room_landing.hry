@@ -16,16 +16,23 @@
     You should have received a copy of the GNU General Public License
     along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
-#pragma once
+
 #include <array>
 #include <random>
 #include <atomic>
 #include <optional>
-#include <idle/gl.hpp>
-#include <idle/draw_text.hpp>
-#include <chry/pointer_wrapper.hpp>
-#include "gui.hpp"
-#include "keys.hpp"
+
+import idle {
+    gl.hpp,
+    draw_text.hpp
+}
+
+import ../pointer_wrapper
+
+import idle/hotel {
+    gui.hpp,
+    keys.hpp
+}
 
 namespace idle::hotel::landing
 {
@@ -59,7 +66,7 @@ struct landing_button : gui::shapes::buttonless<gui::positions::from_center<X, Y
         gl.prog.text.use();
         gl.prog.text.set_color({ .62f, 0, .48f, st.alpha });
 
-        constexpr auto text = []()->std::string_view
+        :let text = ||-> std::string_view
         {
             switch(Id)
             {
@@ -77,7 +84,7 @@ struct landing_button : gui::shapes::buttonless<gui::positions::from_center<X, Y
             }
         }();
 
-        const float scale = static_cast<float>(height)
+        let scale = static_cast<float>(height)
             * (Id == st.focus
                     ? 1.f + (1.f - st.alpha) * .15f
                     : .8f + st.alpha * .2f
@@ -85,7 +92,7 @@ struct landing_button : gui::shapes::buttonless<gui::positions::from_center<X, Y
 
         draw_text<text_align::center, text_align::center>(*gl.fonts.title, gl.prog.text, text, this->pos, scale);
 
-        const auto po = this->pos + point_t{ st.noise[0], st.noise[1] };
+        let po = this->pos + point_t{ st.noise[0], st.noise[1] };
 
         gl.view_mask();
         gl.prog.text.set_color({ Id == st.focus ? 1.f - st.alpha : 0, 0, 0, st.alpha });
@@ -124,9 +131,9 @@ struct luminous_cloud
 constexpr int menu_item_offset(const unsigned i)
 {
 #ifdef IDLE_COMPILE_GALLERY
-    constexpr unsigned short diff = 65;
+    :let diff: unsigned = 65;
 #else
-    constexpr unsigned short diff = 85;
+    :let diff: unsigned = 85;
 #endif
     return static_cast<int>(diff * i) - 40;
 }
