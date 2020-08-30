@@ -1,6 +1,6 @@
 [submodule "cpp/lodepng"]
-	path = cpp/lodepng
+	path = src/lodepng
 	url = https://github.com/lvandeve/lodepng.git
 [submodule "cpp/cherry"]
-	path = cpp/cherry
+	path = src/cherry
 	url = git://git.endorfina.dev/cherry.git
