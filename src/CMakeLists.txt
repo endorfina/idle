@@ -25,6 +25,7 @@ set(${PROJECT_NAME}-files
         hotel/variant.hry
         hotel/service.cry
         hotel/room_landing.cry
+        hotel/room_model.cpp
         room_controller.cpp
         lodge.cry
         gl.cpp
@@ -128,7 +129,6 @@ add_dependencies(${PROJECT_NAME}-obj ${PROJECT_NAME}-generate-sh ${PROJECT_NAME}
 target_include_directories(${PROJECT_NAME}-obj PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-include")
 
 if(COMPILE_GALLERY)
-    list(APPEND ${PROJECT_NAME}-files hotel/room_model.cpp)
     target_compile_definitions(${PROJECT_NAME}-obj PRIVATE IDLE_COMPILE_GALLERY)
 endif()
 

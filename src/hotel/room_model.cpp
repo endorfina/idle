@@ -17,11 +17,11 @@
     along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifdef IDLE_COMPILE_GALLERY
+
 #include <utility>
 #include <idle/drawable.hpp>
 #include "room_model.hpp"
-
-#ifdef IDLE_COMPILE_GALLERY
 
 #include <idle/glass.hpp>
 
