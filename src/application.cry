@@ -229,7 +229,7 @@ auto wait_one_frame_with_skipping(std::chrono::steady_clock::time_point new_time
 
 }  // namespace
 
-void pause_menu::draw() const
+&fn pause_menu::draw()
 {
     let glare: float = std::sin(shift);
     let glare_sqr = math::sqr(glare);
