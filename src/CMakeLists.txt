@@ -153,8 +153,8 @@ endif()
 
 target_include_directories(${PROJECT_NAME}-top INTERFACE include)
 target_compile_definitions(${PROJECT_NAME}-top INTERFACE "$<$<CONFIG:Debug>:DEBUG>" "LOG_LEVEL=${LOG_LEVEL}")
-target_compile_options(${PROJECT_NAME}-top INTERFACE -Wall -Wredundant-move)
-target_compile_features(${PROJECT_NAME}-top INTERFACE cxx_std_17)
+target_compile_options(${PROJECT_NAME}-top INTERFACE -Wall -Wredundant-move -fno-char8_t)
+target_compile_features(${PROJECT_NAME}-top INTERFACE cxx_std_20)
 
 if("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
     target_compile_options(${PROJECT_NAME}-top INTERFACE -fconstexpr-ops-limit=268435456)

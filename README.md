@@ -10,7 +10,7 @@ For information about *Crimson*, an example game developed alongside idle, pleas
 
 ### Dependencies
 
-Requires a C++17 compiler to be available.
+Requires a C++20 compiler to be available.
 Shared library dependencies include freetype, alsa and GLX - instructions for installing which can be found in the following section.
 Additionally, idle includes a slightly modified [SoLoud](http://sol.gfxile.net/soloud/) library used for xmod playback as well as [lodepng](https://github.com/lvandeve/lodepng) for image decoding.
 
