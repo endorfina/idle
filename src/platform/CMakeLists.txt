@@ -85,10 +85,7 @@ else()
 
     add_executable(${PROJECT_NAME} "x.cpp")
     target_link_libraries(${PROJECT_NAME} PRIVATE X11::X11 OpenGL::GL Threads::Threads)
-
-    if (X11_USE_CLIENTMESSAGE)
-        target_compile_definitions(${PROJECT_NAME} PRIVATE X11_USE_CLIENTMESSAGE)
-    endif()
+    target_compile_definitions(${PROJECT_NAME} PRIVATE "$<$<BOOL:${X11_USE_CLIENTMESSAGE}>:X11_USE_CLIENTMESSAGE>")
 
     file(MAKE_DIRECTORY "${OUTPUT_DIR}")
     set_target_properties(${PROJECT_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${OUTPUT_DIR}")
@@ -97,7 +94,7 @@ else()
 
     string(REGEX REPLACE "^${IDLE_WORKING_DIR}/" "./" IDLE_OUTPUT_PATH "${OUTPUT_DIR}/${PROJECT_NAME}")
 
-    set(CLI_RUN_COMMAND "cd '${IDLE_WORKING_DIR}' && test -x '${IDLE_OUTPUT_PATH}' && ( '${IDLE_OUTPUT_PATH}' || true )" CACHE STRING "A command which can be used to boot ${PROJECT_NAME}" FORCE)
+    file(WRITE "${CMAKE_BINARY_DIR}/run_command" "cd '${IDLE_WORKING_DIR}' && test -x '${IDLE_OUTPUT_PATH}' && ( '${IDLE_OUTPUT_PATH}' || true )")
 endif()
 
 add_library(${PROJECT_NAME}-opengl-glue OBJECT "opengl_core_adaptive.cpp")

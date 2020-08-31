@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8.2)
+cmake_minimum_required(VERSION 3.12.4)
 
 project(idle
     VERSION 0.1
@@ -128,17 +128,10 @@ add_dependencies(${PROJECT_NAME}-obj ${PROJECT_NAME}-generate-sh ${PROJECT_NAME}
 
 target_include_directories(${PROJECT_NAME}-obj PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-include")
 
-if(COMPILE_GALLERY)
-    target_compile_definitions(${PROJECT_NAME}-obj PRIVATE IDLE_COMPILE_GALLERY)
-endif()
-
-if(COMPILE_FPS_COUNTERS)
-    target_compile_definitions(${PROJECT_NAME}-obj PRIVATE IDLE_COMPILE_FPS_COUNTERS)
-endif()
-
-if(COMPILE_FONT_DEBUG_SCREEN)
-    target_compile_definitions(${PROJECT_NAME}-obj PRIVATE IDLE_COMPILE_FONT_DEBUG_SCREEN)
-endif()
+target_compile_definitions(${PROJECT_NAME}-obj PRIVATE
+        "$<$<BOOL:${COMPILE_FPS_COUNTERS}>:IDLE_COMPILE_FPS_COUNTERS>"
+        "$<$<BOOL:${COMPILE_FONT_DEBUG_SCREEN}>:IDLE_COMPILE_FONT_DEBUG_SCREEN>"
+        "$<$<BOOL:${COMPILE_GALLERY}>:IDLE_COMPILE_GALLERY>")
 
 if(MAKESHIFT_UNITY)
     jumbo(${PROJECT_NAME}-obj "${${PROJECT_NAME}-files}")
@@ -153,14 +146,12 @@ endif()
 
 target_include_directories(${PROJECT_NAME}-top INTERFACE include)
 target_compile_definitions(${PROJECT_NAME}-top INTERFACE "$<$<CONFIG:Debug>:DEBUG>" "LOG_LEVEL=${LOG_LEVEL}")
-target_compile_options(${PROJECT_NAME}-top INTERFACE -Wall -Wredundant-move -fno-char8_t)
+target_compile_options(${PROJECT_NAME}-top INTERFACE -Wall -Wredundant-move)
 target_compile_features(${PROJECT_NAME}-top INTERFACE cxx_std_20)
 
-if("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
-    target_compile_options(${PROJECT_NAME}-top INTERFACE -fconstexpr-ops-limit=268435456)
-elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-    target_compile_options(${PROJECT_NAME}-top INTERFACE -fconstexpr-steps=268435456)
-endif()
+target_compile_options(${PROJECT_NAME}-top INTERFACE -fno-char8_t
+        "$<$<CXX_COMPILER_ID:GNU>:-fconstexpr-ops-limit=268435456>"
+        "$<$<CXX_COMPILER_ID:Clang>:-fconstexpr-steps=268435456>")
 
 target_compile_definitions(lodepng PUBLIC "$<$<NOT:$<CONFIG:Debug>>:LODEPNG_NO_COMPILE_ERROR_TEXT>")
 

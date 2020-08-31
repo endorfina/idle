@@ -203,30 +203,31 @@ try_download_assets()
   done)
 }
 
-try_download_assets \
-    'space-1.png' \
-    'path4368.png' \
-    'icon.png'
+ASSETS=(
+    space-1.png
+    path4368.png
+    icon.png
+)
+try_download_assets "${ASSETS[@]}"
 
 # required by GNU make
 readonly INDENT=$'\t'
 
 # this allows us to get the boot commands straight from cmake
-readonly exec_sed_filter='/^CLI_RUN_COMMAND:/{s~^.*:STRING=~@~; s~cd '"'$(pwd)~cd '"'..~;'
+readonly exec_sed_filter='s~^~\t@~; s~cd '"'$(pwd)~cd '"'..~;'
 readonly perf_sed_filter='s~\([[:space:]]*('"'[^']*'"')[^)]*\)$~perf stat \1~;'
-readonly filter_ending='p;q;}'
 
 make_target()
 {
+  local command_file=$BUILD_DIR/run_command
   local name=$1
   shift
 
-  local output=$(cmake -N -L --build "$BUILD_DIR" 2>/dev/null | sed -nE "$@")
-
-  if [[ -n $output ]]
+  if [[ -n $command_file ]]
   then
     echo "$name:"
-    echo "$INDENT$output"
+    sed -E -e "$*" "$command_file"
+    echo
   fi
 }
 
@@ -265,11 +266,11 @@ ${INDENT}ccmake -B '../$BUILD_DIR' -S '.'
 erase:
 ${INDENT}rm -rf '../$BUILD_DIR'
 
-$(make_target exec "$exec_sed_filter$filter_ending")
+$(make_target exec "$exec_sed_filter")
 
 run: $PROJECT_NAME exec
 
-$(make_target perf "$exec_sed_filter$perf_sed_filter$filter_ending")
+$(make_target perf "$exec_sed_filter$perf_sed_filter")
 
 .PHONY: $PROJECT_NAME is_configured test vars clean erase exec run perf
 _EOF
