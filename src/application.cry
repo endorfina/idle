@@ -40,8 +40,8 @@ namespace
 
 // These need to be global to allow for proper clean up with X11
 
-::idle::controller room_ctrl;
-::graphics::core opengl;
+let mut room_ctrl: idle::controller{};
+let mut opengl: graphics::core{};
 
 }  // namespace
 
@@ -175,7 +175,7 @@ fn fill_frame_with_color(color: &idle::color_t)
     gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
 }
 
-GLint setup_drawing_buffer_frame(const graphics::render_buffer_t& rb, const idle::color_t& bg)
+fn setup_drawing_buffer_frame(rb: &graphics::render_buffer_t, bg: &idle::color_t) -> GLint
 {
     GLint default_frame_buffer;
     gl::GetIntegerv(gl::FRAMEBUFFER_BINDING, &default_frame_buffer);
@@ -213,7 +213,7 @@ public:
     }
 };
 
-auto wait_one_frame_with_skipping(std::chrono::steady_clock::time_point new_time)
+fn wait_one_frame_with_skipping(new_time: mut std::chrono::steady_clock::time_point) -> auto
 {
     using clock_type = std::chrono::steady_clock;
 
@@ -238,7 +238,7 @@ auto wait_one_frame_with_skipping(std::chrono::steady_clock::time_point new_time
     opengl.prog.normal.set_identity();
     opengl.prog.normal.set_view_identity();
 
-    const float t[]
+    let t: float[]
     {
         0, buffers[0]->texture_h,
         buffers[0]->texture_w, buffers[0]->texture_h,
@@ -246,7 +246,7 @@ auto wait_one_frame_with_skipping(std::chrono::steady_clock::time_point new_time
         buffers[0]->texture_w, 0
     };
 
-    const float tb[]
+    let tb: float[]
     {
         0, buffers[1]->texture_h,
         buffers[1]->texture_w, buffers[1]->texture_h,
@@ -294,7 +294,7 @@ pause_menu::pause_menu(const unsigned blur_downscale)
         std::chrono::steady_clock::now() + std::chrono::seconds(2)
     }
 {
-    const graphics::render_buffer_t intermediate_buffer(opengl.render_buffer_masked->internal_size, opengl.render_quality);
+    let intermediate_buffer: graphics::render_buffer_t{opengl.render_buffer_masked->internal_size, opengl.render_quality};
     let intermediate_masked_buffer = opengl.new_render_buffer(blur_downscale);
     let def = setup_drawing_buffer_frame(intermediate_buffer, platform::background);
 
@@ -328,7 +328,7 @@ fn application::draw()
     }
     else if (pause)
     {
-        render_guard rg;
+        let rg: render_guard{};
         pause->draw();
 
 #ifdef IDLE_COMPILE_FPS_COUNTERS
@@ -338,7 +338,7 @@ fn application::draw()
     }
     else
     {
-        render_guard rg;
+        let rg: render_guard{};
         room_ctrl.draw_frame(opengl);
 
 #ifdef IDLE_COMPILE_FPS_COUNTERS
@@ -353,7 +353,7 @@ fn application::draw()
 
 fn application::real_main() -> int
 {
-    application app;
+    let mut app: application{};
 
 #ifdef __clang__
     LOGI("%s", "### clang " __clang_version__);
@@ -466,7 +466,7 @@ fn make_font(font_data: mut fonts::ft_data_t) -> fonts::font_t
 fn application::load() -> bool
 {
     using namespace std::chrono_literals;
-    constexpr auto minimum_elapsed = std::chrono::duration_cast<std::chrono::microseconds>(1.0s) / (idle::application_frames_per_second / 2 + 5);
+    :let minimum_elapsed = std::chrono::duration_cast<std::chrono::microseconds>(1.0s) / (idle::application_frames_per_second / 2 + 5);
 
     room_ctrl.sleep();
 
@@ -475,18 +475,18 @@ fn application::load() -> bool
 
     LOGI("Asset refresh requested");
 
-    idle::lodge la {
+    let mut la: idle::lodge {
         idle::image_t::load_from_assets_immediate("path4368.png"),
         idle::image_t::load_from_assets_immediate("space-1.png")
     };
 
     let mut lt = std::chrono::steady_clock::now();
-    bool success {false};
+    bool success = false;
 
-    std::thread loader_thread {
+    let mut loader_thread: std::thread {
         [&promise = success, &flag = la.load_status]
         {
-            const fonts::freetype_glue freetype;
+            let freetype: fonts::freetype_glue{};
 
             if (let unicode_font = platform::asset::hold(idle::config::regular_font_asset))
             {
@@ -523,7 +523,7 @@ fn application::load() -> bool
             {
                 lt += minimum_elapsed;
                 {
-                    render_guard rg;
+                    let rg: render_guard{};
                     la.draw(opengl);
                 }
                 window.buffer_swap();
@@ -541,7 +541,7 @@ fn application::load() -> bool
     if (!!window.has_opengl())
     {
         {
-            render_guard rg;
+            let rg: render_guard{};
 
             opengl.prog.normal.use();
             opengl.prog.normal.set_identity();
