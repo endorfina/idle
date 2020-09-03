@@ -62,7 +62,10 @@ void draw_text(const fonts::font_t& font,
         const unsigned int limit = static_cast<unsigned int>(-1)) noexcept
 {
     const auto translate = detail::get_text_transform<H, V>(font, str, p, size, limit);
-    prog.set_view_transform(math::matrices::uniform_scale(size) * math::matrices::translate(translate));
+    auto mat = math::matrices::uniform_scale(size);
+    mat[12] += translate.x;
+    mat[13] += translate.y;
+    prog.set_view_transform(mat);
     font.draw(prog, str, limit);
 }
 
