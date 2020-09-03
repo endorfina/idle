@@ -153,7 +153,10 @@ struct rectangle
 {
     bool is_touching(point_t pos) const noexcept
     {
-        pos += point_t{ static_cast<float>(Width), static_cast<float>(Height) } / 2.f;
+        constexpr auto shift = point_t{ static_cast<float>(Width), static_cast<float>(Height) } / 2.f;
+
+        pos += shift;
+
         return pos.x >= this->pos.x
             && pos.x <= (this->pos.x + Width)
             && pos.y >= this->pos.y
@@ -162,8 +165,11 @@ struct rectangle
 
     void draw_background(const graphics::core& gl) const noexcept
     {
+        auto mat = math::matrices::scale(point_t{Width, Height});
+        math::transform::translate(mat, this->pos);
+
         gl.prog.fill.use();
-        gl.prog.fill.set_transform(math::matrices::scale(point_t{Width, Height}) * math::matrices::translate(this->pos));
+        gl.prog.fill.set_transform(mat);
         fill_rectangle(gl.prog.fill, {-.5f,-.5f,.5f,.5f});
     }
 };

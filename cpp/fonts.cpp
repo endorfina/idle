@@ -27,7 +27,10 @@
 namespace fonts
 {
 
-static void draw_glyph(const glyph_t& g, const graphics::text_program_t& rcp, const float size, const idle::point_t pos) noexcept
+namespace
+{
+
+void draw_glyph(const glyph_t& g, const graphics::text_program_t& rcp, const float size, const idle::point_t pos) noexcept
 {
     const float tex_coords[8]
     {
@@ -41,6 +44,8 @@ static void draw_glyph(const glyph_t& g, const graphics::text_program_t& rcp, co
     rcp.texture_vertex(tex_coords);
     gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
 }
+
+}  // namespace
 
 void font_t::draw(const graphics::text_program_t& rcp, const std::string_view &str, unsigned int limit) const noexcept
 {
@@ -59,7 +64,7 @@ void font_t::draw(const graphics::text_program_t& rcp, const std::string_view &s
             pos.x = 0;
             pos.y += 1;
         }
-        else if (auto gi = character_map.find(u8c); gi != character_map.end())
+        else if (const auto gi = character_map.find(u8c); gi != character_map.end())
         {
             draw_glyph(gi->second, rcp, cell_size, pos);
             pos.x += gi->second.width;
@@ -88,14 +93,17 @@ void font_t::draw_custom_animation(const graphics::text_program_t& rcp, const st
             pos.x = 0;
             pos.y += 1;
         }
-        else if (auto gi = character_map.find(u8c); gi != character_map.end())
+        else if (const auto gi = character_map.find(u8c); gi != character_map.end())
         {
             if (i >= start)
             {
                 if (anim[1].scale < F_TAU_4)
-                    rcp.set_color(col, col.a * (1 - ::math::sqr(cosf(anim->scale))));
+                    rcp.set_color(col, col.a * (1 - math::sqr(std::cos(anim->scale))));
 
-                rcp.set_transform(math::matrices::uniform_scale<float>(1 - cosf(anim->scale) / 2) * math::matrices::rotate(anim->rotation));
+                auto mat = math::matrices::uniform_scale<float>(1 - std::cos(anim->scale) / 2);
+                math::transform::rotate_z(mat, anim->rotation);
+                rcp.set_transform(mat);
+
                 draw_glyph(gi->second, rcp, cell_size, pos);
                 ++anim;
             }
@@ -110,7 +118,7 @@ void font_t::draw_custom_animation(const graphics::text_program_t& rcp, const st
     rcp.set_identity();
 }
 
-::idle::point_t font_t::get_extent(const std::string_view& str, float size, unsigned int limit) const noexcept
+::idle::point_t font_t::get_extent(const std::string_view& str, const float size, unsigned int limit) const noexcept
 {
     float max_line_width = 0;
     int line_amount = 1;
@@ -129,7 +137,7 @@ void font_t::draw_custom_animation(const graphics::text_program_t& rcp, const st
 
             current_line_width = 0;
         }
-        else if (auto gi = character_map.find(u8c); gi != character_map.end())
+        else if (const auto gi = character_map.find(u8c); gi != character_map.cend())
                 current_line_width += gi->second.width * size;
 
         if (!--limit) break;
@@ -143,39 +151,44 @@ void font_t::draw_custom_animation(const graphics::text_program_t& rcp, const st
 
 std::string font_t::prepare_string(const std::string_view &str, const float size, const float width) const noexcept
 {
-    std::string out;
+    static constexpr char space = ' ';
     float current_line_width = 0;
     size_t last_space = 0, write_pos = 0;
+    std::string out;
 
     for (utf8x::translator<char> ut(str); !ut.is_at_end(); ++ut)
     {
         if (const auto u8c = *ut; u8c == '\n')
         {
             current_line_width = 0;
+
             if (write_pos++ == out.size())
-                out += '\n';
-        }
-        else if (auto gi = character_map.find(u8c); gi != character_map.end())
             {
-                if(u8c == 0x20)
+                out += '\n';
+            }
+        }
+        else if (const auto gi = character_map.find(u8c); gi != character_map.end())
+            {
+                if(u8c == space)
                 {
                     const auto current_space = write_pos;
 
                     if (write_pos++ == out.size())
-                        out += char(0x20);
+                    {
+                        out += space;
+                    }
 
                     if (width < current_line_width + gi->second.width * size)
                     {
-                        if (out[last_space] == 0x20)
+                        if (out[last_space] == space)
                         {
                             out[last_space] = '\n';
                             write_pos = last_space + 1;
                             ut = str.substr(write_pos);
-                            last_space = current_space;
                             current_line_width = 0;
                         }
-                        else
-                            last_space = current_space;
+
+                        last_space = current_space;
                         continue;
                     }
                     last_space = current_space;
@@ -195,10 +208,9 @@ std::string font_t::prepare_string(const std::string_view &str, const float size
             }
     }
 
-    if (width < current_line_width)
+    if (width < current_line_width && out[last_space] == space)
     {
-        if (out[last_space] == 0x20)
-            out[last_space] = '\n';
+        out[last_space] = '\n';
     }
     return out;
 }

@@ -278,7 +278,7 @@ void pause_menu::draw() const noexcept
     }
 }
 
-pause_menu::pause_menu(const unsigned blur_downscale)
+pause_menu::pause_menu(const unsigned blur_downscale) noexcept
     : buffers
     {
         opengl.new_render_buffer(),
@@ -379,9 +379,10 @@ auto application::real_main() noexcept -> int
             }
 
             app.pause->fadein_alpha
-                = app.clock < app.pause->finish_time
-                ? std::cos(static_cast<float>((app.pause->finish_time - app.clock) / std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::seconds(2))) * F_TAU_4)
-                : 1.f;
+                = app.clock >= app.pause->finish_time ? 1.f
+                    : std::cos(static_cast<float>(
+                            (app.pause->finish_time - app.clock) / std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::seconds(2))
+                        ) * F_TAU_4);
 
             app.pause->shift += .018f;
             if (app.pause->shift > F_TAU)

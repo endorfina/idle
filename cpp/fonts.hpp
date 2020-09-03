@@ -31,12 +31,12 @@ struct font_t
 {
     void draw(const graphics::text_program_t& rcp, const std::string_view &str, unsigned int limit = (-1)) const noexcept;
 
+    // TODO: This needs work
     void draw_custom_animation(const graphics::text_program_t& rcp, const std::string_view &str, const math::color<float> &col, const idle::text_animation_data* anim, unsigned start, unsigned end) const noexcept;
 
-    //Return the width/height of the rendered text at given size
-    idle::point_t get_extent(const std::string_view &str, float size, unsigned int limit = (-1)) const noexcept;
+    idle::point_t get_extent(const std::string_view &str, float font_size, unsigned int limit = (-1)) const noexcept;
 
-    std::string prepare_string(const std::string_view &str, float size, float max_width) const noexcept;
+    std::string prepare_string(const std::string_view &str, float font_size, float max_width) const noexcept;
 
 #ifndef IDLE_COMPILE_FONT_DEBUG_SCREEN
 private:

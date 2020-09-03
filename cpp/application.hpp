@@ -33,7 +33,7 @@ struct pause_menu
     float fadein_alpha = 0, shift = 0;
     std::chrono::steady_clock::time_point finish_time;
 
-    pause_menu(unsigned blur_downscale);
+    pause_menu(unsigned blur_downscale) noexcept;
 
     void draw() const noexcept;
 };
@@ -51,7 +51,7 @@ public:
     ::platform::context window;
 
 private:
-    application() = default;
+    application() noexcept = default;
 
     auto execute_commands(const bool nested) noexcept -> bool;
 

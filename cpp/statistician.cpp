@@ -27,12 +27,17 @@ namespace idle::stats
 void statistician::count_fps(const std::chrono::high_resolution_clock::time_point start_point) noexcept
 {
     if (iter >= frame_count.size())
+    {
         iter = 0;
+    }
 
     auto& it = frame_count[iter++];
-    it.x = static_cast<float>(iter) / static_cast<float>(frame_count.size() - 1);
     const auto now = std::chrono::high_resolution_clock::now();
-    it.y = static_cast<float>(std::chrono::duration_cast<std::chrono::duration<double, std::micro>>(now - start_point) / time_minimum_elapsed) * .999f;
+
+    it = {
+        static_cast<float>(iter) / static_cast<float>(frame_count.size() - 1),
+        static_cast<float>(std::chrono::duration_cast<std::chrono::duration<double, std::micro>>(now - start_point) / time_minimum_elapsed) * .999f
+    };
 }
 
 void statistician::draw_fps(const graphics::core& gl) const noexcept
@@ -53,25 +58,27 @@ void statistician::draw_fps(const graphics::core& gl) const noexcept
 
 void wall_clock::tick() noexcept
 {
-    if (iter++ >= application_frames_per_second)
+    if (++iter < application_frames_per_second)
     {
-        const auto now = std::chrono::time_point_cast<duration_type>(std::chrono::steady_clock::now());
-        const std::chrono::duration<double> diff = now - last_fps_measurement;
-        const auto val = static_cast<double>(application_frames_per_second) / diff.count();
-
-        const auto amt = std::snprintf(out_str.data(), out_str.size(), "%.3lf", val);
-        if (amt < 0)
-        {
-            view.remove_suffix(view.size());
-        }
-        else
-        {
-            view = { out_str.data(), static_cast<size_t>(amt) };
-        }
-
-        last_fps_measurement = now;
-        iter = 0;
+        return;
     }
+
+    const auto now = std::chrono::time_point_cast<duration_type>(std::chrono::steady_clock::now());
+    const std::chrono::duration<double> diff = now - last_fps_measurement;
+    const auto val = static_cast<float>(static_cast<double>(application_frames_per_second) / diff.count());
+
+    if (const auto amt = std::snprintf(out_str.data(), out_str.size(), "%.1f", val);
+        amt < 0)
+    {
+        view.remove_suffix(view.size());
+    }
+    else
+    {
+        view = { out_str.data(), static_cast<size_t>(amt) };
+    }
+
+    last_fps_measurement = now;
+    iter = 0;
 }
 
 void wall_clock::draw_fps(const graphics::core& gl) const noexcept

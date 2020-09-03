@@ -119,6 +119,13 @@ auto shift_appendages(std::array<float, Size>& ray_array, Rand& rando) noexcept 
     return random_int{application_frames_per_second * 3, application_frames_per_second * 11}(rando);
 }
 
+template<function Id, int X, int Y, unsigned width, unsigned height, typename Rando>
+void cause_spark(luminous_cloud& cloud, const landing_button<Id, X, Y, width, height>& focus, Rando& rando) noexcept
+{
+    cloud.spark<width / 3, height / 4>(focus.pos, rando);
+}
+
+
 }  // namespace
 
 template<unsigned rX, unsigned rY, typename Rando>
@@ -140,12 +147,6 @@ void luminous_cloud::spark(point_t position, Rando& rando) noexcept
         });
 
     flag.store(true, std::memory_order_release);
-}
-
-template<function Id, int X, int Y, unsigned width, unsigned height, typename Rando>
-static void spark(luminous_cloud& cloud, const landing_button<Id, X, Y, width, height>& focus, Rando& rando) noexcept
-{
-    cloud.spark<width / 3, height / 4>(focus.pos, rando);
 }
 
 template<typename Rando>
@@ -226,7 +227,7 @@ auto room::step(const pointer_wrapper& pointer) noexcept -> std::optional<keyrin
     {
         auto sparkler = [this](const auto& butt)
             {
-                spark(polyps, butt, fast_random_device);
+                cause_spark(polyps, butt, fast_random_device);
             };
 
         if (thing.alpha < .821f)
