@@ -4,7 +4,7 @@
 # GPLv3
 
 readonly PROJECT_NAME='idle'
-readonly SOURCE_DIR='src'
+readonly SOURCE_DIR='cpp'
 readonly BUILD_DIR='.cxx'
 readonly COMPC_FILE='compile_commands.json'
 
