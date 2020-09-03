@@ -19,13 +19,14 @@
 #pragma once
 #include <array>
 #include <math.hpp>
+#include "idle_defines.hpp"
 
 namespace idle
 {
 namespace hsv
 {
 
-constexpr float compose(const float a, const float b, float c)
+constexpr float compose(const float a, const float b, float c) noexcept
 {
     if (c > 1.f)
         c -= 1.f;
@@ -42,7 +43,7 @@ constexpr float compose(const float a, const float b, float c)
 
 }  // namespace hsv
 
-constexpr color_t color_hsv(float hue, float sat, float lum)
+constexpr color_t color_hsv(float hue, float sat, float lum) noexcept
 {
     hue /= 360;
     sat = lum < .5f ? lum * (1 + sat) : lum + sat - lum * sat;
@@ -56,7 +57,7 @@ constexpr color_t color_hsv(float hue, float sat, float lum)
     };
 }
 
-constexpr std::array<color_t, 6> rainbow_from_saturation(const float saturation)
+constexpr std::array<color_t, 6> rainbow_from_saturation(const float saturation) noexcept
 {
     constexpr float hue_table [] = {
         0, 42, 60, 120, 255, 290

@@ -57,7 +57,7 @@ constexpr idle::color_t black{0, 0, 0, 1};
 
 using buffer_size = math::point2<unsigned>;
 
-bool assert_opengl_errors();
+bool assert_opengl_errors() noexcept;
 
 struct render_buffer_t
 {
@@ -65,13 +65,13 @@ struct render_buffer_t
     GLfloat texture_w, texture_h;
     buffer_size internal_size;
 
-    render_buffer_t(buffer_size size, GLint quality);
+    render_buffer_t(buffer_size size, GLint quality) noexcept;
 
     render_buffer_t(render_buffer_t&&)=delete;
 
     render_buffer_t(const render_buffer_t&)=delete;
 
-    ~render_buffer_t();
+    ~render_buffer_t() noexcept;
 };
 
 struct render_program_t
@@ -82,11 +82,11 @@ private:
     GLuint texture_position_handle = 0, position_handle = 0;
 
 public:
-    void draw_buffer(const render_buffer_t& source) const;
+    void draw_buffer(const render_buffer_t& source) const noexcept;
 
-    void use() const;
+    void use() const noexcept;
 
-    void prepare();
+    void prepare() noexcept;
 };
 
 struct blur_render_program_t : render_program_t
@@ -95,13 +95,13 @@ private:
     GLint direction_handle = 0, resolution_handle = 0, radius_handle = 0;
 
 public:
-    void prepare();
+    void prepare() noexcept;
 
-    void set_radius(GLfloat x) const;
+    void set_radius(GLfloat x) const noexcept;
 
-    void set_resolution(GLfloat x) const;
+    void set_resolution(GLfloat x) const noexcept;
 
-    void set_direction(GLfloat x, GLfloat y) const;
+    void set_direction(GLfloat x, GLfloat y) const noexcept;
 };
 
 struct masked_render_program_t : render_program_t
@@ -110,9 +110,9 @@ private:
     GLint mask_offset_handle = 0;
 
 public:
-    void prepare();
+    void prepare() noexcept;
 
-    void set_offsets(GLfloat ratio1, GLfloat ratio2, GLfloat buffer_height, GLfloat subbuffer_width) const;
+    void set_offsets(GLfloat ratio1, GLfloat ratio2, GLfloat buffer_height, GLfloat subbuffer_width) const noexcept;
 };
 
 struct core
@@ -156,21 +156,21 @@ struct core
         1, 1
     };
 
-    void copy_projection_matrix(const idle::mat4x4_noopt_t&) const;
+    void copy_projection_matrix(const idle::mat4x4_noopt_t&) const noexcept;
 
-    bool setup_graphics();
+    bool setup_graphics() noexcept;
 
-    bool resize(buffer_size window_size);
+    bool resize(buffer_size window_size) noexcept;
 
-    std::unique_ptr<const render_buffer_t> new_render_buffer(unsigned divider = 1) const;
+    std::unique_ptr<const render_buffer_t> new_render_buffer(unsigned divider = 1) const noexcept;
 
-    void clean();
+    void clean() noexcept;
 
-    void view_normal() const;
+    void view_normal() const noexcept;
 
-    void view_mask() const;
+    void view_mask() const noexcept;
 
-    void view_distortion() const;
+    void view_distortion() const noexcept;
 };
 
 

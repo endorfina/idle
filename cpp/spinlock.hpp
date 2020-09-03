@@ -29,9 +29,9 @@ class spin_lock
     std::atomic_flag flag = ATOMIC_FLAG_INIT;
 
 public:
-    void lock();
+    void lock() noexcept;
 
-    void unlock();
+    void unlock() noexcept;
 };
 
 }  // namespace idle

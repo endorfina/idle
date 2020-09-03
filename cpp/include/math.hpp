@@ -60,7 +60,7 @@ namespace math
 {
 
 template <typename T>
-constexpr T sqr(T x)
+constexpr T sqr(T x) noexcept
 {
     return x * x;
 }
@@ -70,7 +70,7 @@ namespace ce
 {
 
 template <typename T>
-constexpr T abs(T x)
+constexpr T abs(T x) noexcept
 {
     return x >= 0 ? x : -x;
 }
@@ -78,13 +78,13 @@ constexpr T abs(T x)
 namespace detail
 {
     template <typename T>
-    constexpr bool epsilon_equal(T x, T y)
+    constexpr bool epsilon_equal(T x, T y) noexcept
     {
         return abs(x - y) <= std::numeric_limits<T>::epsilon();
     }
 
     template <typename N, typename F>
-    constexpr F power(F x, N nth)
+    constexpr F power(F x, N nth) noexcept
     {
         if (nth == 0)
             return {1};
@@ -101,7 +101,7 @@ namespace detail
     }
 
     template <typename T>
-    constexpr T sqrt(const T x, T guess)
+    constexpr T sqrt(const T x, T guess) noexcept
     {
         while (true)
         {
@@ -114,7 +114,7 @@ namespace detail
 }  // namespace detail
 
 template <typename T>
-constexpr auto sqrt(T x)
+constexpr auto sqrt(T x) noexcept
 {
     if (x == 0)
         return 0.f;
@@ -128,7 +128,7 @@ constexpr auto sqrt(T x)
 namespace detail
 {
     template <typename T>
-    constexpr T cbrt(const T x, T guess)
+    constexpr T cbrt(const T x, T guess) noexcept
     {
         while (true)
         {
@@ -141,7 +141,7 @@ namespace detail
 }  // namespace detail
 
 template <typename T>
-constexpr auto cbrt(T x)
+constexpr auto cbrt(T x) noexcept
 {
     if constexpr (std::is_floating_point_v<T>)
         return detail::cbrt(x, T{1});
@@ -150,7 +150,7 @@ constexpr auto cbrt(T x)
 }
 
 template <typename T>
-constexpr auto hypot(T x, T y)
+constexpr auto hypot(T x, T y) noexcept
 {
     return sqrt(x * x + y * y);
 }
@@ -158,7 +158,7 @@ constexpr auto hypot(T x, T y)
 namespace detail
 {
     template <typename T>
-    constexpr T exp(const T x, T sum, T n, int i, T t)
+    constexpr T exp(const T x, T sum, T n, int i, T t) noexcept
     {
         while (true)
         {
@@ -173,7 +173,7 @@ namespace detail
 }  // namespace detail
 
 template <typename T>
-constexpr auto exp(T x)
+constexpr auto exp(T x) noexcept
 {
     if constexpr (std::is_floating_point_v<T>)
         return detail::exp(x, T{1}, T{1}, 2, x);
@@ -184,7 +184,7 @@ constexpr auto exp(T x)
 namespace detail
 {
     template <typename T>
-    constexpr T trigonometry(const T x, T sum, T n, int i, int s, T t)
+    constexpr T trigonometry(const T x, T sum, T n, int i, int s, T t) noexcept
     {
         while (true)
         {
@@ -201,7 +201,7 @@ namespace detail
 }  // namespace detail
 
 template <typename T>
-constexpr auto sin(T x)
+constexpr auto sin(T x) noexcept
 {
     if constexpr (std::is_floating_point_v<T>)
         return detail::trigonometry(x, x, T{6}, 4, -1, x * x * x);
@@ -210,7 +210,7 @@ constexpr auto sin(T x)
 }
 
 template <typename T>
-constexpr auto cos(T x)
+constexpr auto cos(T x) noexcept
 {
     if constexpr (std::is_floating_point_v<T>)
         return detail::trigonometry(x, T{1}, T{2}, 3, -1, x * x);
@@ -219,7 +219,7 @@ constexpr auto cos(T x)
 }
 
 template <typename T>
-constexpr auto tan(T x)
+constexpr auto tan(T x) noexcept
 {
     static_assert(std::is_floating_point_v<T>);
     const auto c = cos(x);
@@ -231,28 +231,28 @@ constexpr auto tan(T x)
 namespace detail
 {
     template <typename T>
-    constexpr T atan_term(T x2, int k)
+    constexpr T atan_term(T x2, int k) noexcept
     {
         return (T{2} * static_cast<T>(k) * x2)
             / ((T{2} * static_cast<T>(k) + T{1}) * (T{1} + x2));
     }
 
     template <typename T>
-    constexpr T atan_product(T x, int k)
+    constexpr T atan_product(T x, int k) noexcept
     {
         return k == 1 ? atan_term(x * x, k) :
             atan_term(x * x, k) * atan_product(x, k-1);
     }
 
     template <typename T>
-    constexpr T atan_sum(T x, T sum, int n)
+    constexpr T atan_sum(T x, T sum, int n) noexcept
     {
         return sum + atan_product(x, n) == sum ? sum :
             atan_sum(x, sum + atan_product(x, n), n+1);
     }
 
     template <typename T>
-    constexpr T inverse_trigonometry(const T x, T sum, int n, T t)
+    constexpr T inverse_trigonometry(const T x, T sum, int n, T t) noexcept
     {
         while (true)
         {
@@ -268,7 +268,7 @@ namespace detail
 }  // namespace detail
 
 template <typename T>
-constexpr auto asin(T x)
+constexpr auto asin(T x) noexcept
 {
     if (x <= -1)
         return F_TAU_2 / -2.f;
@@ -282,7 +282,7 @@ constexpr auto asin(T x)
 }
 
 template <typename T>
-constexpr auto acos(T x)
+constexpr auto acos(T x) noexcept
 {
     if (x <= -1)
         return F_TAU_2;
@@ -293,7 +293,7 @@ constexpr auto acos(T x)
 }
 
 template <typename T>
-constexpr auto atan(T x)
+constexpr auto atan(T x) noexcept
 {
     if constexpr (std::is_floating_point_v<T>)
         return x / (T{1} + x * x) * detail::atan_sum(x, T{1}, 1);
@@ -302,7 +302,7 @@ constexpr auto atan(T x)
 }
 
 template <typename T>
-constexpr T atan2(T x, T y)
+constexpr T atan2(T x, T y) noexcept
 {
     return x > 0 ? atan(y/x) :
         y >= 0 && x < 0 ? atan(y/x) + static_cast<T>(M_PI) :
@@ -314,14 +314,14 @@ constexpr T atan2(T x, T y)
 namespace detail
 {
     template <typename T>
-    constexpr T floor2(T x, T guess, T inc)
+    constexpr T floor2(T x, T guess, T inc) noexcept
     {
         return guess + inc <= x ? floor2(x, guess + inc, inc) :
             inc <= T{1} ? guess : floor2(x, guess, inc/T{2});
     }
 
     template <typename T>
-    constexpr T floor(T x, T guess, T inc)
+    constexpr T floor(T x, T guess, T inc) noexcept
     {
         return
             inc < T{8} ? floor2(x, guess, inc) :
@@ -337,14 +337,14 @@ namespace detail
     }
 
     template <typename T>
-    constexpr T ceil2(T x, T guess, T dec)
+    constexpr T ceil2(T x, T guess, T dec) noexcept
     {
         return guess - dec >= x ? ceil2(x, guess - dec, dec) :
             dec <= T{1} ? guess : ceil2(x, guess, dec/T{2});
     }
 
     template <typename T>
-    constexpr T ceil(T x, T guess, T dec)
+    constexpr T ceil(T x, T guess, T dec) noexcept
     {
         return
             dec < T{8} ? ceil2(x, guess, dec) :
@@ -360,13 +360,13 @@ namespace detail
     }
 }  // namespace detail
 
-constexpr float ceil(float x);
-constexpr double ceil(double x);
+constexpr float ceil(float x) noexcept;
+constexpr double ceil(double x) noexcept;
 
 template <typename T>
-constexpr float ceil(T x);
+constexpr float ceil(T x) noexcept;
 
-constexpr float floor(float x)
+constexpr float floor(float x) noexcept
 {
     return x < 0 ? -ceil(-x) :
         detail::floor(
@@ -374,7 +374,7 @@ constexpr float floor(float x)
             detail::power<int>(2.0f, std::numeric_limits<float>::max_exponent-1)
         );
 }
-constexpr double floor(double x)
+constexpr double floor(double x) noexcept
 {
     return x < 0 ? -ceil(-x) :
         detail::floor(
@@ -384,12 +384,12 @@ constexpr double floor(double x)
 }
 
 template<typename T>
-constexpr std::enable_if_t<std::is_integral_v<T>, double> floor(T x)
+constexpr std::enable_if_t<std::is_integral_v<T>, double> floor(T x) noexcept
 {
     return static_cast<double>(x);
 }
 
-constexpr float ceil(float x)
+constexpr float ceil(float x) noexcept
 {
     return x < 0 ? -floor(-x) :
         detail::ceil(
@@ -398,7 +398,7 @@ constexpr float ceil(float x)
         );
 }
 
-constexpr double ceil(double x)
+constexpr double ceil(double x) noexcept
 {
     return x < 0 ? -floor(-x) :
         detail::ceil(
@@ -408,48 +408,48 @@ constexpr double ceil(double x)
 }
 
 template <typename T>
-constexpr std::enable_if_t<std::is_integral_v<T>, float> ceil(T x)
+constexpr std::enable_if_t<std::is_integral_v<T>, float> ceil(T x) noexcept
 {
     return static_cast<float>(x);
 }
 
-constexpr float trunc(float x)
+constexpr float trunc(float x) noexcept
 {
     return x >= 0 ? floor(x) : -floor(-x);
 }
 
-constexpr double trunc(double x)
+constexpr double trunc(double x) noexcept
 {
     return x >= 0 ? floor(x) : -floor(-x);
 }
 
-constexpr float round(float x)
+constexpr float round(float x) noexcept
 {
     return x >= 0 ? floor(x + 0.5f) :
         ceil(x - 0.5f);
 }
-constexpr double round(double x)
+constexpr double round(double x) noexcept
 {
     return x >= 0 ? floor(x + 0.5) :
         ceil(x - 0.5);
 }
 
-constexpr float fmod(float x, float y)
+constexpr float fmod(float x, float y) noexcept
 {
     return x - trunc(x / y) * y;
 }
 
-constexpr double fmod(double x, double y)
+constexpr double fmod(double x, double y) noexcept
 {
     return x - trunc(x / y) * y;
 }
 
-constexpr float remainder(float x, float y)
+constexpr float remainder(float x, float y) noexcept
 {
     return x - y * round(x / y);
 }
 
-constexpr double remainder(double x, double y)
+constexpr double remainder(double x, double y) noexcept
 {
     return x - y * round(x / y);
 }
@@ -457,7 +457,7 @@ constexpr double remainder(double x, double y)
 }  // namespace ce
 
 template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
-constexpr bool is_power_of_2(const T a)
+constexpr bool is_power_of_2(const T a) noexcept
 {
     using int_t = std::conditional_t<sizeof(T) >= sizeof(int_fast32_t), T, std::conditional_t<std::is_signed_v<T>, int_fast32_t, uint_fast32_t>>;
     for (int_t it = 1, max = static_cast<int_t>(a); it <= max && it > 0; it *= 2)
@@ -467,7 +467,7 @@ constexpr bool is_power_of_2(const T a)
 }
 
 template<typename T>
-constexpr std::enable_if_t<std::is_floating_point_v<T>, float> degtorad(T a)
+constexpr std::enable_if_t<std::is_floating_point_v<T>, float> degtorad(T a) noexcept
 {
     return a * T{M_PI} / T{180};
 }
@@ -490,61 +490,61 @@ struct point2
     constexpr point2() noexcept : x(0), y(0) {};
     constexpr point2(value_type a, value_type b) noexcept : x(a), y(b) {}
 
-    constexpr point2& operator+=(const point2& other)
+    constexpr point2& operator+=(const point2& other) noexcept
     {
         x += other.x;
         y += other.y;
         return *this;
     }
 
-    constexpr point2& operator-=(const point2& other)
+    constexpr point2& operator-=(const point2& other) noexcept
     {
         x -= other.x;
         y -= other.y;
         return *this;
     }
 
-    constexpr point2& operator*=(const point2& other)
+    constexpr point2& operator*=(const point2& other) noexcept
     {
         x *= other.x;
         y *= other.y;
         return *this;
     }
 
-    constexpr point2& operator/=(const point2& other)
+    constexpr point2& operator/=(const point2& other) noexcept
     {
         x /= other.x;
         y /= other.y;
         return *this;
     }
 
-    constexpr friend point2 operator*(point2 first, const point2& second) { return first *= second; }
+    constexpr friend point2 operator*(point2 first, const point2& second) noexcept { return first *= second; }
 
-    constexpr friend point2 operator/(point2 first, const point2& second) { return first /= second; }
+    constexpr friend point2 operator/(point2 first, const point2& second) noexcept { return first /= second; }
 
-    constexpr friend point2 operator+(point2 first, const point2& second) { return first += second; }
+    constexpr friend point2 operator+(point2 first, const point2& second) noexcept { return first += second; }
 
-    constexpr friend point2 operator-(point2 first, const point2& second) { return first -= second; }
+    constexpr friend point2 operator-(point2 first, const point2& second) noexcept { return first -= second; }
 
-    constexpr friend point2 operator*(point2 first, value_type second) { return first *= second; }
+    constexpr friend point2 operator*(point2 first, value_type second) noexcept { return first *= second; }
 
-    constexpr friend point2 operator/(point2 first, value_type second) { return first /= second; }
+    constexpr friend point2 operator/(point2 first, value_type second) noexcept { return first /= second; }
 
-    constexpr point2& operator*=(value_type f)
+    constexpr point2& operator*=(value_type f) noexcept
     {
         x *= f;
         y *= f;
         return *this;
     }
 
-    constexpr point2& operator/=(value_type f)
+    constexpr point2& operator/=(value_type f) noexcept
     {
         x /= f;
         y /= f;
         return *this;
     }
 
-    constexpr value_type product(const point2& other) { return x * other.x + y * other.y; }
+    constexpr value_type product(const point2& other) noexcept { return x * other.x + y * other.y; }
 
     // Distance
     friend float operator^(const point2& first, const point2& second)
@@ -554,7 +554,7 @@ struct point2
 };
 
 template<class T, class A>
-constexpr point2<T> point_cast(const point2<A> pt)
+constexpr point2<T> point_cast(const point2<A> pt) noexcept
 {
     return { static_cast<T>(pt.x), static_cast<T>(pt.y) };
 }
@@ -570,7 +570,7 @@ struct point3
     constexpr point3() noexcept : x(0), y(0), z(0) {};
     constexpr point3(value_type a, value_type b, value_type c) noexcept : x(a), y(b), z(c) {}
 
-    constexpr point3& operator+=(const point3& other)
+    constexpr point3& operator+=(const point3& other) noexcept
     {
         x += other.x;
         y += other.y;
@@ -578,7 +578,7 @@ struct point3
         return *this;
     }
 
-    constexpr point3& operator-=(const point3& other)
+    constexpr point3& operator-=(const point3& other) noexcept
     {
         x -= other.x;
         y -= other.y;
@@ -586,7 +586,7 @@ struct point3
         return *this;
     }
 
-    constexpr point3& operator*=(const point3& other)
+    constexpr point3& operator*=(const point3& other) noexcept
     {
         x *= other.x;
         y *= other.y;
@@ -594,7 +594,7 @@ struct point3
         return *this;
     }
 
-    constexpr point3& operator/=(const point3& other)
+    constexpr point3& operator/=(const point3& other) noexcept
     {
         x /= other.x;
         y /= other.y;
@@ -602,19 +602,19 @@ struct point3
         return *this;
     }
 
-    constexpr friend point3 operator*(point3 first, const point3 & second) { return first *= second; }
+    constexpr friend point3 operator*(point3 first, const point3 & second) noexcept { return first *= second; }
 
-    constexpr friend point3 operator/(point3 first, const point3 & second) { return first /= second; }
+    constexpr friend point3 operator/(point3 first, const point3 & second) noexcept { return first /= second; }
 
-    constexpr friend point3 operator+(point3 first, const point3 & second) { return first += second; }
+    constexpr friend point3 operator+(point3 first, const point3 & second) noexcept { return first += second; }
 
-    constexpr friend point3 operator-(point3 first, const point3 & second) { return first -= second; }
+    constexpr friend point3 operator-(point3 first, const point3 & second) noexcept { return first -= second; }
 
-    constexpr friend point3 operator*(point3 first, value_type second) { return first *= second; }
+    constexpr friend point3 operator*(point3 first, value_type second) noexcept { return first *= second; }
 
-    constexpr friend point3 operator/(point3 first, value_type second) { return first /= second; }
+    constexpr friend point3 operator/(point3 first, value_type second) noexcept { return first /= second; }
 
-    constexpr point3& operator*=(value_type f)
+    constexpr point3& operator*=(value_type f) noexcept
     {
         x *= f;
         y *= f;
@@ -622,7 +622,7 @@ struct point3
         return *this;
     }
 
-    constexpr point3& operator/=(value_type f)
+    constexpr point3& operator/=(value_type f) noexcept
     {
         x /= f;
         y /= f;
@@ -630,7 +630,7 @@ struct point3
         return *this;
     }
 
-    constexpr value_type product(const point3& other) { return x * other.x + y * other.y + z * other.z; }
+    constexpr value_type product(const point3& other) noexcept { return x * other.x + y * other.y + z * other.z; }
 
     // Distance
     friend float operator^(const point3& first, const point3& second)
@@ -641,7 +641,7 @@ struct point3
 
 
 template<typename T>
-constexpr bool is_inside(const point2<T> (&rect)[4], const point2<T> &p)
+constexpr bool is_inside(const point2<T> (&rect)[4], const point2<T> &p) noexcept
 {
     const std::array<point2<T>, 2> lines {
             { rect[0].x - rect[1].x, rect[0].y - rect[1].y },
@@ -674,7 +674,7 @@ constexpr bool is_inside(const point2<T> (&rect)[4], const point2<T> &p)
 }
 
 template<typename T>
-constexpr bool collision(const point2<T> (&a)[4], const point2<T> (&b)[4])
+constexpr bool collision(const point2<T> (&a)[4], const point2<T> (&b)[4]) noexcept
 {
     std::array<point2<T>, 4> lines {
             { a[0].x - a[1].x, a[0].y - a[1].y },
@@ -732,12 +732,12 @@ struct color
     constexpr color(value_type _r, value_type _g, value_type _b) noexcept : r(_r), g(_g), b(_b), a(1) {}
     constexpr color(value_type _r, value_type _g, value_type _b, value_type _a) noexcept : r(_r), g(_g), b(_b), a(_a) {}
 
-    constexpr static color greyscale(value_type x, value_type a = 1)
+    constexpr static color greyscale(value_type x, value_type a = 1) noexcept
     {
         return { x, x, x, a };
     }
 
-    constexpr color& operator*=(const color &other)
+    constexpr color& operator*=(const color &other) noexcept
     {
         r *= other.r;
         g *= other.g;
@@ -746,7 +746,7 @@ struct color
         return *this;
     }
 
-    constexpr friend color operator*(color first, const color & second) { return first *= second; }
+    constexpr friend color operator*(color first, const color & second) noexcept { return first *= second; }
 };
 
 template<typename T>
@@ -766,7 +766,7 @@ namespace meta
 {
 
 template<typename table_type>
-constexpr table_type multiplication_2d(const table_type& first, const table_type& second)
+constexpr table_type multiplication_2d(const table_type& first, const table_type& second) noexcept
 {
     return {
         first[0] * second[0] + first[1] * second[4],
@@ -792,7 +792,7 @@ constexpr table_type multiplication_2d(const table_type& first, const table_type
 }
 
 template<typename table_type>
-constexpr table_type multiplication(const table_type& first, const table_type& second)
+constexpr table_type multiplication(const table_type& first, const table_type& second) noexcept
 {
     table_type dest{};
     for (int i = 0; i < 16; ++i) {
@@ -804,7 +804,7 @@ constexpr table_type multiplication(const table_type& first, const table_type& s
 }
 
 template<typename table_type>
-constexpr static bool invert_matrix(table_type &mat_)
+constexpr static bool invert_matrix(table_type &mat_) noexcept
 {
     const table_type inv
     {
@@ -943,11 +943,11 @@ struct matrix4x4_bare
 
     constexpr matrix4x4_bare(const table_type& table) noexcept : values{table} {}
 
-    constexpr explicit operator const value_type *() const { return values.data(); }
+    constexpr explicit operator const value_type *() const noexcept { return values.data(); }
 
-    constexpr decltype(auto) operator [](const unsigned i) const { return values[i]; }
+    constexpr decltype(auto) operator [](const unsigned i) const noexcept { return values[i]; }
 
-    constexpr decltype(auto) operator [](const unsigned i) { return values[i]; }
+    constexpr decltype(auto) operator [](const unsigned i) noexcept { return values[i]; }
 };
 
 }  // namespace meta
@@ -958,13 +958,13 @@ struct matrix4x4 : meta::matrix4x4_bare<T>
     using bare_type = meta::matrix4x4_bare<T>;
     using bare_type::matrix4x4_bare;
 
-    constexpr matrix4x4& invert(void)
+    constexpr matrix4x4& invert(void) noexcept
     {
         meta::invert_matrix(this->values);
         return *this;
     }
 
-    constexpr matrix4x4& reverse_multiply(const matrix4x4& other)
+    constexpr matrix4x4& reverse_multiply(const matrix4x4& other) noexcept
     {
         this->values = meta::multiplication(other.values, this->values);
         return *this;
@@ -972,7 +972,7 @@ struct matrix4x4 : meta::matrix4x4_bare<T>
 };
 
 template <typename U, unsigned O1, unsigned O2>
-constexpr matrix4x4<U, std::max(O1, O2)> operator*(const matrix4x4<U, O1>& lhs, const matrix4x4<U, O2>& rhs)
+constexpr matrix4x4<U, std::max(O1, O2)> operator*(const matrix4x4<U, O1>& lhs, const matrix4x4<U, O2>& rhs) noexcept
 {
     if constexpr (O1 || O2)
         return meta::multiplication(lhs.values, rhs.values);
@@ -981,14 +981,14 @@ constexpr matrix4x4<U, std::max(O1, O2)> operator*(const matrix4x4<U, O1>& lhs, 
 }
 
 template<typename T, unsigned O>
-constexpr point2<T> operator*(const matrix4x4<T, O>& mat, const point2<T> p)
+constexpr point2<T> operator*(const matrix4x4<T, O>& mat, const point2<T> p) noexcept
 {
     return { mat[0] * p.x + mat[4] * p.y + mat[12],
              mat[1] * p.x + mat[5] * p.y + mat[13] };
 }
 
 template<typename T, unsigned O>
-constexpr point3<T> operator*(const matrix4x4<T, O>& mat, const point3<T> p)
+constexpr point3<T> operator*(const matrix4x4<T, O>& mat, const point3<T> p) noexcept
 {
     return { mat[0] * p.x + mat[4] * p.y + mat[8] * p.z + mat[12],
              mat[1] * p.x + mat[5] * p.y + mat[9] * p.z + mat[13],
@@ -999,7 +999,7 @@ namespace matrices
 {
 
 template<typename T>
-constexpr auto translate(const point2<T> &p)
+constexpr auto translate(const point2<T> &p) noexcept
 {
     matrix4x4<T, 0> mat;
     mat[12] = p.x;
@@ -1008,7 +1008,7 @@ constexpr auto translate(const point2<T> &p)
 }
 
 template<typename T>
-constexpr matrix4x4<T, 1> translate(const point3<T> &p)
+constexpr matrix4x4<T, 1> translate(const point3<T> &p) noexcept
 {
     matrix4x4<T, 1> mat;
     mat[12] = p.x;
@@ -1018,7 +1018,7 @@ constexpr matrix4x4<T, 1> translate(const point3<T> &p)
 }
 
 template<typename T>
-constexpr auto scale(const point2<T> sc)
+constexpr auto scale(const point2<T> sc) noexcept
 {
     matrix4x4<T, 0> mat;
     mat[0] = sc.x;
@@ -1027,7 +1027,7 @@ constexpr auto scale(const point2<T> sc)
 }
 
 template<typename T>
-constexpr matrix4x4<T, 1> scale(const point3<T> sc)
+constexpr matrix4x4<T, 1> scale(const point3<T> sc) noexcept
 {
     matrix4x4<T, 1> mat;
     mat[0] = sc.x;
@@ -1037,7 +1037,7 @@ constexpr matrix4x4<T, 1> scale(const point3<T> sc)
 }
 
 template<typename T>
-constexpr auto scale(const point2<T> sc, const point2<T> p)
+constexpr auto scale(const point2<T> sc, const point2<T> p) noexcept
 {
     matrix4x4<T, 0> mat;
     mat[0] = sc.x;
@@ -1048,7 +1048,7 @@ constexpr auto scale(const point2<T> sc, const point2<T> p)
 }
 
 template<typename T>
-constexpr auto uniform_scale(const T sc)
+constexpr auto uniform_scale(const T sc) noexcept
 {
     matrix4x4<T, 0> mat;
     mat[0] = sc;
@@ -1057,7 +1057,7 @@ constexpr auto uniform_scale(const T sc)
 }
 
 template<typename T>
-constexpr auto uniform_scale(const T sc, const point2<T> p)
+constexpr auto uniform_scale(const T sc, const point2<T> p) noexcept
 {
     matrix4x4<T, 0> mat;
     mat[0] = sc;
@@ -1068,7 +1068,7 @@ constexpr auto uniform_scale(const T sc, const point2<T> p)
 }
 
 template<typename T>
-constexpr matrix4x4<T, 1> rotate_x(const T rad)
+constexpr matrix4x4<T, 1> rotate_x(const T rad) noexcept
 {
     matrix4x4<T, 1> mat;
     mat[10] = mat[5] = const_math::cos(rad);
@@ -1077,7 +1077,7 @@ constexpr matrix4x4<T, 1> rotate_x(const T rad)
 }
 
 template<typename T>
-constexpr matrix4x4<T, 1> rotate_y(const T rad)
+constexpr matrix4x4<T, 1> rotate_y(const T rad) noexcept
 {
     matrix4x4<T, 1> mat;
     mat[10] = mat[0] = const_math::cos(rad);
@@ -1086,7 +1086,7 @@ constexpr matrix4x4<T, 1> rotate_y(const T rad)
 }
 
 template<typename T>
-constexpr auto rotate(const T rad)
+constexpr auto rotate(const T rad) noexcept
 {
     matrix4x4<T, 0> mat;
     mat[5] = mat[0] = const_math::cos(rad);
@@ -1095,7 +1095,7 @@ constexpr auto rotate(const T rad)
 }
 
 template<typename T>
-constexpr auto rotate(const T rad, const point2<T> &p)
+constexpr auto rotate(const T rad, const point2<T> &p) noexcept
 {
     matrix4x4<T, 0> mat;
     mat[5] = mat[0] = const_math::cos(rad);
@@ -1107,7 +1107,7 @@ constexpr auto rotate(const T rad, const point2<T> &p)
 }
 
 template<typename T>
-constexpr matrix4x4<T, 1> orthof(const T left, const T right, const T top, const T bottom, const T near, const T far)
+constexpr matrix4x4<T, 1> orthof(const T left, const T right, const T top, const T bottom, const T near, const T far) noexcept
 {
     matrix4x4<T, 1> mat;
 
@@ -1125,7 +1125,7 @@ constexpr matrix4x4<T, 1> orthof(const T left, const T right, const T top, const
 }
 
 template<int Near, int Far, typename T>
-constexpr matrix4x4<T, 1> orthof_static(const T left, const T right, const T top, const T bottom)
+constexpr matrix4x4<T, 1> orthof_static(const T left, const T right, const T top, const T bottom) noexcept
 {
     static_assert(Far != Near);
     matrix4x4<T, 1> mat;
@@ -1143,30 +1143,204 @@ constexpr matrix4x4<T, 1> orthof_static(const T left, const T right, const T top
     return mat;
 }
 
-
 }  // namespace matrices
+
+namespace transform
+{
+
+template<typename T>
+constexpr void translate(meta::matrix4x4_bare<T>& m, const point2<T> &p) noexcept
+{
+    const auto co = m;
+    m[0] += co[3] * p.x;
+    m[1] += co[3] * p.y;
+
+    m[4] += co[7] * p.x;
+    m[5] += co[7] * p.y;
+
+    m[8] += co[11] * p.x;
+    m[9] += co[11] * p.y;
+
+    m[12] += co[15] * p.x;
+    m[13] += co[15] * p.y;
+}
+
+template<typename T>
+constexpr void translate(meta::matrix4x4_bare<T>& m, const point3<T> &p) noexcept
+{
+    const auto co = m;
+    m[0] += co[3] * p.x;
+    m[1] += co[3] * p.y;
+    m[2] += co[3] * p.z;
+
+    m[4] += co[7] * p.x;
+    m[5] += co[7] * p.y;
+    m[6] += co[7] * p.z;
+
+    m[8] += co[11] * p.x;
+    m[9] += co[11] * p.y;
+    m[10] += co[11] * p.z;
+
+    m[12] += co[15] * p.x;
+    m[13] += co[15] * p.y;
+    m[14] += co[15] * p.z;
+}
+
+template<typename T>
+constexpr void scale(meta::matrix4x4_bare<T>& m, const point2<T> &sc) noexcept
+{
+    m[0] *= sc.x;
+    m[1] *= sc.y;
+
+    m[4] *= sc.x;
+    m[5] *= sc.y;
+
+    m[8] *= sc.x;
+    m[9] *= sc.y;
+
+    m[12] *= sc.x;
+    m[13] *= sc.y;
+}
+
+template<typename T>
+constexpr void scale(meta::matrix4x4_bare<T>& m, const point3<T> &sc) noexcept
+{
+    m[0] *= sc.x;
+    m[1] *= sc.y;
+    m[2] *= sc.z;
+
+    m[4] *= sc.x;
+    m[5] *= sc.y;
+    m[6] *= sc.z;
+
+    m[8] *= sc.x;
+    m[9] *= sc.y;
+    m[10] *= sc.z;
+
+    m[12] *= sc.x;
+    m[13] *= sc.y;
+    m[14] *= sc.z;
+}
+
+template<typename T>
+constexpr void uniform_scale(meta::matrix4x4_bare<T>& m, const T sc) noexcept
+{
+    m[0] *= sc;
+    m[1] *= sc;
+
+    m[4] *= sc;
+    m[5] *= sc;
+
+    m[8] *= sc;
+    m[9] *= sc;
+
+    m[12] *= sc;
+    m[13] *= sc;
+}
+
+template<typename T>
+constexpr void uniform_scale_3d(meta::matrix4x4_bare<T>& m, const T sc) noexcept
+{
+    m[0] *= sc;
+    m[1] *= sc;
+    m[2] *= sc;
+
+    m[4] *= sc;
+    m[5] *= sc;
+    m[6] *= sc;
+
+    m[8] *= sc;
+    m[9] *= sc;
+    m[10] *= sc;
+
+    m[12] *= sc;
+    m[13] *= sc;
+    m[14] *= sc;
+}
+
+template<typename T>
+constexpr void rotate_x(meta::matrix4x4_bare<T>& m, const T rad) noexcept
+{
+    const auto co = m;
+    const auto c = const_math::cos(rad);
+    const auto s = const_math::sin(rad);
+
+    m[1] = co[1] * c + co[2] * -s;
+    m[2] = co[1] * s + co[2] * c;
+
+    m[5] = co[5] * c + co[6] * -s;
+    m[6] = co[5] * s + co[6] * c;
+
+    m[9] = co[9] * c + co[10] * -s;
+    m[10] = co[9] * s + co[10] * c;
+
+    m[13] = co[13] * c + co[14] * -s;
+    m[14] = co[13] * s + co[14] * c;
+}
+
+template<typename T>
+constexpr void rotate_y(meta::matrix4x4_bare<T>& m, const T rad) noexcept
+{
+    const auto co = m;
+    const auto c = const_math::cos(rad);
+    const auto s = const_math::sin(rad);
+
+    m[0] = co[0] * c + co[2] * s;
+    m[2] = co[0] * -s + co[2] * c;
+
+    m[4] = co[4] * c + co[6] * s;
+    m[6] = co[4] * -s + co[6] * c;
+
+    m[8] = co[8] * c + co[10] * s;
+    m[10] = co[8] * -s + co[10] * c;
+
+    m[12] = co[12] * c + co[14] * s;
+    m[14] = co[12] * -s + co[14] * c;
+}
+
+template<typename T>
+constexpr void rotate_z(meta::matrix4x4_bare<T>& m, const T rad) noexcept
+{
+    const auto co = m;
+    const auto c = const_math::cos(rad);
+    const auto s = const_math::sin(rad);
+
+    m[0] = co[0] * c + co[1] * -s;
+    m[1] = co[0] * s + co[1] * c;
+
+    m[4] = co[4] * c + co[5] * -s;
+    m[5] = co[4] * s + co[5] * c;
+
+    m[8] = co[8] * c + co[9] * -s;
+    m[9] = co[8] * s + co[9] * c;
+
+    m[12] = co[12] * c + co[13] * -s;
+    m[13] = co[12] * s + co[13] * c;
+}
+
+}  // namespace transform
 
 template<typename Uint>
 struct field
 {
     Uint bits;
 
-    constexpr void set(const Uint val)
+    constexpr void set(const Uint val) noexcept
     {
         bits |= val;
     }
 
-    constexpr void reset(const Uint val)
+    constexpr void reset(const Uint val) noexcept
     {
         bits &= ~val;
     }
 
-    constexpr bool test(const Uint val) const
+    constexpr bool test(const Uint val) const noexcept
     {
         return !! (bits & val);
     }
 
-    constexpr void flip()
+    constexpr void flip() noexcept
     {
         bits = ~bits;
     }

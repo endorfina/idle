@@ -52,19 +52,19 @@ struct glyph_view
         FT_Face face;
         position pos;
 
-        position operator*() const
+        position operator*() const noexcept
         {
             return pos;
         }
 
-        iterator& operator++()
+        iterator& operator++() noexcept
         {
             pos.code = FT_Get_Next_Char(face, pos.code, &pos.gindex);
             return *this;
         }
     };
 
-    iterator begin() const
+    iterator begin() const noexcept
     {
         iterator out;
         out.face = face;
@@ -74,13 +74,13 @@ struct glyph_view
 
     struct sentinel
     {
-        friend bool operator!=(const iterator& it, const sentinel&)
+        friend bool operator!=(const iterator& it, const sentinel&) noexcept
         {
             return !!it.pos.gindex;
         }
     };
 
-    sentinel end() const
+    sentinel end() const noexcept
     {
         return {};
     }
@@ -88,7 +88,7 @@ struct glyph_view
 
 
 
-std::optional<ft_data_t> create_font(const font_face_t freetype_font_face, const unsigned resolution, bool (* filter_function)(unsigned long))
+std::optional<ft_data_t> create_font(const font_face_t freetype_font_face, const unsigned resolution, bool (* filter_function)(unsigned long)) noexcept
 {
     const auto filtered_chars = [&filter_function, ft = freetype_font_face.get()]()
     {
@@ -175,7 +175,7 @@ bool library_loaded = false;
 }  // namespace
 
 
-std::optional<ft_data_t> freetype_glue::operator()(bool (* filter_function)(unsigned long), const std::string_view &memory, const texture_quality resolution) const
+std::optional<ft_data_t> freetype_glue::operator()(bool (* filter_function)(unsigned long), const std::string_view &memory, const texture_quality resolution) const noexcept
 {
     if (!library_loaded) return {};
 
@@ -193,7 +193,7 @@ std::optional<ft_data_t> freetype_glue::operator()(bool (* filter_function)(unsi
 }
 
 
-freetype_glue::freetype_glue()
+freetype_glue::freetype_glue() noexcept
 {
     if (++library_ref_count == 1)
     {
@@ -206,7 +206,7 @@ freetype_glue::freetype_glue()
     }
 }
 
-freetype_glue::~freetype_glue()
+freetype_glue::~freetype_glue() noexcept
 {
     if (--library_ref_count == 0)
     {

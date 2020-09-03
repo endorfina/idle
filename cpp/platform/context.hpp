@@ -41,17 +41,17 @@ struct context
     std::optional<resize_request_t> resize_request;
     command_queue_t commands;
 
-    context();
+    context() noexcept;
 
-    ~context();
+    ~context() noexcept;
 
-    void terminate_display();
+    void terminate_display() noexcept;
 
-    void buffer_swap();
+    void buffer_swap() noexcept;
 
-    void event_loop_back(bool block_if_possible);
+    void event_loop_back(bool block_if_possible) noexcept;
 
-    bool has_opengl() const;
+    bool has_opengl() const noexcept;
 };
 
 }  // namespace platform

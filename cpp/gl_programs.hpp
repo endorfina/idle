@@ -29,17 +29,17 @@ private:
     GLuint value;
 
 public:
-    unique_texture(GLuint);
+    unique_texture(GLuint) noexcept;
 
     unique_texture(const unique_texture&) = delete;
     unique_texture& operator=(const unique_texture&) = delete;
 
-    unique_texture(unique_texture&&);
-    unique_texture& operator=(unique_texture&&);
+    unique_texture(unique_texture&&) noexcept;
+    unique_texture& operator=(unique_texture&&) noexcept;
 
-    ~unique_texture();
+    ~unique_texture() noexcept;
 
-    GLuint get() const;
+    GLuint get() const noexcept;
 };
 
 struct program_t
@@ -51,27 +51,27 @@ private:
     GLint model_handle = 0, view_handle = 0, color_handle = 0;
 
 public:
-    void set_transform(const idle::mat4x4_t& f) const;
+    void set_transform(const idle::mat4x4_t& f) const noexcept;
 
-    void set_transform(const idle::mat4x4_noopt_t& f) const;
+    void set_transform(const idle::mat4x4_noopt_t& f) const noexcept;
 
-    void set_identity(void) const;
+    void set_identity(void) const noexcept;
 
-    void set_view_transform(const idle::mat4x4_t& f) const;
+    void set_view_transform(const idle::mat4x4_t& f) const noexcept;
 
-    void set_view_transform(const idle::mat4x4_noopt_t& f) const;
+    void set_view_transform(const idle::mat4x4_noopt_t& f) const noexcept;
 
-    void set_view_identity(void) const;
+    void set_view_identity(void) const noexcept;
 
-    void set_color(const idle::color_t& c) const;
+    void set_color(const idle::color_t& c) const noexcept;
 
-    void set_color(const idle::color_t& c, float custom_alpha) const;
+    void set_color(const idle::color_t& c, float custom_alpha) const noexcept;
 
-    void position_vertex(const GLfloat *f) const;
+    void position_vertex(const GLfloat *f) const noexcept;
 
-    void use() const;
+    void use() const noexcept;
 
-    void prepare();
+    void prepare() noexcept;
 };
 
 struct textured_program_t : program_t
@@ -80,9 +80,9 @@ private:
     GLuint texture_position_handle = 0;
 
 public:
-    void texture_vertex(const GLfloat *f) const;
+    void texture_vertex(const GLfloat *f) const noexcept;
 
-    void prepare();
+    void prepare() noexcept;
 };
 
 struct noise_program_t : textured_program_t
@@ -91,13 +91,13 @@ private:
     GLint secondary_color_handle = 0, tertiary_color_handle = 0, noise_seed_handle = 0;
 
 public:
-    void prepare();
+    void prepare() noexcept;
 
-    void set_secondary_color(const idle::color_t& c) const;
+    void set_secondary_color(const idle::color_t& c) const noexcept;
 
-    void set_tertiary_color(const idle::color_t& c) const;
+    void set_tertiary_color(const idle::color_t& c) const noexcept;
 
-    void set_seed(idle::point_t seed) const;
+    void set_seed(idle::point_t seed) const noexcept;
 };
 
 struct gradient_program_t : program_t
@@ -107,13 +107,13 @@ private:
     GLint secondary_color_handle = 0;
 
 public:
-    void prepare();
+    void prepare() noexcept;
 
-    void set_secondary_color(const idle::color_t& c) const;
+    void set_secondary_color(const idle::color_t& c) const noexcept;
 
-    void set_secondary_color(const idle::color_t& c, float alpha) const;
+    void set_secondary_color(const idle::color_t& c, float alpha) const noexcept;
 
-    void interpolation_vertex(const GLfloat *f) const;
+    void interpolation_vertex(const GLfloat *f) const noexcept;
 };
 
 struct double_base_program_t
@@ -123,21 +123,21 @@ private:
     GLint interpolation_handle = 0;
 
 public:
-    void destination_vertex(const GLfloat *f) const;
+    void destination_vertex(const GLfloat *f) const noexcept;
 
-    void set_interpolation(GLfloat x) const;
+    void set_interpolation(GLfloat x) const noexcept;
 
-    void prepare_headless(GLuint prog);
+    void prepare_headless(GLuint prog) noexcept;
 };
 
 struct double_solid_program_t : program_t, double_base_program_t
 {
-    void prepare();
+    void prepare() noexcept;
 };
 
 struct double_vertex_program_t : textured_program_t, double_base_program_t
 {
-    void prepare();
+    void prepare() noexcept;
 };
 
 struct text_program_t : textured_program_t
@@ -146,9 +146,9 @@ private:
     GLint font_offset_handle = 0;
 
 public:
-    void set_text_offset(idle::point_t offset) const;
+    void set_text_offset(idle::point_t offset) const noexcept;
 
-    void prepare();
+    void prepare() noexcept;
 };
 
 struct fullbg_program_t : program_t
@@ -157,11 +157,11 @@ private:
     GLuint offset_handle = 0, resolution_handle = 0;
 
 public:
-    void set_offset(GLfloat x) const;
+    void set_offset(GLfloat x) const noexcept;
 
-    void set_resolution(idle::point_t res) const;
+    void set_resolution(idle::point_t res) const noexcept;
 
-    void prepare();
+    void prepare() noexcept;
 };
 
 }

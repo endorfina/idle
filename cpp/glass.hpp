@@ -29,7 +29,7 @@ namespace idle::glass
 {
 
 template<std::size_t I = 0, typename Callable, typename...Vars>
-constexpr void tuple_visit(const Callable& call, const std::tuple<Vars...>& tuple)
+constexpr void tuple_visit(const Callable& call, const std::tuple<Vars...>& tuple) noexcept
 {
     call(std::get<I>(tuple));
 
@@ -40,7 +40,7 @@ constexpr void tuple_visit(const Callable& call, const std::tuple<Vars...>& tupl
 }
 
 template<std::size_t I = 0, typename...Vars>
-constexpr void tuple_copy(std::tuple<Vars...>& dest, const std::tuple<Vars...>& src)
+constexpr void tuple_copy(std::tuple<Vars...>& dest, const std::tuple<Vars...>& src) noexcept
 {
     std::get<I>(dest) = std::get<I>(src);
 
@@ -63,12 +63,16 @@ struct bone
     static constexpr unsigned oddness = 0;
     static constexpr unsigned prime_branch_len = 1;
 
-    constexpr auto get_transform() const
+    constexpr auto get_transform() const noexcept
     {
-        return math::matrices::translate<float>({0, 0, length})
-            * math::matrices::rotate_x<float>(angle.x)
-            * math::matrices::rotate_y<float>(angle.y)
-            * math::matrices::rotate<float>(angle.z);
+        math::matrix4x4<float, 1> out{};
+        // math::transform::translate(out, {0, 0, length});
+        out[14] = length;
+
+        math::transform::rotate_x(out, angle.x);
+        math::transform::rotate_y(out, angle.y);
+        math::transform::rotate_z(out, angle.z);
+        return out;
     }
 };
 
@@ -82,20 +86,20 @@ struct joint
     tuple_type branches;
 
     template<unsigned Index = 0>
-    constexpr auto& branch()
+    constexpr auto& branch() noexcept
     {
         static_assert(Index < sizeof...(Appendages));
         return std::get<Index>(branches);
     }
 
     template<unsigned Index = 0>
-    constexpr auto& branch() const
+    constexpr auto& branch() const noexcept
     {
         static_assert(Index < sizeof...(Appendages));
         return std::get<Index>(branches);
     }
 
-    constexpr joint& operator=(const joint& other)
+    constexpr joint& operator=(const joint& other) noexcept
     {
         root = other.root;
         tuple_copy(branches, other.branches);
@@ -114,12 +118,12 @@ struct segment
 
     std::array<bone, Size> table;
 
-    constexpr const bone& operator[](unsigned pos) const
+    constexpr const bone& operator[](unsigned pos) const noexcept
     {
         return table[pos];
     }
 
-    constexpr bone& operator[](unsigned pos)
+    constexpr bone& operator[](unsigned pos) noexcept
     {
         return table[pos];
     }
@@ -145,13 +149,13 @@ namespace meta
 {
 
 template<typename Callable>
-constexpr void apply_for_all(const Callable& func, blocks::bone& node)
+constexpr void apply_for_all(const Callable& func, blocks::bone& node) noexcept
 {
     func(node);
 }
 
 template<unsigned Size, typename Callable>
-constexpr void apply_for_all(const Callable& func, blocks::segment<Size>& node)
+constexpr void apply_for_all(const Callable& func, blocks::segment<Size>& node) noexcept
 {
     for (auto& it : node.table)
     {
@@ -160,7 +164,7 @@ constexpr void apply_for_all(const Callable& func, blocks::segment<Size>& node)
 }
 
 template<unsigned Index = 0, typename Callable, typename...Nodes>
-constexpr void apply_for_all(const Callable& func, blocks::joint<Nodes...>& node)
+constexpr void apply_for_all(const Callable& func, blocks::joint<Nodes...>& node) noexcept
 {
     if constexpr (Index == 0)
     {
@@ -177,7 +181,7 @@ constexpr void apply_for_all(const Callable& func, blocks::joint<Nodes...>& node
 }
 
 template<typename Val>
-constexpr void sync_right(blocks::symmetry<Val>& sym)
+constexpr void sync_right(blocks::symmetry<Val>& sym) noexcept
 {
     sym.right = sym.left;
     apply_for_all([](auto& b) { b.angle *= point_3d_t{-1.f, 1.f, -1.f}; }, sym.right);
@@ -185,7 +189,7 @@ constexpr void sync_right(blocks::symmetry<Val>& sym)
 
 using index_pair = std::array<unsigned, 2>;
 
-constexpr point_t flatten(const point_3d_t p)
+constexpr point_t flatten(const point_3d_t p) noexcept
 {
     return { p.y, - p.z };
 }
@@ -202,7 +206,7 @@ struct deep_tree
     std::array<unsigned, 1 + joint_type::oddness> lengths{};
 
 private:
-    constexpr meta::index_pair to_lines(meta::index_pair index, const blocks::bone& b, const mat4x4_noopt_t& mat)
+    constexpr meta::index_pair to_lines(meta::index_pair index, const blocks::bone& b, const mat4x4_noopt_t& mat) noexcept
     {
         const auto rot = b.get_transform() * mat;
         table[index[0]++] = rot * point_3d_t{};
@@ -210,7 +214,7 @@ private:
     }
 
     template<unsigned Size>
-    constexpr meta::index_pair to_lines(meta::index_pair index, const blocks::segment<Size>& s, mat4x4_noopt_t mat)
+    constexpr meta::index_pair to_lines(meta::index_pair index, const blocks::segment<Size>& s, mat4x4_noopt_t mat) noexcept
     {
         for (const auto& it : s.table)
         {
@@ -222,7 +226,7 @@ private:
     }
 
     template<typename...Vars>
-    constexpr meta::index_pair to_lines(meta::index_pair index, const blocks::joint<Vars...>& j, const mat4x4_noopt_t& mat)
+    constexpr meta::index_pair to_lines(meta::index_pair index, const blocks::joint<Vars...>& j, const mat4x4_noopt_t& mat) noexcept
     {
         const auto rot = j.root.get_transform() * mat;
         const auto branchoff_point = index[0];
@@ -244,7 +248,7 @@ private:
     }
 
     template<typename Val>
-    constexpr meta::index_pair to_lines(meta::index_pair index, const blocks::symmetry<Val>& s, const mat4x4_noopt_t& mat)
+    constexpr meta::index_pair to_lines(meta::index_pair index, const blocks::symmetry<Val>& s, const mat4x4_noopt_t& mat) noexcept
     {
         const auto branchoff_point = index[0];
         index = to_lines(index, s.left, mat);
@@ -254,7 +258,7 @@ private:
     }
 
 public:
-    constexpr deep_tree(const joint_type& root, const mat4x4_noopt_t& mat)
+    constexpr deep_tree(const joint_type& root, const mat4x4_noopt_t& mat) noexcept
     {
         const auto [total_length, last_iter] = to_lines({0, 0}, root, mat);
         lengths[last_iter] = total_length;
@@ -274,7 +278,7 @@ struct flat_tree
     std::array<point_t, joint_type::size + joint_type::oddness> table{};
     std::array<unsigned, 1 + joint_type::oddness> lengths;
 
-    explicit constexpr flat_tree(const deep_tree<Js...>& source)
+    explicit constexpr flat_tree(const deep_tree<Js...>& source) noexcept
         : lengths{source.lengths}
     {
         // std::transform is unavailable in C++17
@@ -291,13 +295,13 @@ struct muscle
 {
     std::tuple<Links...> chain;
 
-    constexpr muscle(std::tuple<Links...> var)
+    constexpr muscle(std::tuple<Links...> var) noexcept
         : chain{std::move(var)}
     {}
 
 protected:
     template<unsigned Index = 0, typename Load>
-    constexpr void expand(Load& load) const
+    constexpr void expand(Load& load) const noexcept
     {
         constexpr auto source_index = Index > 0 ? Index - 1 : 0;
         load[Index] = std::get<Index>(chain)(load[source_index]);
@@ -313,7 +317,7 @@ public:
     using array_t = std::array<Val, sizeof...(Links)>;
 
     template<typename Cargo>
-    constexpr array_t<Cargo> animate(const Cargo& cargo) const
+    constexpr array_t<Cargo> animate(const Cargo& cargo) const noexcept
     {
         array_t<Cargo> out{};
         out[0] = cargo;
@@ -339,32 +343,32 @@ struct humanoid : blocks::joint
                     >
                 >
 {
-    constexpr decltype(auto) get_upperbody()
+    constexpr decltype(auto) get_upperbody() noexcept
     {
         return branch<0>();
     }
 
-    constexpr decltype(auto) get_lowerbody()
+    constexpr decltype(auto) get_lowerbody() noexcept
     {
         return branch<1>();
     }
 
-    constexpr decltype(auto) get_shoulders()
+    constexpr decltype(auto) get_shoulders() noexcept
     {
         return get_upperbody().branch<1>();
     }
 
-    constexpr decltype(auto) get_head()
+    constexpr decltype(auto) get_head() noexcept
     {
         return get_upperbody().branch<0>();
     }
 
-    constexpr decltype(auto) get_hips()
+    constexpr decltype(auto) get_hips() noexcept
     {
         return get_lowerbody().branch<0>();
     }
 
-    constexpr void realign()
+    constexpr void realign() noexcept
     {
         root.length = 1;
 
@@ -379,7 +383,7 @@ struct humanoid : blocks::joint
             root.length -= low;
     }
 
-    constexpr humanoid()
+    constexpr humanoid() noexcept
     {
         auto& [neck, face] = get_head().table;
         neck.length = 12;
@@ -431,7 +435,7 @@ struct blob
 {
     std::array<float, Steps> data;
 
-    constexpr blob(const float radius)
+    constexpr blob(const float radius) noexcept
         : data{}
     {
         for (auto& it : data)

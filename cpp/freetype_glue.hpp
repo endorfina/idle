@@ -34,10 +34,10 @@ enum class texture_quality : unsigned
 
 struct freetype_glue
 {
-    std::optional<ft_data_t> operator()(bool (* filter_function)(unsigned long), const std::string_view &memory, texture_quality resolution) const;
+    std::optional<ft_data_t> operator()(bool (* filter_function)(unsigned long), const std::string_view &memory, texture_quality resolution) const noexcept;
 
-    freetype_glue();
-    ~freetype_glue();
+    freetype_glue() noexcept;
+    ~freetype_glue() noexcept;
 
     freetype_glue(const freetype_glue &) = delete;
     freetype_glue(freetype_glue &&) = delete;

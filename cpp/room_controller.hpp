@@ -41,7 +41,7 @@ struct door
     using opened_type = Open;
 
     template<typename Variant, typename...Args>
-    void open(Variant& var, Args&&...args) const
+    void open(Variant& var, Args&&...args) const noexcept
     {
         var.template emplace<opened_type>(std::forward<Args>(args)...);
     }
@@ -74,17 +74,17 @@ public:
     std::atomic<platform::pointer> cached_cursor;
     crash_handler haiku;
 
-    bool should_stay_awake() const;
+    bool should_stay_awake() const noexcept;
 
-    void sleep();
+    void sleep() noexcept;
 
-    void awaken(std::chrono::steady_clock::time_point step_time);
+    void awaken(std::chrono::steady_clock::time_point step_time) noexcept;
 
-    void resize(point_t size);
+    void resize(point_t size) noexcept;
 
-    void draw_frame(const graphics::core& gl);
+    void draw_frame(const graphics::core& gl) noexcept;
 
-    std::optional<hotel::keyring::variant> do_step(const pointer_wrapper& cursor);
+    std::optional<hotel::keyring::variant> do_step(const pointer_wrapper& cursor) noexcept;
 };
 
 }  // namespace idle

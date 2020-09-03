@@ -29,14 +29,14 @@ namespace fonts
 
 struct font_t
 {
-    void draw(const graphics::text_program_t& rcp, const std::string_view &str, unsigned int limit = (-1)) const;
+    void draw(const graphics::text_program_t& rcp, const std::string_view &str, unsigned int limit = (-1)) const noexcept;
 
-    void draw_custom_animation(const graphics::text_program_t& rcp, const std::string_view &str, const math::color<float> &col, const idle::text_animation_data* anim, unsigned start, unsigned end) const;
+    void draw_custom_animation(const graphics::text_program_t& rcp, const std::string_view &str, const math::color<float> &col, const idle::text_animation_data* anim, unsigned start, unsigned end) const noexcept;
 
     //Return the width/height of the rendered text at given size
-    idle::point_t get_extent(const std::string_view &str, float size, unsigned int limit = (-1)) const;
+    idle::point_t get_extent(const std::string_view &str, float size, unsigned int limit = (-1)) const noexcept;
 
-    std::string prepare_string(const std::string_view &str, float size, float max_width) const;
+    std::string prepare_string(const std::string_view &str, float size, float max_width) const noexcept;
 
 #ifndef IDLE_COMPILE_FONT_DEBUG_SCREEN
 private:
@@ -47,7 +47,7 @@ private:
 
 public:
     template<typename A, typename B>
-    font_t(A&& tex, B&& map, const float size, const float mny, const float mxy)
+    font_t(A&& tex, B&& map, const float size, const float mny, const float mxy) noexcept
         : texture(std::forward<A>(tex))
         , character_map(std::forward<B>(map))
         , cell_size(size)

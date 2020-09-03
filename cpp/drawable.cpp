@@ -34,7 +34,7 @@ namespace idle
 namespace
 {
 
-float proportional_to_nearest_sqr(const size_t w)
+float proportional_to_nearest_sqr(const size_t w) noexcept
 {
     size_t u = 1;
     while (u < w) u *= 2;
@@ -44,7 +44,7 @@ float proportional_to_nearest_sqr(const size_t w)
 unsigned wasteful_zlib_decompress(unsigned char** out_ptr, size_t* out_size,
                                  const unsigned char* const source,
                                  const size_t source_size,
-                                 const LodePNGDecompressSettings* const)
+                                 const LodePNGDecompressSettings* const) noexcept
 {
     if (const auto working_buffer = zlib<std::vector<unsigned char>>(source, source_size, false, false))
     {
@@ -64,7 +64,7 @@ struct image_data
     std::unique_ptr<unsigned char[]> image;
     unsigned width, height, real_width, real_height, size;
 
-    std::vector<unsigned char> decode_png_buffer(const unsigned char * const src, const size_t datalen)
+    std::vector<unsigned char> decode_png_buffer(const unsigned char * const src, const size_t datalen) noexcept
     {
         std::vector<unsigned char> out;
         lodepng::State st;
@@ -84,9 +84,9 @@ struct image_data
         return out;
     }
 
-    image_data() = default;
+    image_data() noexcept = default;
 
-    image_data(const std::string_view source) : real_width(1), real_height(1)
+    image_data(const std::string_view source) noexcept : real_width(1), real_height(1)
     {
         constexpr unsigned source_size = 4;
         if (const auto temp = decode_png_buffer(reinterpret_cast<const unsigned char*>(source.data()), source.size()); !!temp.size())
@@ -120,7 +120,7 @@ struct image_data
     }
 };
 
-bool verify_file_extension(const char * const fn)
+bool verify_file_extension(const char * const fn) noexcept
 {
     auto chk = fn;
     for (; *chk; ++chk);
@@ -128,7 +128,7 @@ bool verify_file_extension(const char * const fn)
     return !(strcmp(chk, ".png") != 0);
 }
 
-image_data make_image_data(const char * fn)
+image_data make_image_data(const char * fn) noexcept
 {
     if (verify_file_extension(fn))
     {
@@ -157,7 +157,7 @@ struct image_meta_data_t
             GLint q, GLint r,
             Pixels&& pix,
             Promise&& prom
-        ) :
+        ) noexcept :
         width(w), height(h),
         internalformat(i), format(f),
         quality(q), repeat(r),
@@ -172,43 +172,43 @@ std::mutex queue_mutex;
 
 }  // namespace
 
-image_t::image_t()
+image_t::image_t() noexcept
     : i(0), width(0), height(0)
 {}
 
-image_t::image_t(GLuint id, size_t w, size_t h)
+image_t::image_t(GLuint id, size_t w, size_t h) noexcept
     : tex(proportional_to_nearest_sqr(w), proportional_to_nearest_sqr(h)), i(id), width(w), height(h)
 {}
 
-image_t::image_t(GLuint id, size_t w, size_t h, size_t u2, size_t v2)
+image_t::image_t(GLuint id, size_t w, size_t h, size_t u2, size_t v2) noexcept
     : tex(static_cast<float>(w) / static_cast<float>(u2), static_cast<float>(h) / static_cast<float>(v2)), i(id), width(w), height(h)
 {}
 
-image_t::image_t(image_t&& other) :
+image_t::image_t(image_t&& other) noexcept :
     tex(other.tex), i(other.i), width(other.width), height(other.height)
 {
     other.width = other.height = 0;
 }
 
-image_t::~image_t()
+image_t::~image_t() noexcept
 {
     if (width != 0 || height != 0)
         gl::DeleteTextures(1, &i);
 }
 
-GLuint image_t::get_gl_id() const
+GLuint image_t::get_gl_id() const noexcept
 {
     return i;
 }
 
-GLuint image_t::release()
+GLuint image_t::release() noexcept
 {
     width = height = 0;
     return i;
 }
 
 
-image_t image_t::load_from_assets_immediate(const char * fn, GLint quality)
+image_t image_t::load_from_assets_immediate(const char * fn, GLint quality) noexcept
 {
     const auto picture = make_image_data(fn);
     GLuint texID = 0;
@@ -237,7 +237,7 @@ image_t image_t::load_from_assets_immediate(const char * fn, GLint quality)
     return { texID, picture.width, picture.height, picture.real_width, picture.real_height };
 }
 
-image_t image_t::load_from_assets(const char * fn, GLint quality)
+image_t image_t::load_from_assets(const char * fn, GLint quality) noexcept
 {
     auto picture = make_image_data(fn);
 
@@ -270,7 +270,7 @@ image_t image_t::load_from_assets(const char * fn, GLint quality)
 image_t image_t::load_from_memory(GLsizei w, GLsizei h,
             GLint i, GLenum f,
             GLint q, GLint r,
-            std::unique_ptr<unsigned char[]> pix)
+            std::unique_ptr<unsigned char[]> pix) noexcept
 {
     std::promise<GLuint> promise;
     auto texID = promise.get_future();
@@ -285,7 +285,7 @@ image_t image_t::load_from_memory(GLsizei w, GLsizei h,
     return { texID.get(), static_cast<size_t>(w), static_cast<size_t>(h), static_cast<size_t>(w), static_cast<size_t>(h) };
 }
 
-void image_t::load_topmost_queued_picture()
+void image_t::load_topmost_queued_picture() noexcept
 {
     if (auto td = []()->std::optional<image_meta_data_t>
         {
@@ -318,7 +318,7 @@ void image_t::load_topmost_queued_picture()
 
 
 
-void fill_circle(const graphics::program_t& prog, point_t center, const float radius, const unsigned int steps)
+void fill_circle(const graphics::program_t& prog, point_t center, const float radius, const unsigned int steps) noexcept
 {
     if (radius > 0.f && steps > 4)
     {
@@ -338,7 +338,7 @@ void fill_circle(const graphics::program_t& prog, point_t center, const float ra
     }
 }
 
-void draw_circle(const graphics::program_t& prog, point_t center, const float radius, const unsigned int steps)
+void draw_circle(const graphics::program_t& prog, point_t center, const float radius, const unsigned int steps) noexcept
 {
     if (radius > 0.f && steps > 4)
     {
@@ -353,7 +353,7 @@ void draw_circle(const graphics::program_t& prog, point_t center, const float ra
     }
 }
 
-void fill_rectangle(const graphics::program_t& prog, const rect_t &rect)
+void fill_rectangle(const graphics::program_t& prog, const rect_t &rect) noexcept
 {
     const float v[] = {
             rect.left, rect.top,  rect.right, rect.top,
@@ -364,7 +364,7 @@ void fill_rectangle(const graphics::program_t& prog, const rect_t &rect)
     gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
 }
 
-void draw_rectangle(const graphics::program_t& prog, const rect_t &rect)
+void draw_rectangle(const graphics::program_t& prog, const rect_t &rect) noexcept
 {
     const float v[] = {
             rect.left, rect.top,  rect.right, rect.top,
@@ -376,13 +376,13 @@ void draw_rectangle(const graphics::program_t& prog, const rect_t &rect)
     gl::DrawArrays(gl::LINE_STRIP, 0, 5);
 }
 
-void fill_screen(const graphics::core& gl, const graphics::program_t& prog)
+void fill_screen(const graphics::core& gl, const graphics::program_t& prog) noexcept
 {
     prog.position_vertex(gl.draw_bounds_verts.data());
     gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
 }
 
-void fill_rectangle(const graphics::program_t& prog, point_t rect)
+void fill_rectangle(const graphics::program_t& prog, point_t rect) noexcept
 {
     const float v[] = {
             0, 0,  rect.x, 0,
@@ -392,7 +392,7 @@ void fill_rectangle(const graphics::program_t& prog, point_t rect)
     gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
 }
 
-void draw_rectangle(const graphics::program_t& prog, point_t rect)
+void draw_rectangle(const graphics::program_t& prog, point_t rect) noexcept
 {
     const float v[] = {
             0, 0,  rect.x, 0,
@@ -405,7 +405,7 @@ void draw_rectangle(const graphics::program_t& prog, point_t rect)
 
 #define ROUND_RECTANGLE_DRAW_STEPS 5
 
-void fill_round_rectangle(const graphics::program_t& prog, const rect_t &rect, const float radius)
+void fill_round_rectangle(const graphics::program_t& prog, const rect_t &rect, const float radius) noexcept
 {
     if (radius <= 0.f) {
         fill_rectangle(prog, rect);
@@ -427,7 +427,7 @@ void fill_round_rectangle(const graphics::program_t& prog, const rect_t &rect, c
     }
 }
 
-void image_t::draw(const graphics::textured_program_t& prog) const
+void image_t::draw(const graphics::textured_program_t& prog) const noexcept
 {
     const float v[] = {
             0, 0,  static_cast<float>(width), 0,
@@ -445,7 +445,7 @@ void image_t::draw(const graphics::textured_program_t& prog) const
     gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
 }
 
-void image_t::draw(const graphics::textured_program_t& prog, point_t p) const
+void image_t::draw(const graphics::textured_program_t& prog, point_t p) const noexcept
 {
     const float v[] = {
             p.x, p.y,  p.x + width, p.y,
@@ -462,7 +462,7 @@ void image_t::draw(const graphics::textured_program_t& prog, point_t p) const
     gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
 }
 
-void image_t::draw(const graphics::textured_program_t& prog, point_t p, const rect_t &rect) const
+void image_t::draw(const graphics::textured_program_t& prog, point_t p, const rect_t &rect) const noexcept
 {
     const float _w = fabsf(rect.right - rect.left), _h = fabsf(rect.bottom - rect.top), tx = tex.x / width, ty = tex.y / height;
     const float v[] = {
@@ -480,7 +480,7 @@ void image_t::draw(const graphics::textured_program_t& prog, point_t p, const re
     gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
 }
 
-void image_t::draw(const graphics::textured_program_t& prog, const rect_t &rect) const
+void image_t::draw(const graphics::textured_program_t& prog, const rect_t &rect) const noexcept
 {
     const float _w = fabsf(rect.right - rect.left), _h = fabsf(rect.bottom - rect.top), tx = tex.x / width, ty = tex.y / height;
     const float v[] = {

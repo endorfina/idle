@@ -46,12 +46,12 @@ struct x11_display
 
     x11_display() = delete;
 
-    static const x11_display& cast(const context::data_t& data)
+    static const x11_display& cast(const context::data_t& data) noexcept
     {
         return *std::launder(reinterpret_cast<const x11_display*>(data));
     }
 
-    static x11_display& cast(context::data_t& data)
+    static x11_display& cast(context::data_t& data) noexcept
     {
         return *std::launder(reinterpret_cast<x11_display*>(data));
     }
@@ -61,13 +61,13 @@ struct x11_display
 Atom wmDeleteMessage;
 #endif
 
-int x_fatal_error_handler(Display *)
+int x_fatal_error_handler(Display *) noexcept
 {
     LOGE(u8"\U0001F480 (Display destroyed)");
     return 0;
 }
 
-int x_error_handler(Display *dpy, XErrorEvent *ev)
+int x_error_handler(Display *dpy, XErrorEvent *ev) noexcept
 {
     char str[250];
     XGetErrorText(dpy, ev->error_code, str, 250);
@@ -79,7 +79,7 @@ static_assert(sizeof(x11_display) <= sizeof(context::data_t));
 
 } // namespace
 
-context::context()
+context::context() noexcept
 {
     auto& x = x11_display::cast(data);
 
@@ -250,13 +250,13 @@ context::context()
     commands.insert(command::GainedFocus); // TODO: Make X handle focus as to reduce resource usage when idle
 }
 
-void context::buffer_swap()
+void context::buffer_swap() noexcept
 {
     auto& x = x11_display::cast(data);
     glXSwapBuffers(x.display, x.window);
 }
 
-void context::event_loop_back(bool)
+void context::event_loop_back(bool) noexcept
 {
     auto& x = x11_display::cast(data);
     XEvent xev;
@@ -310,19 +310,19 @@ void context::event_loop_back(bool)
     }
 }
 
-context::~context()
+context::~context() noexcept
 {
     LOGDD("context::~context");
     terminate_display();
 }
 
-bool context::has_opengl() const
+bool context::has_opengl() const noexcept
 {
     auto& x = x11_display::cast(data);
     return !!x.display;
 }
 
-void context::terminate_display()
+void context::terminate_display() noexcept
 {
     auto& x = x11_display::cast(data);
 
@@ -339,17 +339,17 @@ void context::terminate_display()
     }
 }
 
-asset::operator bool() const
+asset::operator bool() const noexcept
 {
     return !!size;
 }
 
-std::string_view asset::view() const
+std::string_view asset::view() const noexcept
 {
     return { reinterpret_cast<const char*>(ptr.get()), size };
 }
 
-asset asset::hold(std::string path)
+asset asset::hold(std::string path) noexcept
 {
     path.insert(0, "assets/");
 
@@ -380,7 +380,7 @@ asset asset::hold(std::string path)
     return {};
 }
 
-asset asset::hold(const char * path)
+asset asset::hold(const char * path) noexcept
 {
     return hold(std::string{path});
 }

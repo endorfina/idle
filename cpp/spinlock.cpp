@@ -22,12 +22,12 @@
 namespace idle
 {
 
-void spin_lock::lock()
+void spin_lock::lock() noexcept
 {
     while (flag.test_and_set(std::memory_order_acquire));
 }
 
-void spin_lock::unlock()
+void spin_lock::unlock() noexcept
 {
     flag.clear(std::memory_order_release);
 }

@@ -34,7 +34,7 @@ namespace
 {
 
 #ifndef NDEBUG
-void detailed_report_opengl_errors(const char* op, const char *const file, const int line)
+void detailed_report_opengl_errors(const char* op, const char *const file, const int line) noexcept
 {
     if (assert_opengl_errors())
     {
@@ -47,7 +47,7 @@ void detailed_report_opengl_errors(const char* op, const char *const file, const
 #define report_opengl_errors(x) ((void)0)
 #endif
 
-GLuint load_shader(const GLenum shaderType, const char* const pSource)
+GLuint load_shader(const GLenum shaderType, const char* const pSource) noexcept
 {
     if (const GLuint shader = gl::CreateShader(shaderType))
     {
@@ -77,7 +77,7 @@ GLuint load_shader(const GLenum shaderType, const char* const pSource)
     return 0;
 }
 
-GLuint create_program(const char* const pVertexSource, const char* const pFragmentSource)
+GLuint create_program(const char* const pVertexSource, const char* const pFragmentSource) noexcept
 {
     const GLuint vertexShader = load_shader(gl::VERTEX_SHADER, pVertexSource);
     if (!vertexShader)
@@ -122,18 +122,18 @@ class shader_compiler
     buffer_type buffer;
 
 public:
-    shader_compiler(const std::string_view view)
+    shader_compiler(const std::string_view view) noexcept
         : failed(!decompress(view))
     {
     }
 
 private:
-    const char * data(const unsigned int addr) const
+    const char * data(const unsigned int addr) const noexcept
     {
         return &buffer[addr];
     }
 
-    bool decompress(const std::string_view source)
+    bool decompress(const std::string_view source) noexcept
     {
         if (const auto buf = idle::zlib<std::vector<unsigned char>>(source, false, true);
                     buf && buf->size() == Size)
@@ -145,7 +145,7 @@ private:
     }
 
 public:
-    GLuint compile(const unsigned int v, const unsigned int f)
+    GLuint compile(const unsigned int v, const unsigned int f) noexcept
     {
         if (!has_failed())
         {
@@ -159,14 +159,14 @@ public:
         return 0;
     }
 
-    bool has_failed() const
+    bool has_failed() const noexcept
     {
         return failed;
     }
 };
 
 template<typename Call>
-void apply_to_all(core::program_container_t& con, const Call& call)
+void apply_to_all(core::program_container_t& con, const Call& call) noexcept
 {
     call(con.render_final);
     call(con.render_masked);
@@ -182,7 +182,7 @@ void apply_to_all(core::program_container_t& con, const Call& call)
     call(con.gradient);
 }
 
-bool compile_shaders(core::program_container_t& prog)
+bool compile_shaders(core::program_container_t& prog) noexcept
 {
     using source = shaders::source_info;
     shader_compiler<source::size_uncompressed> sc{ shaders::get_view() };
@@ -210,12 +210,12 @@ bool compile_shaders(core::program_container_t& prog)
 }
 
 template<typename...Progs>
-bool programs_are_functional(const Progs& ... progs)
+bool programs_are_functional(const Progs& ... progs) noexcept
 {
     return (true && ... && !!progs.program_id);
 }
 
-buffer_size appropriate_size(const buffer_size size)
+buffer_size appropriate_size(const buffer_size size) noexcept
 {
     buffer_size u{ 64, 64 };
     while (u.x < size.x) u.x *= 2;
@@ -223,7 +223,7 @@ buffer_size appropriate_size(const buffer_size size)
     return u;
 }
 
-GLuint load_attribute(const GLuint program, const char* const variable_name)
+GLuint load_attribute(const GLuint program, const char* const variable_name) noexcept
 {
     const auto handle = static_cast<GLuint>(gl::GetAttribLocation(program, variable_name));
     gl::EnableVertexAttribArray(handle);
@@ -231,7 +231,7 @@ GLuint load_attribute(const GLuint program, const char* const variable_name)
     return handle;
 }
 
-GLint load_uniform(const GLuint program, const char* const variable_name)
+GLint load_uniform(const GLuint program, const char* const variable_name) noexcept
 {
     const auto handle = gl::GetUniformLocation(program, variable_name);
     report_opengl_errors(variable_name);
@@ -240,7 +240,7 @@ GLint load_uniform(const GLuint program, const char* const variable_name)
 
 }  // namespace
 
-bool core::setup_graphics()
+bool core::setup_graphics() noexcept
 {
     gl::Disable(gl::CULL_FACE);
     gl::Disable(gl::DEPTH_TEST);
@@ -270,7 +270,7 @@ bool core::setup_graphics()
     return true;
 }
 
-bool core::resize(const buffer_size window_size)
+bool core::resize(const buffer_size window_size) noexcept
 {
     if (window_size.x * 4 / 5 < window_size.y)
     {
@@ -336,151 +336,151 @@ bool core::resize(const buffer_size window_size)
 }
 
 
-void program_t::set_transform(const idle::mat4x4_t& f) const
+void program_t::set_transform(const idle::mat4x4_t& f) const noexcept
 {
     gl::UniformMatrix4fv(model_handle, 1, gl::FALSE_, static_cast<const GLfloat*>(f));
 }
 
-void program_t::set_transform(const idle::mat4x4_noopt_t& f) const
+void program_t::set_transform(const idle::mat4x4_noopt_t& f) const noexcept
 {
     gl::UniformMatrix4fv(model_handle, 1, gl::FALSE_, static_cast<const GLfloat*>(f));
 }
 
 static constexpr auto identity_mat = idle::mat4x4_t{};
 
-void program_t::set_identity(void) const
+void program_t::set_identity(void) const noexcept
 {
     gl::UniformMatrix4fv(model_handle, 1, gl::FALSE_, static_cast<const GLfloat*>(identity_mat));
 }
 
-void program_t::set_view_transform(const idle::mat4x4_t& f) const
+void program_t::set_view_transform(const idle::mat4x4_t& f) const noexcept
 {
     gl::UniformMatrix4fv(view_handle, 1, gl::FALSE_, static_cast<const GLfloat*>(f));
 }
 
-void program_t::set_view_transform(const idle::mat4x4_noopt_t& f) const
+void program_t::set_view_transform(const idle::mat4x4_noopt_t& f) const noexcept
 {
     gl::UniformMatrix4fv(view_handle, 1, gl::FALSE_, static_cast<const GLfloat*>(f));
 }
 
-void program_t::set_view_identity(void) const
+void program_t::set_view_identity(void) const noexcept
 {
     gl::UniformMatrix4fv(view_handle, 1, gl::FALSE_, static_cast<const GLfloat*>(identity_mat));
 }
 
-void render_program_t::use() const
+void render_program_t::use() const noexcept
 {
     gl::UseProgram(program);
 }
 
-void program_t::use() const
+void program_t::use() const noexcept
 {
     gl::UseProgram(program_id);
 }
 
-void program_t::set_color(const idle::color_t& c) const
+void program_t::set_color(const idle::color_t& c) const noexcept
 {
     gl::Uniform4f(color_handle, c.r, c.g, c.b, c.a);
 }
 
-void program_t::set_color(const idle::color_t& c, GLfloat custom_alpha) const
+void program_t::set_color(const idle::color_t& c, GLfloat custom_alpha) const noexcept
 {
     gl::Uniform4f(color_handle, c.r, c.g, c.b, custom_alpha);
 }
 
-void program_t::position_vertex(const GLfloat *f) const
+void program_t::position_vertex(const GLfloat *f) const noexcept
 {
     gl::VertexAttribPointer(position_handle, 2, gl::FLOAT, gl::FALSE_, 0, f);
 }
 
-void textured_program_t::texture_vertex(const GLfloat *f) const
+void textured_program_t::texture_vertex(const GLfloat *f) const noexcept
 {
     gl::VertexAttribPointer(texture_position_handle, 2, gl::FLOAT, gl::FALSE_, 0, f);
 }
 
-void double_base_program_t::destination_vertex(const GLfloat *f) const
+void double_base_program_t::destination_vertex(const GLfloat *f) const noexcept
 {
     gl::VertexAttribPointer(destination_handle, 2, gl::FLOAT, gl::FALSE_, 0, f);
 }
 
-void text_program_t::set_text_offset(const idle::point_t offset) const
+void text_program_t::set_text_offset(const idle::point_t offset) const noexcept
 {
     gl::Uniform2f(font_offset_handle, offset.x, offset.y);
 }
 
-void double_base_program_t::set_interpolation(const GLfloat x) const
+void double_base_program_t::set_interpolation(const GLfloat x) const noexcept
 {
     gl::Uniform1f(interpolation_handle, x);
 }
 
-void fullbg_program_t::set_offset(const GLfloat x) const
+void fullbg_program_t::set_offset(const GLfloat x) const noexcept
 {
     gl::Uniform1f(offset_handle, x);
 }
 
-void fullbg_program_t::set_resolution(const idle::point_t res) const
+void fullbg_program_t::set_resolution(const idle::point_t res) const noexcept
 {
     gl::Uniform2f(resolution_handle, res.x, res.y);
 }
 
-void noise_program_t::set_secondary_color(const idle::color_t& c) const
+void noise_program_t::set_secondary_color(const idle::color_t& c) const noexcept
 {
     gl::Uniform4f(secondary_color_handle, c.r, c.g, c.b, c.a);
 }
 
-void noise_program_t::set_tertiary_color(const idle::color_t& c) const
+void noise_program_t::set_tertiary_color(const idle::color_t& c) const noexcept
 {
     gl::Uniform4f(tertiary_color_handle, c.r, c.g, c.b, c.a);
 }
 
-void noise_program_t::set_seed(const idle::point_t seed) const
+void noise_program_t::set_seed(const idle::point_t seed) const noexcept
 {
     gl::Uniform2f(noise_seed_handle, seed.x, seed.y);
 }
 
-void gradient_program_t::set_secondary_color(const idle::color_t& c) const
+void gradient_program_t::set_secondary_color(const idle::color_t& c) const noexcept
 {
     gl::Uniform4f(secondary_color_handle, c.r, c.g, c.b, c.a);
 }
 
-void gradient_program_t::set_secondary_color(const idle::color_t& c, const float alpha) const
+void gradient_program_t::set_secondary_color(const idle::color_t& c, const float alpha) const noexcept
 {
     gl::Uniform4f(secondary_color_handle, c.r, c.g, c.b, alpha);
 }
 
-void gradient_program_t::interpolation_vertex(const GLfloat *f) const
+void gradient_program_t::interpolation_vertex(const GLfloat *f) const noexcept
 {
     gl::VertexAttribPointer(interpolation_handle, 1, gl::FLOAT, gl::FALSE_, 0, f);
 }
 
-void blur_render_program_t::set_direction(const GLfloat x, const GLfloat y) const
+void blur_render_program_t::set_direction(const GLfloat x, const GLfloat y) const noexcept
 {
     gl::Uniform2f(direction_handle, x, y);
 }
 
-void blur_render_program_t::set_radius(const GLfloat rad) const
+void blur_render_program_t::set_radius(const GLfloat rad) const noexcept
 {
     gl::Uniform1f(radius_handle, rad);
 }
 
-void blur_render_program_t::set_resolution(const GLfloat res) const
+void blur_render_program_t::set_resolution(const GLfloat res) const noexcept
 {
     gl::Uniform1f(resolution_handle, res);
 }
 
-void masked_render_program_t::set_offsets(const GLfloat ratio1, const GLfloat ratio2, const GLfloat buffer_height, const GLfloat subbuffer_width) const
+void masked_render_program_t::set_offsets(const GLfloat ratio1, const GLfloat ratio2, const GLfloat buffer_height, const GLfloat subbuffer_width) const noexcept
 {
     gl::Uniform4f(mask_offset_handle, ratio1, ratio2, buffer_height, subbuffer_width);
 }
 
-void render_program_t::prepare()
+void render_program_t::prepare() noexcept
 {
     use();
     position_handle = load_attribute(program, "attr_pos");
     texture_position_handle = load_attribute(program, "attr_mapped_vec");
 }
 
-void program_t::prepare()
+void program_t::prepare() noexcept
 {
     use();
     position_handle = load_attribute(program_id, "attr_pos");
@@ -493,14 +493,14 @@ void program_t::prepare()
     report_opengl_errors("program_t::prepare()");
 }
 
-void textured_program_t::prepare()
+void textured_program_t::prepare() noexcept
 {
     program_t::prepare();
     texture_position_handle = load_attribute(program_id,"attr_mapped_vec");
     report_opengl_errors("textured_program_t::prepare()");
 }
 
-void noise_program_t::prepare()
+void noise_program_t::prepare() noexcept
 {
     textured_program_t::prepare();
     secondary_color_handle = load_uniform(program_id, "u_color_2");
@@ -510,7 +510,7 @@ void noise_program_t::prepare()
     report_opengl_errors("noise_program_t::prepare()");
 }
 
-void gradient_program_t::prepare()
+void gradient_program_t::prepare() noexcept
 {
     program_t::prepare();
     secondary_color_handle = load_uniform(program_id, "u_color_2");
@@ -518,14 +518,14 @@ void gradient_program_t::prepare()
     report_opengl_errors("gradient_program_t::prepare()");
 }
 
-void text_program_t::prepare()
+void text_program_t::prepare() noexcept
 {
     textured_program_t::prepare();
     font_offset_handle = load_uniform(program_id, "u_offset");
     report_opengl_errors("text_program_t::prepare()");
 }
 
-void fullbg_program_t::prepare()
+void fullbg_program_t::prepare() noexcept
 {
     program_t::prepare();
     offset_handle = load_uniform(program_id, "u_speed");
@@ -535,7 +535,7 @@ void fullbg_program_t::prepare()
     report_opengl_errors("fullbg_program_t::prepare()");
 }
 
-void double_base_program_t::prepare_headless(const GLuint prog)
+void double_base_program_t::prepare_headless(const GLuint prog) noexcept
 {
     destination_handle = load_attribute(prog,"attr_dest_pos");
     interpolation_handle = load_uniform(prog, "u_inter");
@@ -545,19 +545,19 @@ void double_base_program_t::prepare_headless(const GLuint prog)
     report_opengl_errors("double_base_program_t::prepare()");
 }
 
-void double_solid_program_t::prepare()
+void double_solid_program_t::prepare() noexcept
 {
     program_t::prepare();
     double_base_program_t::prepare_headless(program_id);
 }
 
-void double_vertex_program_t::prepare()
+void double_vertex_program_t::prepare() noexcept
 {
     textured_program_t::prepare();
     double_base_program_t::prepare_headless(program_id);
 }
 
-void blur_render_program_t::prepare()
+void blur_render_program_t::prepare() noexcept
 {
     render_program_t::prepare();
     direction_handle = load_uniform(program, "u_direction");
@@ -568,13 +568,13 @@ void blur_render_program_t::prepare()
     set_radius(1.f);
 }
 
-void masked_render_program_t::prepare()
+void masked_render_program_t::prepare() noexcept
 {
     render_program_t::prepare();
     mask_offset_handle = load_uniform(program, "u_offset");
 }
 
-void render_program_t::draw_buffer(const render_buffer_t& src) const
+void render_program_t::draw_buffer(const render_buffer_t& src) const noexcept
 {
     constexpr float v[]
     {
@@ -601,13 +601,13 @@ void render_program_t::draw_buffer(const render_buffer_t& src) const
 
 
 
-static void set_projection_matrix(const program_t& prog, const idle::mat4x4_noopt_t& mat)
+static void set_projection_matrix(const program_t& prog, const idle::mat4x4_noopt_t& mat) noexcept
 {
     prog.use();
     gl::UniformMatrix4fv(load_uniform(prog.program_id, "u_projm"), 1, gl::FALSE_, static_cast<const GLfloat*>(mat));
 }
 
-void core::copy_projection_matrix(const idle::mat4x4_noopt_t& projection_matrix) const
+void core::copy_projection_matrix(const idle::mat4x4_noopt_t& projection_matrix) const noexcept
 {
     set_projection_matrix(prog.normal, projection_matrix);
     set_projection_matrix(prog.fill, projection_matrix);
@@ -619,12 +619,12 @@ void core::copy_projection_matrix(const idle::mat4x4_noopt_t& projection_matrix)
     set_projection_matrix(prog.gradient, projection_matrix);
 }
 
-std::unique_ptr<const render_buffer_t> core::new_render_buffer(const unsigned div) const
+std::unique_ptr<const render_buffer_t> core::new_render_buffer(const unsigned div) const noexcept
 {
     return std::make_unique<const render_buffer_t>(viewport_size / div, render_quality);
 }
 
-render_buffer_t::~render_buffer_t()
+render_buffer_t::~render_buffer_t() noexcept
 {
     LOGDD("Destroying fr%i/t%i/d%i", buffer_frame, texture, buffer_depth);
     gl::DeleteFramebuffers(1, &buffer_frame);
@@ -632,7 +632,7 @@ render_buffer_t::~render_buffer_t()
     gl::DeleteRenderbuffers(1, &buffer_depth);
 }
 
-render_buffer_t::render_buffer_t(const buffer_size tex_size, const GLint quality)
+render_buffer_t::render_buffer_t(const buffer_size tex_size, const GLint quality) noexcept
     : internal_size(tex_size)
 {
     gl::GenFramebuffers(1, &buffer_frame);
@@ -669,45 +669,45 @@ render_buffer_t::render_buffer_t(const buffer_size tex_size, const GLint quality
     gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
 }
 
-void core::clean()
+void core::clean() noexcept
 {
     fonts.regular.reset();
     fonts.title.reset();
     render_buffer_masked.reset();
 }
 
-void core::view_normal() const
+void core::view_normal() const noexcept
 {
     gl::Viewport(0, 0, viewport_size.x, viewport_size.y);
 }
 
-void core::view_mask() const
+void core::view_mask() const noexcept
 {
     gl::Viewport(0, viewport_size.y, viewport_size.x / 3, viewport_size.y / 3);
 }
 
-void core::view_distortion() const
+void core::view_distortion() const noexcept
 {
     gl::Viewport(viewport_size.x / 3, viewport_size.y, viewport_size.x / 3, viewport_size.y / 3);
 }
 
-unique_texture::unique_texture(const GLuint val) : value{val}
+unique_texture::unique_texture(const GLuint val) noexcept : value{val}
 {
 }
 
-unique_texture::unique_texture(unique_texture&& other) : value{other.value}
+unique_texture::unique_texture(unique_texture&& other) noexcept : value{other.value}
 {
     other.value = GLuint(-1);
 }
 
-unique_texture& unique_texture::operator=(unique_texture&& other)
+unique_texture& unique_texture::operator=(unique_texture&& other) noexcept
 {
     value = other.value;
     other.value = GLuint(-1);
     return *this;
 }
 
-unique_texture::~unique_texture()
+unique_texture::~unique_texture() noexcept
 {
     if (value != GLuint(-1))
     {
@@ -716,12 +716,12 @@ unique_texture::~unique_texture()
     }
 }
 
-GLuint unique_texture::get() const
+GLuint unique_texture::get() const noexcept
 {
     return value;
 }
 
-bool assert_opengl_errors()
+bool assert_opengl_errors() noexcept
 {
     if (auto error = gl::GetError(); error != gl::NO_ERROR_)
     {

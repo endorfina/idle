@@ -37,39 +37,39 @@ class asset
     AAsset * file = nullptr;
     std::string_view data;
 
-    asset() = default;
-    asset(AAsset*, std::string_view);
+    asset() noexcept = default;
+    asset(AAsset*, std::string_view) noexcept;
 
 public:
-    asset(asset&&);
+    asset(asset&&) noexcept;
 
-    ~asset();
+    ~asset() noexcept;
 
 #else
 private:
     std::unique_ptr<unsigned char[]> ptr;
     size_t size = 0;
 
-    asset() = default;
+    asset() noexcept = default;
 
     template<typename Ptr>
-    asset(Ptr&& p, size_t s)
+    asset(Ptr&& p, size_t s) noexcept
         : ptr(std::forward<Ptr>(p)), size(s) {}
 
 public:
-    asset(asset&&) = default;
+    asset(asset&&) noexcept = default;
 
 #endif
 
-    operator bool() const;
+    operator bool() const noexcept;
 
-    std::string_view view() const;
+    std::string_view view() const noexcept;
 
     asset(const asset&) = delete;
 
-    static asset hold(const char * path);
+    static asset hold(const char * path) noexcept;
 
-    static asset hold(std::string path);
+    static asset hold(std::string path) noexcept;
 };
 
 }  // namespace platform

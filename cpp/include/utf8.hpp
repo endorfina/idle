@@ -53,7 +53,7 @@ struct is_view<
         > : public std::true_type {};
 
 template<typename A>
-constexpr A remove_potential_BOM(A text)
+constexpr A remove_potential_BOM(A text) noexcept
 {
     std::conditional_t<is_view<A>::value, decltype(text.data()), const unsigned char *> check = nullptr;
     if constexpr (is_view<A>::value) {
@@ -79,17 +79,19 @@ constexpr A remove_potential_BOM(A text)
 }
 
 template <typename Char>
-constexpr auto scoop(Char c) {
+constexpr auto scoop(Char c) noexcept
+{
     return static_cast<uint8_t>(c) & 0x3f; // Scoop dat 10xxxxxx, yo
 }
 
 template <typename Char>
-constexpr bool check(Char c) {
+constexpr bool check(Char c) noexcept
+{
     return static_cast<uint8_t>(c) >> 6 == 0x2;
 }
 
 template <typename CharIt>
-constexpr unsigned short sequence_length(CharIt it)
+constexpr unsigned short sequence_length(CharIt it) noexcept
 {
     const auto byte = static_cast<uint8_t>(*it);
     // 0xxxxxxx
@@ -108,7 +110,7 @@ constexpr unsigned short sequence_length(CharIt it)
 }
 
 template <typename CharIt>
-constexpr utf8int_t get_2(CharIt it) // Can be inlined?
+constexpr utf8int_t get_2(CharIt it) noexcept // Can be inlined?
 {
     if (check(it[1]))
         return ((static_cast<utf8int_t>(*it) & 0x1f) << 6) + scoop(it[1]);
@@ -116,7 +118,7 @@ constexpr utf8int_t get_2(CharIt it) // Can be inlined?
 }
 
 template <typename CharIt>
-constexpr utf8int_t get_3(CharIt it)
+constexpr utf8int_t get_3(CharIt it) noexcept
 {
     utf8int_t code_point = static_cast<utf8int_t>(*it) & 0xf;
     if (check(it[1]) && check(it[2])) {
@@ -127,7 +129,7 @@ constexpr utf8int_t get_3(CharIt it)
 }
 
 template <typename CharIt>
-constexpr utf8int_t get_4(CharIt it)
+constexpr utf8int_t get_4(CharIt it) noexcept
 {
     utf8int_t code_point = static_cast<utf8int_t>(*it) & 0x7;
     if (check(it[1]) && check(it[2]) && check(it[3])) {
@@ -140,7 +142,7 @@ constexpr utf8int_t get_4(CharIt it)
 
 /* 5 and 6 byte encoding are an extension of the standard */
 template <typename CharIt>
-constexpr utf8int_t get_5(CharIt it)
+constexpr utf8int_t get_5(CharIt it) noexcept
 {
     utf8int_t code_point = static_cast<utf8int_t>(*it) & 0x3;
     if (check(it[1]) && check(it[2]) && check(it[3]) && check(it[4])) {
@@ -153,7 +155,7 @@ constexpr utf8int_t get_5(CharIt it)
 }
 
 template <typename CharIt>
-constexpr utf8int_t get_6(CharIt it)
+constexpr utf8int_t get_6(CharIt it) noexcept
 {
     utf8int_t code_point = static_cast<utf8int_t>(*it) & 0x1;
     if (check(it[1]) && check(it[2]) && check(it[3]) && check(it[4]) && check(it[5])) {
@@ -167,7 +169,7 @@ constexpr utf8int_t get_6(CharIt it)
 }
 
 template <typename CharIt>
-constexpr utf8int_t get_switch(CharIt it, unsigned size)
+constexpr utf8int_t get_switch(CharIt it, unsigned size) noexcept
 {
     switch(size) {
         case 1:
@@ -190,7 +192,7 @@ constexpr utf8int_t get_switch(CharIt it, unsigned size)
 
 /* WARNING: May overflow, check sequence length first */
 template <typename CharIt>
-constexpr CharIt put(CharIt it,  utf8int_t code)
+constexpr CharIt put(CharIt it,  utf8int_t code) noexcept
 {
     if (code < 0x80)
         *it++ = static_cast<uint8_t>(code);
@@ -230,7 +232,7 @@ constexpr CharIt put(CharIt it,  utf8int_t code)
 }
 
 template <typename CharIt>
-constexpr CharIt put_switch(CharIt it, const unsigned size, utf8int_t code)
+constexpr CharIt put_switch(CharIt it, const unsigned size, utf8int_t code) noexcept
 {
     switch(size)
     {
@@ -277,7 +279,8 @@ constexpr CharIt put_switch(CharIt it, const unsigned size, utf8int_t code)
 }
 
 /* In accordance with the previous function */
-constexpr unsigned short code_length(const utf8int_t code) {
+constexpr unsigned short code_length(const utf8int_t code) noexcept
+{
     if (code < 0x80)
         return 1;
     else if (code < 0x800)
@@ -298,7 +301,7 @@ constexpr unsigned short code_length(const utf8int_t code) {
 
 
 template<class Iter>
-constexpr Iter _find_unicode_(Iter p, const size_t n, const unsigned cp)
+constexpr Iter _find_unicode_(Iter p, const size_t n, const unsigned cp) noexcept
 {
     const auto e = p + n;
     while (p < e) {
@@ -313,7 +316,7 @@ constexpr Iter _find_unicode_(Iter p, const size_t n, const unsigned cp)
 }
 
 template<class Str>
-constexpr size_t find_unicode(const Str &s_, const unsigned c_, const size_t pos_ = 0)
+constexpr size_t find_unicode(const Str &s_, const unsigned c_, const size_t pos_ = 0) noexcept
 {
     const size_t size_ = s_.size();
     if (pos_ < size_)
@@ -328,7 +331,7 @@ constexpr size_t find_unicode(const Str &s_, const unsigned c_, const size_t pos
 }
 
 template<class Iter, class A, typename = std::enable_if_t<!std::is_arithmetic_v<A>>>
-constexpr Iter _find_unicode_array_(Iter p, const size_t n, const A &cp)
+constexpr Iter _find_unicode_array_(Iter p, const size_t n, const A &cp) noexcept
 {
     using value_type = std::decay_t<decltype(cp[0])>;
     static_assert(std::is_arithmetic_v<value_type> || std::is_enum_v<value_type>);
@@ -352,7 +355,7 @@ constexpr Iter _find_unicode_array_(Iter p, const size_t n, const A &cp)
 }
 
 template<class Str, class N, typename = std::enable_if_t<!std::is_arithmetic_v<N>>>
-constexpr size_t find_unicode_array(const Str &s_, N &&c_, const size_t pos_ = 0)
+constexpr size_t find_unicode_array(const Str &s_, N &&c_, const size_t pos_ = 0) noexcept
 {
     const size_t size_ = s_.size();
     if (pos_ < size_)
@@ -377,98 +380,110 @@ class translator
     size_t _pos = 0;
     unsigned _len = 1;
 
-    constexpr void get_length_(void) {
+    constexpr void get_length_(void) noexcept
+    {
         _len = is_at_end() ? 0
             : sequence_length(&_data[_pos]);
         if (_len > 4 || _pos + _len > _data.size()) // Invalid sequence
             _len = 0;
     }
 
-    constexpr void iterate_(void) { _pos += _len; get_length_(); }
+    constexpr void iterate_(void) noexcept { _pos += _len; get_length_(); }
 
 public:
 
     struct end_sentinel_ {
-        constexpr bool operator==(const translator &_t) {
+        constexpr bool operator==(const translator &_t) noexcept
+        {
             return _t.is_at_end();
         }
-        constexpr bool operator!=(const translator &_t) {
+        constexpr bool operator!=(const translator &_t) noexcept
+        {
             return !_t.is_at_end();
         }
 
-        friend constexpr bool operator!=(end_sentinel_ _es, const translator &_t) {
+        friend constexpr bool operator!=(end_sentinel_ _es, const translator &_t) noexcept
+        {
             return !_t.is_at_end();
         }
-        friend constexpr bool operator!=(const translator &_t, end_sentinel_ _es) {
+        friend constexpr bool operator!=(const translator &_t, end_sentinel_ _es) noexcept
+        {
             return !_t.is_at_end();
         }
     };
 
-    constexpr translator() = default;
-    constexpr translator(const translator &) = default;
-    constexpr translator(translator &&) = default;
-    constexpr translator &operator=(const translator &) = default;
-    constexpr translator &operator=(translator &&) = default;
+    constexpr translator() noexcept = default;
+    constexpr translator(const translator &) noexcept = default;
+    constexpr translator(translator &&) noexcept = default;
+    constexpr translator &operator=(const translator &) noexcept = default;
+    constexpr translator &operator=(translator &&) noexcept = default;
 
-    constexpr translator(const view_t &_sv) : _data(remove_potential_BOM(_sv)), _pos(0), _len(1) { get_length_(); }
-    constexpr translator &operator=(const view_t &_sv) { _data = _sv; _data = remove_potential_BOM(_data); _pos = 0; _len = 1; get_length_(); return *this; }
+    constexpr translator(const view_t &_sv) noexcept : _data(remove_potential_BOM(_sv)), _pos(0), _len(1) { get_length_(); }
+    constexpr translator &operator=(const view_t &_sv) noexcept { _data = _sv; _data = remove_potential_BOM(_data); _pos = 0; _len = 1; get_length_(); return *this; }
 
-    constexpr bool is_at_end() const { return _len == 0 || _pos >= _data.size(); }
-    constexpr utf8int_t get() const { return is_at_end() ? 0x0 : get_switch(&_data[_pos], _len); }
-    constexpr utf8int_t get_and_iterate() { utf8int_t i = get(); iterate_(); return i; }
-    constexpr operator utf8int_t() const { return get(); }
-    constexpr auto get_pos() const { return _pos; }
-    constexpr auto get_len() const { return _len; }
-    constexpr void set_pos(size_t _p) { _pos = _p; get_length_(); }
-    constexpr auto substr() { return _data.substr(_pos); }
-    constexpr auto substr(size_t p, size_t s = view_t::npos) { return _data.substr(p, s); }
-    constexpr auto size() const { return _data.size(); }
+    constexpr bool is_at_end() const noexcept { return _len == 0 || _pos >= _data.size(); }
+    constexpr utf8int_t get() const noexcept { return is_at_end() ? 0x0 : get_switch(&_data[_pos], _len); }
+    constexpr utf8int_t get_and_iterate() noexcept { utf8int_t i = get(); iterate_(); return i; }
+    constexpr operator utf8int_t() const noexcept { return get(); }
+    constexpr auto get_pos() const noexcept { return _pos; }
+    constexpr auto get_len() const noexcept { return _len; }
+    constexpr void set_pos(size_t _p) noexcept { _pos = _p; get_length_(); }
+    constexpr auto substr() noexcept { return _data.substr(_pos); }
+    constexpr auto substr(size_t p, size_t s = view_t::npos) noexcept { return _data.substr(p, s); }
+    constexpr auto size() const noexcept { return _data.size(); }
 
-    constexpr auto operator*() const { return get(); }
+    constexpr auto operator*() const noexcept { return get(); }
 
-    constexpr translator &operator++() {
+    constexpr translator &operator++() noexcept
+    {
         iterate_();
         return *this;
     }
 
-    constexpr translator operator++(int) {
+    constexpr translator operator++(int) noexcept
+    {
         translator copy{*this};
         this->iterate_();
         return copy;
     }
 
-    constexpr end_sentinel_ end(void) { return {}; }
+    constexpr end_sentinel_ end(void) noexcept { return {}; }
 
-    constexpr translator begin(void) { return translator{_data}; }
+    constexpr translator begin(void) noexcept { return translator{_data}; }
 
-    constexpr auto find_and_iterate(unsigned a) {
+    constexpr auto find_and_iterate(unsigned a) noexcept
+    {
         _pos = std::min(find_unicode(_data, a, _pos), _data.size());
         get_length_();
         return _pos;
     }
 
     template<class N>
-    constexpr auto find_and_iterate_array(N&&a) {
+    constexpr auto find_and_iterate_array(N&&a) noexcept
+    {
         _pos = std::min(find_unicode_array(_data, std::forward<N>(a), _pos), _data.size());
         get_length_();
         return _pos;
     }
 
     template<class Predicate>
-    constexpr void skip_all(Predicate&&p) {
+    constexpr void skip_all(Predicate&&p) noexcept
+    {
         while(!is_at_end() && p(get()))
             iterate_();
     }
 
     template<class Predicate>
-    constexpr auto pop_substr_until(Predicate&&p) {
+    constexpr auto pop_substr_until(Predicate&&p) noexcept
+    {
         const auto i = _pos;
         while(!(is_at_end() || p(get())))
             iterate_();
         return _data.substr(i, _pos - i);
     }
 
-    constexpr void skip_whitespace(void) {
+    constexpr void skip_whitespace(void) noexcept
+    {
         while(!is_at_end() && _len == 1 && !!std::isspace(static_cast<unsigned char>(_data[_pos])))
             iterate_();
     }

@@ -27,7 +27,7 @@
 namespace fonts
 {
 
-static void draw_glyph(const glyph_t& g, const graphics::text_program_t& rcp, const float size, const idle::point_t pos)
+static void draw_glyph(const glyph_t& g, const graphics::text_program_t& rcp, const float size, const idle::point_t pos) noexcept
 {
     const float tex_coords[8]
     {
@@ -42,7 +42,7 @@ static void draw_glyph(const glyph_t& g, const graphics::text_program_t& rcp, co
     gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
 }
 
-void font_t::draw(const graphics::text_program_t& rcp, const std::string_view &str, unsigned int limit) const
+void font_t::draw(const graphics::text_program_t& rcp, const std::string_view &str, unsigned int limit) const noexcept
 {
     if (limit == 0) return;
 
@@ -69,7 +69,7 @@ void font_t::draw(const graphics::text_program_t& rcp, const std::string_view &s
     }
 }
 
-void font_t::draw_custom_animation(const graphics::text_program_t& rcp, const std::string_view &str, const ::math::color<float> &col, const idle::text_animation_data* anim, const unsigned start, const unsigned end) const
+void font_t::draw_custom_animation(const graphics::text_program_t& rcp, const std::string_view &str, const ::math::color<float> &col, const idle::text_animation_data* anim, const unsigned start, const unsigned end) const noexcept
 {
     gl::ActiveTexture(gl::TEXTURE0);
     gl::BindTexture(gl::TEXTURE_2D, texture.get());
@@ -110,7 +110,7 @@ void font_t::draw_custom_animation(const graphics::text_program_t& rcp, const st
     rcp.set_identity();
 }
 
-::idle::point_t font_t::get_extent(const std::string_view& str, float size, unsigned int limit) const
+::idle::point_t font_t::get_extent(const std::string_view& str, float size, unsigned int limit) const noexcept
 {
     float max_line_width = 0;
     int line_amount = 1;
@@ -141,7 +141,7 @@ void font_t::draw_custom_animation(const graphics::text_program_t& rcp, const st
 }
 
 
-std::string font_t::prepare_string(const std::string_view &str, const float size, const float width) const
+std::string font_t::prepare_string(const std::string_view &str, const float size, const float width) const noexcept
 {
     std::string out;
     float current_line_width = 0;

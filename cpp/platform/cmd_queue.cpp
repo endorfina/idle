@@ -22,37 +22,37 @@
 namespace platform
 {
 
-bool command_queue_t::is_full() const
+bool command_queue_t::is_full() const noexcept
 {
     return count >= raw_queue.size();
 }
 
-const command * command_queue_t::begin() const
+const command * command_queue_t::begin() const noexcept
 {
     return &raw_queue[0];
 }
 
-const command * command_queue_t::end() const
+const command * command_queue_t::end() const noexcept
 {
     return begin() + count;
 }
 
-void command_queue_t::insert(const command new_cmd)
+void command_queue_t::insert(const command new_cmd) noexcept
 {
     raw_queue[count++] = new_cmd;
 }
 
-void command_queue_t::clear()
+void command_queue_t::clear() noexcept
 {
     count = 0;
 }
 
-unsigned command_queue_t::size() const
+unsigned command_queue_t::size() const noexcept
 {
     return count;
 }
 
-resize_request_t::resize_request_t(const unsigned width, const unsigned height)
+resize_request_t::resize_request_t(const unsigned width, const unsigned height) noexcept
     : w(width), h(height)
 {
 }

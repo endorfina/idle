@@ -22,18 +22,18 @@
 namespace idle
 {
 
-void crash_handler::crash(std::string_view str)
+void crash_handler::crash(std::string_view str) noexcept
 {
     error_string = str;
     crashed.store(true, std::memory_order_release);
 }
 
-bool crash_handler::has_crashed() const
+bool crash_handler::has_crashed() const noexcept
 {
     return crashed.load(std::memory_order_acquire);
 }
 
-std::string_view crash_handler::get_string() const
+std::string_view crash_handler::get_string() const noexcept
 {
     return error_string;
 }

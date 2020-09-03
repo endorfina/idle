@@ -42,9 +42,9 @@ struct room
 
     std::atomic<animation> model_anim = animation{0, 1, 0.f};
 
-    std::optional<keyring::variant> step(const pointer_wrapper& cursor);
+    std::optional<keyring::variant> step(const pointer_wrapper& cursor) noexcept;
 
-    void draw(const graphics::core& gl) const;
+    void draw(const graphics::core& gl) const noexcept;
 };
 
 }  // namespace idle::hotel::model

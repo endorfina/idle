@@ -36,7 +36,7 @@ TEMPLATE_CHECK_METHOD(draw_background);
 TEMPLATE_CHECK_METHOD(draw_foreground);
 
 template<std::size_t I = 0, typename Tuple, typename...Vars>
-void elem_draw(const Tuple& tuple, const Vars&...vars)
+void elem_draw(const Tuple& tuple, const Vars&...vars) noexcept
 {
     constexpr auto tuple_size = std::tuple_size<Tuple>::value;
     using tuple_elem_type = typename std::tuple_element<I, Tuple>::type;
@@ -60,7 +60,7 @@ void elem_draw(const Tuple& tuple, const Vars&...vars)
 TEMPLATE_CHECK_METHOD(position_on);
 
 template<std::size_t I = 0, typename... Tp>
-void elem_update_position(point_t screen_size, std::tuple<Tp...>& tuple)
+void elem_update_position(point_t screen_size, std::tuple<Tp...>& tuple) noexcept
 {
     if constexpr (has_position_on_method<typename std::tuple_element<I, std::tuple<Tp...>>::type>::value)
     {
@@ -75,7 +75,7 @@ void elem_update_position(point_t screen_size, std::tuple<Tp...>& tuple)
 TEMPLATE_CHECK_METHOD(trigger);
 
 template<std::size_t I = 0, typename Ret, typename Tuple, typename Func, typename...Vars>
-std::optional<Ret> elem_trigger(const point_t pointer, Tuple& tuple, Func&& func, Vars&&...vars)
+std::optional<Ret> elem_trigger(const point_t pointer, Tuple& tuple, Func&& func, Vars&&...vars) noexcept
 {
     constexpr auto tuple_size = std::tuple_size<Tuple>::value;
     constexpr auto elem_id = tuple_size - I - 1;
@@ -118,7 +118,7 @@ struct edge_hugger
 {
     point_t pos;
 
-    constexpr void position_on(point_t screen_size)
+    constexpr void position_on(point_t screen_size) noexcept
     {
         if constexpr (X < 0)
             pos.x = screen_size.x + static_cast<float>(X);
@@ -137,7 +137,7 @@ struct from_center
 {
     point_t pos;
 
-    constexpr void position_on(point_t screen_size)
+    constexpr void position_on(point_t screen_size) noexcept
     {
         pos = screen_size / 2.f + point_t{ static_cast<float>(X), static_cast<float>(Y) };
     }
@@ -151,7 +151,7 @@ namespace shapes
 template<class Pos, unsigned Width, unsigned Height>
 struct rectangle
 {
-    bool is_touching(point_t pos) const
+    bool is_touching(point_t pos) const noexcept
     {
         pos += point_t{ static_cast<float>(Width), static_cast<float>(Height) } / 2.f;
         return pos.x >= this->pos.x
@@ -160,7 +160,7 @@ struct rectangle
             && pos.y <= (this->pos.y + Height);
     }
 
-    void draw_background(const graphics::core& gl) const
+    void draw_background(const graphics::core& gl) const noexcept
     {
         gl.prog.fill.use();
         gl.prog.fill.set_transform(math::matrices::scale(point_t{Width, Height}) * math::matrices::translate(this->pos));
@@ -204,7 +204,7 @@ struct buttonless : Pos
 {
     static_assert(Width > Height);
 
-    bool is_touching(point_t pt) const
+    bool is_touching(point_t pt) const noexcept
     {
         const auto diff = pt - this->pos;
 
@@ -226,7 +226,7 @@ struct buttonless : Pos
 template<class Pos, unsigned Width, unsigned Height>
 struct button : buttonless<Pos, Width, Height>
 {
-    void draw_background(const graphics::core& gl) const
+    void draw_background(const graphics::core& gl) const noexcept
     {
         constexpr auto fan = []
         {
@@ -269,19 +269,19 @@ class interface
     tuple_t tuple_array;
 
 public:
-    void resize(point_t size)
+    void resize(point_t size) noexcept
     {
         internal::elem_update_position(size, tuple_array);
     }
 
     template<typename...Vars>
-    void draw(const Vars&...vars) const
+    void draw(const Vars&...vars) const noexcept
     {
         internal::elem_draw<0, tuple_t, Vars...>(tuple_array, vars...);
     }
 
     template<typename Ret, typename Func>
-    std::optional<Ret> click(point_t pos, Func&& func)
+    std::optional<Ret> click(point_t pos, Func&& func) noexcept
     {
         return internal::elem_trigger<0, Ret, tuple_t>(pos, tuple_array, std::forward<Func>(func));
     }

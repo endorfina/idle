@@ -27,7 +27,7 @@ namespace idle
 {
 
 template <class Container>
-std::optional<Container> zlib(const unsigned char *source, const size_t source_size, const bool compress, const bool gzip)
+std::optional<Container> zlib(const unsigned char *source, const size_t source_size, const bool compress, const bool gzip) noexcept
 {
     static_assert(sizeof(typename Container::value_type) == sizeof(char));
     Container out;
@@ -103,7 +103,7 @@ std::optional<Container> zlib(const unsigned char *source, const size_t source_s
 }
 
 template <class Container>
-std::optional<Container> zlib(const std::string_view source, bool compress, bool gzip)
+std::optional<Container> zlib(const std::string_view source, bool compress, bool gzip) noexcept
 {
     return zlib<Container>(reinterpret_cast<const unsigned char*>(source.data()), source.size(), compress, gzip);
 }

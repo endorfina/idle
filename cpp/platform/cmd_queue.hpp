@@ -39,24 +39,24 @@ struct command_queue_t
     unsigned count = 0;
     std::array<command, (sizeof(void*) * 2) / sizeof(command)> raw_queue;
 
-    bool is_full() const;
+    bool is_full() const noexcept;
 
-    const command * begin() const;
+    const command * begin() const noexcept;
 
-    const command * end() const;
+    const command * end() const noexcept;
 
-    void insert(command cmd);
+    void insert(command cmd) noexcept;
 
-    void clear();
+    void clear() noexcept;
 
-    unsigned size() const;
+    unsigned size() const noexcept;
 };
 
 struct resize_request_t
 {
     unsigned w, h;
 
-    resize_request_t(unsigned, unsigned);
+    resize_request_t(unsigned, unsigned) noexcept;
 };
 
 }  // namespace platform

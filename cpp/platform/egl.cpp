@@ -42,12 +42,12 @@ struct egl_display
 
     egl_display() = delete;
 
-    static const egl_display& cast(const context::data_t& data)
+    static const egl_display& cast(const context::data_t& data) noexcept
     {
         return *std::launder(reinterpret_cast<const egl_display*>(data));
     }
 
-    static egl_display& cast(context::data_t& data)
+    static egl_display& cast(context::data_t& data) noexcept
     {
         return *std::launder(reinterpret_cast<egl_display*>(data));
     }
@@ -65,7 +65,7 @@ constexpr EGLint attributes[]
     EGL_NONE
 };
 
-std::optional<resize_request_t> create_window(egl_display& egl)
+std::optional<resize_request_t> create_window(egl_display& egl) noexcept
 {
     // initialize OpenGL ES and EGL
     EGLint w, h;
@@ -151,7 +151,7 @@ std::optional<resize_request_t> create_window(egl_display& egl)
     return {{ static_cast<unsigned>(w), static_cast<unsigned>(h) }};
 }
 
-int32_t android_handle_input(android_app * app, AInputEvent* event)
+int32_t android_handle_input(android_app * app, AInputEvent* event) noexcept
 {
     auto& win = *reinterpret_cast<context*>(app->userData);
 
@@ -191,7 +191,7 @@ int32_t android_handle_input(android_app * app, AInputEvent* event)
     return 0;
 }
 
-void android_handle_command(struct android_app* app, const int32_t cmd)
+void android_handle_command(struct android_app* app, const int32_t cmd) noexcept
 {
     auto& win = *reinterpret_cast<context*>(app->userData);
 
@@ -232,7 +232,7 @@ void android_handle_command(struct android_app* app, const int32_t cmd)
 
 }  // namespace
 
-context::context()
+context::context() noexcept
 {
     assert(asset::android_activity);
     auto& egl = egl_display::cast(data);
@@ -249,13 +249,13 @@ context::context()
     egl.surface = EGL_NO_SURFACE;
 }
 
-void context::buffer_swap()
+void context::buffer_swap() noexcept
 {
     auto& egl = egl_display::cast(data);
     eglSwapBuffers(egl.display, egl.surface);
 }
 
-void context::event_loop_back(bool block_if_possible)
+void context::event_loop_back(bool block_if_possible) noexcept
 {
     int events;
     android_poll_source * source;
@@ -279,19 +279,19 @@ void context::event_loop_back(bool block_if_possible)
     }
 }
 
-context::~context()
+context::~context() noexcept
 {
     LOGDD("context::~context");
     terminate_display();
 }
 
-bool context::has_opengl() const
+bool context::has_opengl() const noexcept
 {
     auto& egl = egl_display::cast(data);
     return egl.display != EGL_NO_DISPLAY;
 }
 
-void context::terminate_display()
+void context::terminate_display() noexcept
 {
     auto& egl = egl_display::cast(data);
 
@@ -312,38 +312,38 @@ void context::terminate_display()
 
 struct android_app * asset::android_activity = nullptr;
 
-asset::asset(AAsset* f, std::string_view d)
+asset::asset(AAsset* f, std::string_view d) noexcept
     : file(f), data(d)
 {}
 
-asset::asset(asset&& other)
+asset::asset(asset&& other) noexcept
     : file(other.file), data(other.data)
 {
     other.file = nullptr;
 }
 
-asset::~asset()
+asset::~asset() noexcept
 {
     if (file)
         AAsset_close(file);
 }
 
-asset::operator bool() const
+asset::operator bool() const noexcept
 {
     return !!data.size();
 }
 
-std::string_view asset::view() const
+std::string_view asset::view() const noexcept
 {
     return data;
 }
 
-asset asset::hold(std::string path)
+asset asset::hold(std::string path) noexcept
 {
     return hold(path.c_str());
 }
 
-asset asset::hold(const char * path)
+asset asset::hold(const char * path) noexcept
 {
     std::unique_ptr<AAsset, decltype(&AAsset_close)> file{
             AAssetManager_open(android_activity->activity->assetManager, path, AASSET_MODE_BUFFER),

@@ -30,11 +30,11 @@ class crash_handler
     std::atomic_bool crashed{false};
 
 public:
-    std::string_view get_string() const;
+    std::string_view get_string() const noexcept;
 
-    bool has_crashed() const;
+    bool has_crashed() const noexcept;
 
-    void crash(std::string_view haiku);
+    void crash(std::string_view haiku) noexcept;
 };
 
 }  // namespace idle

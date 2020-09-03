@@ -33,41 +33,41 @@ class image_t
     size_t width, height;
 
 protected:
-    image_t();
+    image_t() noexcept;
 
-    image_t(GLuint id, size_t w, size_t h);
+    image_t(GLuint id, size_t w, size_t h) noexcept;
 
-    image_t(GLuint id, size_t w, size_t h, size_t u2, size_t v2);
+    image_t(GLuint id, size_t w, size_t h, size_t u2, size_t v2) noexcept;
 
 public:
-    ~image_t();
+    ~image_t() noexcept;
 
     image_t(const image_t&) = delete;
 
-    image_t(image_t&&);
+    image_t(image_t&&) noexcept;
 
-    static image_t load_from_assets_immediate(const char * fn, GLint quality=gl::LINEAR);
+    static image_t load_from_assets_immediate(const char * fn, GLint quality=gl::LINEAR) noexcept;
 
-    static image_t load_from_assets(const char * fn, GLint quality=gl::LINEAR);
+    static image_t load_from_assets(const char * fn, GLint quality=gl::LINEAR) noexcept;
 
     static image_t load_from_memory(GLsizei w, GLsizei h,
         GLint i, GLenum f,
         GLint q, GLint r,
-        std::unique_ptr<unsigned char[]> pix);
+        std::unique_ptr<unsigned char[]> pix) noexcept;
 
-    static void load_topmost_queued_picture();
+    static void load_topmost_queued_picture() noexcept;
 
-    void draw(const graphics::textured_program_t& prog) const;
+    void draw(const graphics::textured_program_t& prog) const noexcept;
 
-    void draw(const graphics::textured_program_t& prog, point_t p) const;
+    void draw(const graphics::textured_program_t& prog, point_t p) const noexcept;
 
-    void draw(const graphics::textured_program_t& prog, point_t p, const rect_t &rect) const;
+    void draw(const graphics::textured_program_t& prog, point_t p, const rect_t &rect) const noexcept;
 
-    void draw(const graphics::textured_program_t& prog, const rect_t &rect) const;
+    void draw(const graphics::textured_program_t& prog, const rect_t &rect) const noexcept;
 
-    GLuint get_gl_id() const;
+    GLuint get_gl_id() const noexcept;
 
-    GLuint release();
+    GLuint release() noexcept;
 
     template<typename Ret>
     math::point2<Ret> get_size() const {
@@ -75,19 +75,19 @@ public:
     }
 };
 
-void fill_screen(const graphics::core& gl, const graphics::program_t& prog);
+void fill_screen(const graphics::core& gl, const graphics::program_t& prog) noexcept;
 
-void fill_rectangle(const graphics::program_t& prog, const rect_t &rect);
-void fill_rectangle(const graphics::program_t& prog, point_t rect);
+void fill_rectangle(const graphics::program_t& prog, const rect_t &rect) noexcept;
+void fill_rectangle(const graphics::program_t& prog, point_t rect) noexcept;
 
-void draw_rectangle(const graphics::program_t& prog, const rect_t &rect);
-void draw_rectangle(const graphics::program_t& prog, point_t rect);
+void draw_rectangle(const graphics::program_t& prog, const rect_t &rect) noexcept;
+void draw_rectangle(const graphics::program_t& prog, point_t rect) noexcept;
 
-void fill_round_rectangle(const graphics::program_t& prog, const rect_t &rect, const float radius);
+void fill_round_rectangle(const graphics::program_t& prog, const rect_t &rect, const float radius) noexcept;
 
-void fill_circle(const graphics::program_t& prog, point_t center, const float radius, const unsigned int steps = 24);
+void fill_circle(const graphics::program_t& prog, point_t center, const float radius, const unsigned int steps = 24) noexcept;
 
-void draw_circle(const graphics::program_t& prog, point_t center, const float radius, const unsigned int steps = 24);
+void draw_circle(const graphics::program_t& prog, point_t center, const float radius, const unsigned int steps = 24) noexcept;
 
 }  // namespace idle
 

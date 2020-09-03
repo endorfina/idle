@@ -38,7 +38,7 @@ struct line_mesh
 
     tree_type mesh;
 
-    void draw(const graphics::core& gl) const
+    void draw(const graphics::core& gl) const noexcept
     {
         auto ptr = mesh.table.data();
 
@@ -50,7 +50,7 @@ struct line_mesh
         }
     }
 
-    void draw_interpolated(const graphics::core& gl, const line_mesh& another) const
+    void draw_interpolated(const graphics::core& gl, const line_mesh& another) const noexcept
     {
         size_t sum = 0;
 
@@ -63,13 +63,13 @@ struct line_mesh
         }
     }
 
-    explicit constexpr line_mesh(const tree_type& tree) : mesh{tree}
+    explicit constexpr line_mesh(const tree_type& tree) noexcept : mesh{tree}
     {
     }
 };
 
 template<typename S, auto...Is>
-constexpr auto skew_index(const S& source, const mat4x4_noopt_t& mat, std::index_sequence<Is...>)
+constexpr auto skew_index(const S& source, const mat4x4_noopt_t& mat, std::index_sequence<Is...>) noexcept
 {
     return std::array{
         line_mesh{
@@ -84,7 +84,7 @@ constexpr auto skew_index(const S& source, const mat4x4_noopt_t& mat, std::index
 constexpr mat4x4_noopt_t skew_matrix = math::matrices::rotate<GLfloat>(F_TAU_8) * math::matrices::rotate_y<GLfloat>(F_TAU_4 / 3);
 
 template<unsigned...Deg, typename Rig, auto Size>
-constexpr auto skew(const std::array<Rig, Size>& anim)
+constexpr auto skew(const std::array<Rig, Size>& anim) noexcept
 {
     auto fun = [&anim] (const float deg)
     {
@@ -273,7 +273,7 @@ constexpr auto floating_muscle_digest = glass::muscle
 constexpr auto floating = skew<0, 45, 90, 135, 180, 225, 270, 315>(floating_muscle_digest);
 
 template<typename Models>
-void draw_bones(const Models& models, const graphics::core& gl, const animation anim)
+void draw_bones(const Models& models, const graphics::core& gl, const animation anim) noexcept
 {
     gl.prog.fill.use();
     gl.prog.fill.set_color({1,0,0});
@@ -299,7 +299,7 @@ void draw_bones(const Models& models, const graphics::core& gl, const animation 
 
 }  // namespace
 
-void room::draw(const graphics::core& gl) const
+void room::draw(const graphics::core& gl) const noexcept
 {
     gl.prog.fill.use();
     gl.prog.fill.set_identity();
@@ -317,7 +317,7 @@ void room::draw(const graphics::core& gl) const
     draw_bones(walking[facing], gl, model_anim.load(std::memory_order_relaxed));
 }
 
-std::optional<keyring::variant> room::step(const pointer_wrapper& cursor)
+std::optional<keyring::variant> room::step(const pointer_wrapper& cursor) noexcept
 {
     auto work_copy = model_anim.load(std::memory_order_relaxed);
     timer += .12f / F_TAU_2 * uni_time_factor;

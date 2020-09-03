@@ -26,7 +26,7 @@ namespace idle
 namespace detail
 {
 template <text_align H, text_align V>
-point_t get_text_transform(const fonts::font_t& font, std::string_view str, point_t pos, const float ft_size, const unsigned int limit)
+point_t get_text_transform(const fonts::font_t& font, std::string_view str, point_t pos, const float ft_size, const unsigned int limit) noexcept
 {
     if constexpr (H == text_align::near && V == text_align::near)
         return pos;
@@ -59,7 +59,7 @@ void draw_text(const fonts::font_t& font,
         const std::string_view str,
         const point_t p,
         const float size,
-        const unsigned int limit = static_cast<unsigned int>(-1))
+        const unsigned int limit = static_cast<unsigned int>(-1)) noexcept
 {
     const auto translate = detail::get_text_transform<H, V>(font, str, p, size, limit);
     prog.set_view_transform(math::matrices::uniform_scale(size) * math::matrices::translate(translate));

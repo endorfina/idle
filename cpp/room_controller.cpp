@@ -29,7 +29,7 @@ namespace idle
 namespace
 {
 
-auto wait_one_frame(std::chrono::steady_clock::time_point new_time)
+auto wait_one_frame(std::chrono::steady_clock::time_point new_time) noexcept
 {
     new_time += stats::time_minimum_elapsed;
     std::this_thread::sleep_until(new_time);
@@ -52,12 +52,12 @@ struct is_hotel_room<hotel::keyring::somewhere_else<T>> : std::true_type {};
 }  // namespace
 
 
-void controller::sleep()
+void controller::sleep() noexcept
 {
     worker.set_active(false);
 }
 
-void controller::resize(point_t size)
+void controller::resize(point_t size) noexcept
 {
     const std::lock_guard block_room_changes{mutability};
     current_screen_size = size;
@@ -71,7 +71,7 @@ void controller::resize(point_t size)
     }, current_variant);
 }
 
-void controller::draw_frame(const graphics::core& gl)
+void controller::draw_frame(const graphics::core& gl) noexcept
 {
     if (haiku.has_crashed())
     {
@@ -97,7 +97,7 @@ void controller::draw_frame(const graphics::core& gl)
     }
 }
 
-void controller::awaken(const std::chrono::steady_clock::time_point clock)
+void controller::awaken(const std::chrono::steady_clock::time_point clock) noexcept
 {
     using namespace std::chrono_literals;
     constexpr auto skip_a_beat = std::chrono::duration_cast<std::chrono::microseconds>(1.5s) / application_frames_per_second;
@@ -163,7 +163,7 @@ constexpr char room_label<hotel::model::room>[] = "MODEL";
 
 }  // namespace
 
-std::optional<hotel::keyring::variant> controller::do_step(const pointer_wrapper& cur)
+std::optional<hotel::keyring::variant> controller::do_step(const pointer_wrapper& cur) noexcept
 {
     if (next_variant.rooms)
     {
