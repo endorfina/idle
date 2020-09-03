@@ -1,4 +1,4 @@
-﻿/*
+/*
     Copyright © 2020 endorfina <dev.endorfina@outlook.com>
 
     This file is part of Idle.
@@ -17,12 +17,10 @@
     along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
 
+#pragma once
 #include <atomic>
-
-import idle {
-    drawable.hpp,
-    gl.hpp
-}
+#include "drawable.hpp"
+#include "gl.hpp"
 
 namespace idle
 {
@@ -40,11 +38,11 @@ class lodge
     {
     }
 
-    fn tick();
+    void tick() noexcept;
 
-    &fn draw(gl: &graphics::core);
+    void draw(const graphics::core& gl) const noexcept;
 
-    &fn is_done() -> bool;
+    auto is_done() const noexcept -> bool;
 };
 
 }  //namespace idle

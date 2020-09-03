@@ -1,4 +1,4 @@
-﻿/*
+/*
     Copyright © 2020 endorfina <dev.endorfina@outlook.com>
 
     This file is part of Idle.
@@ -17,10 +17,9 @@
     along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
 
-import idle {
-    platform/pointer.hpp,
-    idle_defines.hpp
-}
+#pragma once
+#include "platform/pointer.hpp"
+#include "idle_defines.hpp"
 
 namespace idle
 {
@@ -40,9 +39,9 @@ private:
     int single_press_previous_state = 0, double_tap_timer = 0;
 
 public:
-    fn advance(cur: &platform::pointer);
+    void advance(const platform::pointer& cur) noexcept;
 
-    &fn get() -> &pointer_wrapper;
+    auto get() const noexcept -> const pointer_wrapper&;
 };
 
 }  // namepsace idle

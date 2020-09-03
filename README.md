@@ -8,8 +8,6 @@ Aside from more technical objectives, its original one was to help me deal with 
 
 For information about *Crimson*, an example game developed alongside idle, please visit [its homepage](https://idle.endorfina.dev/crimson).
 
-A good chunk of the code is written in silly *moonspeak*. 😅 It can be easily converted to regular old C++ by either CMake or the cherry submodule directly.
-
 ### Dependencies
 
 Requires a C++20 compiler to be available.

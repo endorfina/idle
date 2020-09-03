@@ -1,4 +1,4 @@
-﻿/*
+/*
     Copyright © 2020 endorfina <dev.endorfina@outlook.com>
 
     This file is part of Idle.
@@ -17,14 +17,12 @@
     along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
 
+#pragma once
 #include <chrono>
 #include <optional>
 #include <memory>
-
-import idle {
-    gl.hpp,
-    platform/context.hpp
-}
+#include "gl.hpp"
+#include "platform/context.hpp"
 
 namespace outside
 {
@@ -37,7 +35,7 @@ struct pause_menu
 
     pause_menu(unsigned blur_downscale);
 
-    &fn draw();
+    void draw() const noexcept;
 };
 
 struct application
@@ -55,14 +53,14 @@ public:
 private:
     application() = default;
 
-    fn execute_commands(nested: bool) -> bool;
+    auto execute_commands(const bool nested) noexcept -> bool;
 
 public:
-    static fn real_main() -> int;
+    static auto real_main() noexcept -> int;
 
-    fn load() -> bool;
+    auto load() noexcept -> bool;
 
-    fn draw();
+    void draw() noexcept;
 };
 
 }  // namespace outside

@@ -1,4 +1,4 @@
-﻿/*
+/*
     Copyright © 2020 endorfina <dev.endorfina@outlook.com>
 
     This file is part of Idle.
@@ -19,33 +19,29 @@
 
 #include <cmath>
 #include <random>
-
-import idle {
-    drawable.hpp,
-    hsv.hpp
-}
+#include <idle/drawable.hpp>
+#include <idle/hsv.hpp>
+#include "room_landing.hpp"
 
 namespace idle::hotel::landing
 {
 namespace
 {
 
-fn draw_dim_noise(noise: &graphics::noise_program_t, size: point_t, seed: point_t, alpha: float, fadeout: float)
+void draw_dim_noise(const graphics::noise_program_t& noise, const point_t size, const point_t seed, const float alpha, const float fadeout) noexcept
 {
     noise.use();
     noise.set_identity();
     noise.set_view_identity();
 
-    const float vert[]
-    {
+    const float vert[] {
         0, 0,
         size.x, 0,
         0, size.y,
         size.x, size.y
     };
 
-    constexpr float faux_tex_coords[]
-    {
+    constexpr float faux_tex_coords[] {
         0, 0, 1, 0,
         0, 1, 1, 1
     };
@@ -54,19 +50,22 @@ fn draw_dim_noise(noise: &graphics::noise_program_t, size: point_t, seed: point_
 
     if (fadeout < 1)
     {
-        white = std::max<float>(0.f, (fadeout - .6f) / .4f);
+        const auto w = (fadeout - .6f) / .4f;
+        white = std::max<float>(0, w);
 
-        red = std::min<float>(1.f, fadeout / .6f);
+        red = fadeout > .6f ? w
+            : (fadeout - .6f) / -.6f;
     }
 
     const auto faster_alpha = std::min<float>(alpha * 3, 1);
 
-    noise.set_color({white, white, white, std::min<float>(faster_alpha * 2, 1)});
+    // this makes the noise easier at the beginning
+    noise.set_color({white, white, white, std::min<float>(faster_alpha * 2.4f, 1)});
     noise.set_secondary_color({
-            math::sqr((alpha - .3f) / .7f) * red,
-            .912f * red,
-            .912f * red,
-            faster_alpha});
+            math::sqr((alpha - .3f) / .7f) * white,
+            .912f * white,
+            .912f * white,
+            faster_alpha * red});
     noise.set_tertiary_color({0, 0, 0, faster_alpha});
     noise.set_seed(seed);
     noise.position_vertex(vert);
@@ -75,7 +74,7 @@ fn draw_dim_noise(noise: &graphics::noise_program_t, size: point_t, seed: point_
 }
 
 template<auto Size, class Rand>
-fn tickle_appendages(times: mut unsigned, ray_array: &mut std::array<float, Size>, rando: &mut Rand)
+void tickle_appendages(unsigned times, std::array<float, Size>& ray_array, Rand& rando) noexcept
 {
     static_assert(Size > 0);
     if (times == 0) return;
@@ -87,8 +86,8 @@ fn tickle_appendages(times: mut unsigned, ray_array: &mut std::array<float, Size
 
     do
     {
-        let amp = amplitude(rando);
-        let elem = element_picker(rando);
+        const auto amp = amplitude(rando);
+        const auto elem = element_picker(rando);
         ray_array[elem] += amp;
         ray_array[elem < 1 ? Size - 1 : elem - 1] += amp * .41f;
         ray_array[elem < 2 ? Size - 2 + elem : elem - 2] += amp * .13f;
@@ -100,18 +99,18 @@ fn tickle_appendages(times: mut unsigned, ray_array: &mut std::array<float, Size
 
 
 template<auto Size, class Rand>
-fn shift_appendages(ray_array: &mut std::array<float, Size>, rando: &mut Rand) -> unsigned
+auto shift_appendages(std::array<float, Size>& ray_array, Rand& rando) noexcept -> unsigned
 {
     static_assert(Size > 0);
     using random_int = std::uniform_int_distribution<unsigned int>;
     using random_float = std::uniform_real_distribution<float>;
 
-    let offset: float = random_float{-F_TAU_4, F_TAU_2}(rando);
+    const float offset = random_float{-F_TAU_4, F_TAU_2}(rando);
 
     for (unsigned i = 0; i < Size; ++i)
     {
-        let val: float = std::sin(i * (F_TAU * 13.f / Size) + offset);
-        let amp: float = std::pow(val, 5);
+        const float val = std::sin(i * (F_TAU * 13.f / Size) + offset);
+        const float amp = std::pow(val, 5);
         ray_array[i] = .061f * (val + amp);
     }
 
@@ -123,7 +122,7 @@ fn shift_appendages(ray_array: &mut std::array<float, Size>, rando: &mut Rand) -
 }  // namespace
 
 template<unsigned rX, unsigned rY, typename Rando>
-void luminous_cloud::spark(point_t position, Rando& rando)
+void luminous_cloud::spark(point_t position, Rando& rando) noexcept
 {
     std::uniform_real_distribution<float> generator{ -1.f, 1.f };
 
@@ -144,13 +143,13 @@ void luminous_cloud::spark(point_t position, Rando& rando)
 }
 
 template<function Id, int X, int Y, unsigned width, unsigned height, typename Rando>
-static fn spark(cloud: &mut luminous_cloud, focus: &landing_button<Id, X, Y, width, height>, rando: &mut Rando)
+static void spark(luminous_cloud& cloud, const landing_button<Id, X, Y, width, height>& focus, Rando& rando) noexcept
 {
     cloud.spark<width / 3, height / 4>(focus.pos, rando);
 }
 
 template<typename Rando>
-void luminous_cloud::step(Rando& rando)
+void luminous_cloud::step(Rando& rando) noexcept
 {
     std::uniform_real_distribution<float> generator{ -1.f, 1.f };
     bool is_empty = true;
@@ -174,7 +173,7 @@ void luminous_cloud::step(Rando& rando)
         flag.store(false, std::memory_order_release);
 }
 
-std::optional<keyring::variant> room::step(const pointer_wrapper& pointer)
+auto room::step(const pointer_wrapper& pointer) noexcept -> std::optional<keyring::variant>
 {
     using random_float = std::uniform_real_distribution<float>;
 
@@ -211,7 +210,8 @@ std::optional<keyring::variant> room::step(const pointer_wrapper& pointer)
 
     if (destination)
     {
-        thing.alpha = std::min<float>(thing.alpha + (impatient ? .0033f : .0017f) * uni_time_factor, 2.f);
+        thing.alpha = std::min<float>(thing.alpha + (impatient ? .005f : .0019f) * uni_time_factor, 2.f);
+        // thing.alpha = std::min<float>(thing.alpha + .0008f * uni_time_factor, 2.f);
 
         if (thing.alpha > 1.811f)
         {
@@ -224,7 +224,7 @@ std::optional<keyring::variant> room::step(const pointer_wrapper& pointer)
     }
     else if (pointer.single_press)
     {
-        let mut sparkler = [this](const auto& butt)
+        auto sparkler = [this](const auto& butt)
             {
                 spark(polyps, butt, fast_random_device);
             };
@@ -233,7 +233,7 @@ std::optional<keyring::variant> room::step(const pointer_wrapper& pointer)
         {
             impatient = true;
         }
-        else if (let dest = gui.click<function>(pointer.cursor.pos, sparkler))
+        else if (const auto dest = gui.click<function>(pointer.cursor.pos, sparkler))
         {
             tickle_appendages(64, thing.legs[1], fast_random_device);
 
@@ -261,27 +261,25 @@ std::optional<keyring::variant> room::step(const pointer_wrapper& pointer)
     return {};
 }
 
-void luminous_cloud::draw(const graphics::core& gl) const
+void luminous_cloud::draw(const graphics::core& gl) const noexcept
 {
-    :let not_white: color_t{ 1, .91f, .91f, 0 };
-    :let not_red: color_t{ 1.f, .15f, .31f, 0 };
+    constexpr color_t not_white { 1, .91f, .91f, 0 };
+    constexpr color_t not_red { 1.f, .15f, .31f, 0 };
     gl.prog.gradient.use();
 
-    :let blob_array_len: unsigned = 16;
+    constexpr unsigned blob_array_len = 16;
 
-    :let blob_colors = ||
-    {
+    constexpr auto blob_colors = []() {
         std::array<float, blob_array_len> out{};
         out[0] = 1.f;
         return out;
     }();
 
-    :let blob_points = ||
-    {
+    constexpr auto blob_points = []() {
         std::array<point_t, blob_array_len> out{};
         float angle = 0.f;
         static_assert(blob_array_len > 4);
-        :let step: float = F_TAU / static_cast<float>(blob_array_len - 2);
+        constexpr float step = F_TAU / static_cast<float>(blob_array_len - 2);
 
         for (unsigned i = 1; i < blob_array_len; ++i)
         {
@@ -318,9 +316,9 @@ void luminous_cloud::draw(const graphics::core& gl) const
     }
 }
 
-void room::draw(const graphics::core& gl) const
+void room::draw(const graphics::core& gl) const noexcept
 {
-    let alpha_sine = std::sin(std::min<float>(thing.alpha, 1.f) * F_TAU_4);
+    const auto alpha_sine = std::sin(std::min<float>(thing.alpha, 1.f) * F_TAU_4);
     gl.prog.fill.use();
     gl.prog.fill.set_identity();
     gl.prog.fill.set_view_identity();
@@ -339,8 +337,8 @@ void room::draw(const graphics::core& gl) const
     gl.prog.gradient.set_secondary_color(dim_color, math::sqr(alpha_sine));
     gl.prog.gradient.set_view_transform(math::matrices::translate(point_t{gl.draw_size.x / 2.f, gl.draw_size.y / 2.f}));
 
-    :let div = F_TAU / static_cast<float>(std::tuple_size<great_crimson_thing::arm_t>::value);
-    :let array_len = std::tuple_size<great_crimson_thing::arm_t>::value + 2;
+    constexpr auto div = F_TAU / static_cast<float>(std::tuple_size<great_crimson_thing::arm_t>::value);
+    constexpr auto array_len = std::tuple_size<great_crimson_thing::arm_t>::value + 2;
 
     constexpr std::array<float, array_len> black_interpolation_values = []()
     {
@@ -374,10 +372,10 @@ void room::draw(const graphics::core& gl) const
         return out;
     }();
 
-    let lower_draw_size = std::min(gl.draw_size.x, gl.draw_size.y);
-    let higher_draw_size = std::max(gl.draw_size.x, gl.draw_size.y);
-    let higher_ratio: float = std::max(4.f / 3.f, higher_draw_size / lower_draw_size);
-    let adaptive_mult: float = higher_ratio / (4.f / 3.f);
+    const auto lower_draw_size = std::min(gl.draw_size.x, gl.draw_size.y);
+    const auto higher_draw_size = std::max(gl.draw_size.x, gl.draw_size.y);
+    const float higher_ratio = std::max(4.f / 3.f, higher_draw_size / lower_draw_size);
+    const float adaptive_mult = higher_ratio / (4.f / 3.f);
 
     gl.prog.gradient.set_transform(math::matrices::rotate(thing.rotation)
             * math::matrices::uniform_scale(lower_draw_size * (.8f - alpha_sine * .2f) * adaptive_mult));
@@ -399,6 +397,21 @@ void room::draw(const graphics::core& gl) const
 
     const auto fadeout_alpha_sine = std::sin(std::max<float>(thing.alpha + 1.f, 2.f) * F_TAU_4) + 1.f;
 
+    if (thing.alpha < .15f)
+    {
+        const float info_alpha = 1.f - std::max(thing.alpha - .1f, 0.f) * 20;
+        gl.prog.text.use();
+        gl.prog.text.set_color(color_t::greyscale(0, info_alpha));
+        draw_text<text_align::near, text_align::far>(*gl.fonts.title, gl.prog.text, "GPL v3\nCC-BY-SA-4.0", {10, gl.draw_size.y - 10}, 12);
+    }
+
+    // gl.view_distortion();
+
+    // gl.prog.gradient.use();
+    // gl.prog.gradient.set_secondary_color({std::cos(thing.rotation * 12), std::sin(thing.rotation * 12), .5f, .6f});
+    // gl.prog.gradient.set_color({.5f, .5f, .5f, 0.f});
+    // gl::DrawArrays(gl::TRIANGLE_FAN, 0, array_len);
+
     gl.view_mask();
 
     draw_dim_noise(gl.prog.noise,
@@ -411,8 +424,7 @@ void room::draw(const graphics::core& gl) const
 
     if (thing.alpha > .8f && fadeout_alpha_sine > .7f)
     {
-        let menu_state: button_state
-        {
+        const button_state menu_state {
             .alpha = std::min<float>((thing.alpha - .8f) / .2f, 1.f) * ((fadeout_alpha_sine - .7f) / .3f),
             .focus = focus,
             .noise = menu_visual_noise.data()
@@ -426,7 +438,7 @@ void room::draw(const graphics::core& gl) const
     }
 }
 
-void room::on_resize(point_t screen_size)
+void room::on_resize(const point_t screen_size) noexcept
 {
     gui.resize(screen_size);
 }

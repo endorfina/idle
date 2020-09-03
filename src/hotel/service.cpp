@@ -1,4 +1,4 @@
-﻿/*
+/*
     Copyright © 2020 endorfina <dev.endorfina@outlook.com>
 
     This file is part of Idle.
@@ -17,34 +17,36 @@
     along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <atomic>
-#include <optional>
-#include <thread>
+#include "service.hpp"
 
 namespace idle::hotel
 {
 
-class room_service
+void room_service::set_active(const bool flag) noexcept
 {
-    std::atomic_bool worker_active_flag{false};
-    std::optional<std::thread> worker_thread;
+    worker_active_flag.store(flag, std::memory_order_relaxed);
+}
 
-public:
-    template<typename...Vars>
-    void start(Vars...vars)
+void room_service::stop() noexcept
+{
+    set_active(false);
+
+    if (worker_thread)
     {
-        stop();
-        set_active(true);
-        worker_thread.emplace(std::forward<Vars>(vars)...);
+        worker_thread->join();
+        worker_thread.reset();
     }
+}
 
-    fn set_active(flag: bool);
+auto room_service::is_active() const noexcept -> bool
+{
+    return worker_active_flag.load(std::memory_order_relaxed);
+}
 
-    fn stop();
-
-    &fn is_active() -> bool;
-
-    ~room_service();
-};
+room_service::~room_service()
+{
+    stop();
+}
 
 }  // namespace idle::hotel
+

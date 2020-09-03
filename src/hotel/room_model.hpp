@@ -21,7 +21,7 @@
 #include <idle/gl.hpp>
 
 #ifdef IDLE_COMPILE_GALLERY
-#include <chry/pointer_wrapper.hpp>
+#include <idle/pointer_wrapper.hpp>
 #include <idle/draw_text.hpp>
 #include "gui.hpp"
 #include "keys.hpp"

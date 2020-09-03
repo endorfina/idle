@@ -1,4 +1,4 @@
-﻿/*
+/*
     Copyright © 2020 endorfina <dev.endorfina@outlook.com>
 
     This file is part of Idle.
@@ -17,10 +17,12 @@
     along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "pointer_wrapper.hpp"
+
 namespace idle
 {
 
-fn pointer_keeper::advance(cur: &platform::pointer)
+void pointer_keeper::advance(const platform::pointer& cur) noexcept
 {
     pointer.cursor = cur;
 
@@ -54,7 +56,7 @@ fn pointer_keeper::advance(cur: &platform::pointer)
         --double_tap_timer;
 }
 
-&fn pointer_keeper::get() -> &pointer_wrapper
+auto pointer_keeper::get() const noexcept -> const pointer_wrapper&
 {
     return pointer;
 }

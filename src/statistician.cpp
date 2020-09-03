@@ -1,4 +1,4 @@
-﻿/*
+/*
     Copyright © 2020 endorfina <dev.endorfina@outlook.com>
 
     This file is part of Idle.
@@ -18,23 +18,24 @@
 */
 
 #include <cstdio>
-import idle/draw_text.hpp
+#include "draw_text.hpp"
+#include "statistician.hpp"
 
 namespace idle::stats
 {
 
-fn statistician::count_fps(start_point: std::chrono::high_resolution_clock::time_point)
+void statistician::count_fps(const std::chrono::high_resolution_clock::time_point start_point) noexcept
 {
     if (iter >= frame_count.size())
         iter = 0;
 
-    let mut it = &frame_count[iter++];
+    auto& it = frame_count[iter++];
     it.x = static_cast<float>(iter) / static_cast<float>(frame_count.size() - 1);
-    let now = std::chrono::high_resolution_clock::now();
+    const auto now = std::chrono::high_resolution_clock::now();
     it.y = static_cast<float>(std::chrono::duration_cast<std::chrono::duration<double, std::micro>>(now - start_point) / time_minimum_elapsed) * .999f;
 }
 
-&fn statistician::draw_fps(gl: &graphics::core)
+void statistician::draw_fps(const graphics::core& gl) const noexcept
 {
     gl::LineWidth(1.f);
 
@@ -50,15 +51,15 @@ fn statistician::count_fps(start_point: std::chrono::high_resolution_clock::time
     gl::DrawArrays(gl::LINE_STRIP, 0, frame_count.size());
 }
 
-fn wall_clock::tick()
+void wall_clock::tick() noexcept
 {
     if (iter++ >= application_frames_per_second)
     {
-        let now = std::chrono::time_point_cast<duration_type>(std::chrono::steady_clock::now());
+        const auto now = std::chrono::time_point_cast<duration_type>(std::chrono::steady_clock::now());
         const std::chrono::duration<double> diff = now - last_fps_measurement;
-        let val = static_cast<double>(application_frames_per_second) / diff.count();
+        const auto val = static_cast<double>(application_frames_per_second) / diff.count();
 
-        let amt = std::snprintf(out_str.data(), out_str.size(), "%.3lf", val);
+        const auto amt = std::snprintf(out_str.data(), out_str.size(), "%.3lf", val);
         if (amt < 0)
         {
             view.remove_suffix(view.size());
@@ -73,9 +74,9 @@ fn wall_clock::tick()
     }
 }
 
-&fn wall_clock::draw_fps(gl: &graphics::core)
+void wall_clock::draw_fps(const graphics::core& gl) const noexcept
 {
-    ::let fps_draw_point = point_t{10.f, 10.f};
+    static constexpr auto fps_draw_point = point_t{10.f, 10.f};
     gl.prog.text.use();
     gl.prog.text.set_color({1, .733f, .496f, .91f});
     gl.view_mask();

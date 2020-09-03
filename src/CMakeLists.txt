@@ -21,21 +21,24 @@ set(${PROJECT_NAME}-files
         spinlock.cpp
         drawable.cpp
         crash_handler.cpp
-        statistician.cry
-        hotel/variant.hry
-        hotel/service.cry
-        hotel/room_landing.cry
+        statistician.cpp
+        hotel/service.cpp
+        hotel/room_landing.cpp
         hotel/room_model.cpp
         room_controller.cpp
-        lodge.cry
+        lodge.cpp
         gl.cpp
         fonts.cpp
-        pointer_wrapper.cry
-        application.cry
+        pointer_wrapper.cpp
+        application.cpp
         main_wrapper.cpp)
 
+set(IDLE_INCLUDE_DIR_BASENAME "${PROJECT_NAME}-include")
+set(IDLE_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/${IDLE_INCLUDE_DIR_BASENAME}")
+file(MAKE_DIRECTORY "${IDLE_INCLUDE_DIR}")
+
 set(SHADER_OUTPUT_BASENAME "embedded_shaders.hpp")
-set(SHADER_OUTPUT "${PROJECT_NAME}-include/${SHADER_OUTPUT_BASENAME}")
+set(SHADER_OUTPUT "${IDLE_INCLUDE_DIR_BASENAME}/${SHADER_OUTPUT_BASENAME}")
 set(SHADER_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/shader_source.glsl")
 set(SHADER_GENERATOR "${CMAKE_CURRENT_SOURCE_DIR}/generate.sh")
 
@@ -66,43 +69,6 @@ function(jumbo library filelist)
     target_sources(${library} PRIVATE ${UNITY_FILE})
 endfunction()
 
-set(CHERRY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/cherry")
-set(CHERRY_INTERNAL_DIR "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-include/chry")
-
-set(CHERRY_FILE_LIST "${${PROJECT_NAME}-files}")
-set(CHERRY_BYPRODUCTS "")
-list(FILTER ${PROJECT_NAME}-files EXCLUDE REGEX "\\.[ch]ry$")
-list(FILTER CHERRY_FILE_LIST INCLUDE REGEX "\\.[ch]ry$")
-
-file(MAKE_DIRECTORY "${CHERRY_INTERNAL_DIR}")
-
-foreach(CHERRY_FILE IN LISTS CHERRY_FILE_LIST)
-    string(REGEX REPLACE "\\.([ch])ry$" ".\\1pp" CHERRY_FILE "${CHERRY_INTERNAL_DIR}/${CHERRY_FILE}")
-    list(APPEND CHERRY_BYPRODUCTS "${CHERRY_FILE}")
-
-    if(CHERRY_FILE MATCHES "\\.cpp$")
-        string(REGEX REPLACE "\\.cpp$" ".hpp" CHERRY_FILE "${CHERRY_FILE}")
-        list(APPEND CHERRY_BYPRODUCTS "${CHERRY_FILE}")
-    endif()
-endforeach()
-
-foreach(FF IN LISTS CHERRY_BYPRODUCTS)
-    if(NOT EXISTS "${FF}")
-        string(REGEX REPLACE "/[^/]+$" "" CHERRY_FILE_PARENT_DIR "${FF}")
-        file(MAKE_DIRECTORY "${CHERRY_FILE_PARENT_DIR}")
-        file(TOUCH "${CHERRY_FILE}")
-    endif()
-endforeach()
-
-list(APPEND ${PROJECT_NAME}-files ${CHERRY_BYPRODUCTS})
-
-add_custom_target(${PROJECT_NAME}-cherry
-    COMMAND ./cherry.sh -q -R scr -h -s "${CMAKE_CURRENT_SOURCE_DIR}" -o "${CHERRY_INTERNAL_DIR}" ${CHERRY_FILE_LIST}
-    BYPRODUCTS ${CHERRY_BYPRODUCTS}
-    WORKING_DIRECTORY "${CHERRY_DIR}"
-    COMMENT "🌸 .[ch]ry translate"
-    VERBATIM)
-
 add_library(lodepng STATIC "lodepng/lodepng.cpp")
 target_compile_definitions(lodepng PUBLIC LODEPNG_NO_COMPILE_ZLIB LODEPNG_NO_COMPILE_DISK)
 target_include_directories(lodepng INTERFACE lodepng)
@@ -124,9 +90,9 @@ add_custom_target(${PROJECT_NAME}-generate-sh
     COMMENT "Preparing ${SHADER_OUTPUT}"
     VERBATIM)
 
-add_dependencies(${PROJECT_NAME}-obj ${PROJECT_NAME}-generate-sh ${PROJECT_NAME}-cherry)
+add_dependencies(${PROJECT_NAME}-obj ${PROJECT_NAME}-generate-sh)
 
-target_include_directories(${PROJECT_NAME}-obj PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-include")
+target_include_directories(${PROJECT_NAME}-obj PRIVATE "${IDLE_INCLUDE_DIR}")
 
 target_compile_definitions(${PROJECT_NAME}-obj PRIVATE
         "$<$<BOOL:${COMPILE_FPS_COUNTERS}>:IDLE_COMPILE_FPS_COUNTERS>"

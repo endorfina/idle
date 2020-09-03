@@ -17,22 +17,17 @@
     along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
 
+#pragma once
 #include <array>
 #include <random>
 #include <atomic>
 #include <optional>
+#include <idle/gl.hpp>
+#include <idle/draw_text.hpp>
+#include <idle/pointer_wrapper.hpp>
+#include "gui.hpp"
+#include "keys.hpp"
 
-import idle {
-    gl.hpp,
-    draw_text.hpp
-}
-
-import ../pointer_wrapper
-
-import idle/hotel {
-    gui.hpp,
-    keys.hpp
-}
 
 namespace idle::hotel::landing
 {
@@ -61,12 +56,12 @@ struct button_state
 template<function Id, int X, int Y, unsigned width, unsigned height>
 struct landing_button : gui::shapes::buttonless<gui::positions::from_center<X, Y>, width, height>
 {
-    void draw_foreground(const graphics::core& gl, const button_state& st) const
+    void draw_foreground(const graphics::core& gl, const button_state& st) const noexcept
     {
         gl.prog.text.use();
         gl.prog.text.set_color({ .62f, 0, .48f, st.alpha });
 
-        :let text = ||-> std::string_view
+        constexpr auto text = []() -> std::string_view
         {
             switch(Id)
             {
@@ -84,7 +79,7 @@ struct landing_button : gui::shapes::buttonless<gui::positions::from_center<X, Y
             }
         }();
 
-        let scale = static_cast<float>(height)
+        const auto scale = static_cast<float>(height)
             * (Id == st.focus
                     ? 1.f + (1.f - st.alpha) * .15f
                     : .8f + st.alpha * .2f
@@ -92,7 +87,7 @@ struct landing_button : gui::shapes::buttonless<gui::positions::from_center<X, Y
 
         draw_text<text_align::center, text_align::center>(*gl.fonts.title, gl.prog.text, text, this->pos, scale);
 
-        let po = this->pos + point_t{ st.noise[0], st.noise[1] };
+        const auto po = this->pos + point_t{ st.noise[0], st.noise[1] };
 
         gl.view_mask();
         gl.prog.text.set_color({ Id == st.focus ? 1.f - st.alpha : 0, 0, 0, st.alpha });
@@ -101,7 +96,7 @@ struct landing_button : gui::shapes::buttonless<gui::positions::from_center<X, Y
         gl.view_normal();
     }
 
-    function trigger() const
+    auto trigger() const noexcept -> function
     {
         return Id;
     }
@@ -120,20 +115,20 @@ struct luminous_cloud
     std::atomic_bool flag = false;
 
     template<typename Rando>
-    void step(Rando&);
+    void step(Rando& gen) noexcept;
 
     template<unsigned rX, unsigned rY, typename Rando>
-    void spark(point_t position, Rando& rando);
+    void spark(point_t position, Rando& rando) noexcept;
 
-    void draw(const graphics::core& gl) const;
+    void draw(const graphics::core& gl) const noexcept;
 };
 
 constexpr int menu_item_offset(const unsigned i)
 {
 #ifdef IDLE_COMPILE_GALLERY
-    :let diff: unsigned = 65;
+    constexpr unsigned diff = 65;
 #else
-    :let diff: unsigned = 85;
+    constexpr unsigned diff = 85;
 #endif
     return static_cast<int>(diff * i) - 40;
 }
@@ -159,11 +154,11 @@ struct room
     great_crimson_thing thing;
     luminous_cloud polyps;
 
-    void on_resize(point_t);
+    void on_resize(point_t) noexcept;
 
-    std::optional<keyring::variant> step(const pointer_wrapper& cursor);
+    auto step(const pointer_wrapper& cursor) noexcept -> std::optional<keyring::variant>;
 
-    void draw(const graphics::core&) const;
+    void draw(const graphics::core& gl) const noexcept;
 };
 
 }  // namespace idle::hotel::landing

@@ -1,4 +1,4 @@
-﻿/*
+/*
     Copyright © 2020 endorfina <dev.endorfina@outlook.com>
 
     This file is part of Idle.
@@ -17,21 +17,20 @@
     along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
 
+#pragma once
 #include <array>
 #include <thread>
 #include <chrono>
 #include <string_view>
-import idle
-{
-    idle_defines.hpp,
-    gl.hpp
-}
+#include "idle_defines.hpp"
+#include "gl.hpp"
+
 
 namespace idle::stats
 {
 
-:let time_one_second = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::seconds(1));
-:let time_minimum_elapsed = time_one_second / application_frames_per_second;
+constexpr auto time_one_second = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::seconds(1));
+constexpr auto time_minimum_elapsed = time_one_second / application_frames_per_second;
 
 class statistician
 {
@@ -39,9 +38,9 @@ class statistician
     std::array<point_t, idle::application_frames_per_second * 12> frame_count;
 
 public:
-    fn count_fps(start_point: std::chrono::high_resolution_clock::time_point);
+    void count_fps(const std::chrono::high_resolution_clock::time_point start_point) noexcept;
 
-    &fn draw_fps(gl: &graphics::core);
+    void draw_fps(const graphics::core& gl) const noexcept;
 };
 
 class wall_clock
@@ -55,9 +54,9 @@ class wall_clock
     std::string_view view;
 
 public:
-    fn tick();
+    void tick() noexcept;
 
-    &fn draw_fps(gl: &graphics::core);
+    void draw_fps(const graphics::core& gl) const noexcept;
 };
 
 }  // namespace idle::stats

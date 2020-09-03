@@ -27,9 +27,9 @@
 #include <mutex>
 
 #include "gl.hpp"
-#include <chry/hotel/variant.hpp>
-#include <chry/hotel/service.hpp>
-#include <chry/statistician.hpp>
+#include "hotel/variant.hpp"
+#include "hotel/service.hpp"
+#include "statistician.hpp"
 #include "crash_handler.hpp"
 
 namespace idle

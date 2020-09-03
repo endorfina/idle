@@ -1,4 +1,4 @@
-﻿/*
+/*
     Copyright © 2020 endorfina <dev.endorfina@outlook.com>
 
     This file is part of Idle.
@@ -18,15 +18,16 @@
 */
 
 #include <math.hpp>
+#include "lodge.hpp"
 
 namespace idle
 {
 
-&fn lodge::draw(gl: &graphics::core)
+void lodge::draw(const graphics::core& gl) const noexcept
 {
-    let bgsz = background.get_size<float>();
-    let bgsc: float = std::max(gl.draw_size.y / bgsz.y, gl.draw_size.x / bgsz.x);
-    :let astronaut: rect_t{0, 0, 398, 432}, /* text_loading{0, 512 - 70, 360, 512},*/ text_cp{450, 0, 512, 512};
+    const auto bgsz = background.get_size<float>();
+    const float bgsc = std::max(gl.draw_size.y / bgsz.y, gl.draw_size.x / bgsz.x);
+    constexpr rect_t astronaut {0, 0, 398, 432}, /* text_loading{0, 512 - 70, 360, 512},*/ text_cp{450, 0, 512, 512};
 
     gl.prog.normal.use();
     gl.prog.normal.set_color({1, 1, 1, alpha});
@@ -59,7 +60,7 @@ namespace idle
     picture.draw(gl.prog.normal, text_cp);
 }
 
-fn lodge::tick()
+void lodge::tick() noexcept
 {
     if (!load_status.load(std::memory_order_acquire))
     {
@@ -71,7 +72,7 @@ fn lodge::tick()
     }
 }
 
-&fn lodge::is_done() -> bool
+auto lodge::is_done() const noexcept -> bool
 {
     return (load_status.load(std::memory_order_acquire) && alpha == 0.f);
 }

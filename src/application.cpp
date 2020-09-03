@@ -1,4 +1,4 @@
-﻿/*
+/*
     Copyright © 2020 endorfina <dev.endorfina@outlook.com>
 
     This file is part of Idle.
@@ -19,18 +19,15 @@
 
 #include <cstdio>
 #include <future>
-
-import idle {
-    drawable.hpp,
-    draw_text.hpp,
-    room_controller.hpp,
-    freetype_glue.hpp,
-    assets_config.hpp,
-    platform/asset_access.hpp
-}
-
-import lodge
-import statistician
+#include "drawable.hpp"
+#include "draw_text.hpp"
+#include "room_controller.hpp"
+#include "freetype_glue.hpp"
+#include "assets_config.hpp"
+#include "platform/asset_access.hpp"
+#include "lodge.hpp"
+#include "statistician.hpp"
+#include "application.hpp"
 
 namespace outside
 {
@@ -40,12 +37,12 @@ namespace
 
 // These need to be global to allow for proper clean up with X11
 
-let mut room_ctrl: idle::controller{};
-let mut opengl: graphics::core{};
+idle::controller room_ctrl{};
+graphics::core opengl{};
 
 }  // namespace
 
-fn application::execute_commands(is_nested: bool) -> bool
+auto application::execute_commands(const bool is_nested) noexcept -> bool
 {
     window.event_loop_back(!update_display);
 
@@ -54,7 +51,7 @@ fn application::execute_commands(is_nested: bool) -> bool
 
     if (!!window.commands.size())
     {
-        [[maybe_unused]] :let log_prefix = "command::%s";
+        [[maybe_unused]] constexpr auto log_prefix = "command::%s";
 
         for (const auto cmd : window.commands)
             switch (cmd)
@@ -126,14 +123,14 @@ fn application::execute_commands(is_nested: bool) -> bool
 
     if (window.resize_request)
     {
-        let now = std::chrono::system_clock::now();
+        const auto now = std::chrono::system_clock::now();
 
         if (now > earliest_available_resize)
         {
-            let request = std::move(*window.resize_request);
+            const auto request = std::move(*window.resize_request);
             window.resize_request.reset();
 
-            let resize_result = opengl.resize({request.w, request.h});
+            const auto resize_result = opengl.resize({request.w, request.h});
 
             blank_display = !resize_result;
 
@@ -152,7 +149,7 @@ fn application::execute_commands(is_nested: bool) -> bool
 namespace
 {
 
-fn setup_unmasked_buffer_frame(rb: &graphics::render_buffer_t, bg: &idle::color_t) -> GLint
+auto setup_unmasked_buffer_frame(const graphics::render_buffer_t& rb, const idle::color_t& bg) noexcept -> GLint
 {
     GLint default_frame_buffer;
     gl::GetIntegerv(gl::FRAMEBUFFER_BINDING, &default_frame_buffer);
@@ -165,7 +162,7 @@ fn setup_unmasked_buffer_frame(rb: &graphics::render_buffer_t, bg: &idle::color_
     return default_frame_buffer;
 }
 
-fn fill_frame_with_color(color: &idle::color_t)
+void fill_frame_with_color(const idle::color_t& color) noexcept
 {
     opengl.prog.fill.use();
     opengl.prog.fill.set_identity();
@@ -175,7 +172,7 @@ fn fill_frame_with_color(color: &idle::color_t)
     gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
 }
 
-fn setup_drawing_buffer_frame(rb: &graphics::render_buffer_t, bg: &idle::color_t) -> GLint
+auto setup_drawing_buffer_frame(const graphics::render_buffer_t& rb, const idle::color_t& bg) noexcept -> GLint
 {
     GLint default_frame_buffer;
     gl::GetIntegerv(gl::FRAMEBUFFER_BINDING, &default_frame_buffer);
@@ -213,7 +210,7 @@ public:
     }
 };
 
-fn wait_one_frame_with_skipping(new_time: mut std::chrono::steady_clock::time_point) -> auto
+auto wait_one_frame_with_skipping(std::chrono::steady_clock::time_point new_time) noexcept -> auto
 {
     using clock_type = std::chrono::steady_clock;
 
@@ -229,25 +226,23 @@ fn wait_one_frame_with_skipping(new_time: mut std::chrono::steady_clock::time_po
 
 }  // namespace
 
-&fn pause_menu::draw()
+void pause_menu::draw() const noexcept
 {
-    let glare: float = std::sin(shift);
-    let glare_sqr = math::sqr(glare);
+    const float glare = std::sin(shift);
+    const auto glare_sqr = math::sqr(glare);
 
     opengl.prog.normal.use();
     opengl.prog.normal.set_identity();
     opengl.prog.normal.set_view_identity();
 
-    let t: float[]
-    {
+    const float t[] {
         0, buffers[0]->texture_h,
         buffers[0]->texture_w, buffers[0]->texture_h,
         0, 0,
         buffers[0]->texture_w, 0
     };
 
-    let tb: float[]
-    {
+    const float tb[] {
         0, buffers[1]->texture_h,
         buffers[1]->texture_w, buffers[1]->texture_h,
         0, 0,
@@ -266,7 +261,7 @@ fn wait_one_frame_with_skipping(new_time: mut std::chrono::steady_clock::time_po
     opengl.prog.normal.texture_vertex(tb);
     gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
 
-    let y_shift = opengl.draw_size.y / 2 - 60.f + (1 - fadein_alpha) * 20;
+    const auto y_shift = opengl.draw_size.y / 2 - 60.f + (1 - fadein_alpha) * 20;
 
     opengl.prog.text.use();
     opengl.prog.text.set_color({1, .733f, .796f, fadein_alpha});
@@ -294,9 +289,9 @@ pause_menu::pause_menu(const unsigned blur_downscale)
         std::chrono::steady_clock::now() + std::chrono::seconds(2)
     }
 {
-    let intermediate_buffer: graphics::render_buffer_t{opengl.render_buffer_masked->internal_size, opengl.render_quality};
-    let intermediate_masked_buffer = opengl.new_render_buffer(blur_downscale);
-    let def = setup_drawing_buffer_frame(intermediate_buffer, platform::background);
+    const graphics::render_buffer_t intermediate_buffer {opengl.render_buffer_masked->internal_size, opengl.render_quality};
+    const auto intermediate_masked_buffer = opengl.new_render_buffer(blur_downscale);
+    const auto def = setup_drawing_buffer_frame(intermediate_buffer, platform::background);
 
     room_ctrl.draw_frame(opengl);
 
@@ -319,7 +314,7 @@ pause_menu::pause_menu(const unsigned blur_downscale)
     gl::BindFramebuffer(gl::FRAMEBUFFER, def);
 }
 
-fn application::draw()
+void application::draw() noexcept
 {
     if (blank_display)
     {
@@ -328,7 +323,7 @@ fn application::draw()
     }
     else if (pause)
     {
-        let rg: render_guard{};
+        const render_guard rg {};
         pause->draw();
 
 #ifdef IDLE_COMPILE_FPS_COUNTERS
@@ -338,7 +333,7 @@ fn application::draw()
     }
     else
     {
-        let rg: render_guard{};
+        const render_guard rg {};
         room_ctrl.draw_frame(opengl);
 
 #ifdef IDLE_COMPILE_FPS_COUNTERS
@@ -351,9 +346,9 @@ fn application::draw()
 
 #define PRINT_SIZE(obj) LOGD("# sizeof " #obj " = %zu", sizeof(obj))
 
-fn application::real_main() -> int
+auto application::real_main() noexcept -> int
 {
-    let mut app: application{};
+    application app {};
 
 #ifdef __clang__
     LOGI("%s", "### clang " __clang_version__);
@@ -371,7 +366,7 @@ fn application::real_main() -> int
         {
             if (app.window.cursor.pressed)
             {
-                let p = app.window.cursor.pos * opengl.translate_vector;
+                const auto p = app.window.cursor.pos * opengl.translate_vector;
                 app.window.cursor.pressed = false;
 
                 if (fabsf(p.x - opengl.draw_size.x / 2) < 150.f
@@ -414,19 +409,19 @@ fn application::real_main() -> int
 namespace
 {
 
-:fn ext_ascii_plus_math(c: unsigned long) -> bool
+constexpr auto ext_ascii_plus_math(const unsigned long c) noexcept -> bool
 {
     return (c >= 0x20 && c < 0x17f) || (c >= 0x20b && c < 0x370) || (c > 0x390 && c <= 0x3fc);
 }
 
-:fn ext_ascii(c: unsigned long) -> bool
+constexpr auto ext_ascii(const unsigned long c) noexcept -> bool
 {
     return (c >= 0x20 && c < 0x17f);
 }
 
-fn make_font(font_data: mut fonts::ft_data_t) -> fonts::font_t
+auto make_font(fonts::ft_data_t font_data) noexcept -> fonts::font_t
 {
-    let mut image = graphics::unique_texture(idle::image_t::load_from_memory(
+    auto image = graphics::unique_texture(idle::image_t::load_from_memory(
                 font_data.width, font_data.width,
 #ifdef __ANDROID__
                 gl::LUMINANCE, gl::LUMINANCE,
@@ -435,16 +430,14 @@ fn make_font(font_data: mut fonts::ft_data_t) -> fonts::font_t
 #endif
                 gl::LINEAR, gl::CLAMP_TO_EDGE, std::move(font_data.pixels)).release());
 
-    let min_y = std::min_element(font_data.map.begin(), font_data.map.end(),
-            |left: &auto, right: &auto|
-            {
+    const auto min_y = std::min_element(font_data.map.begin(), font_data.map.end(),
+            [](const auto& left, const auto& right) {
                 return left.second.offset.y < right.second.offset.y;
 
             })->second.offset.y;
 
-    let max_y = std::max_element(font_data.map.begin(), font_data.map.end(),
-            |left: &auto, right: &auto|
-            {
+    const auto max_y = std::max_element(font_data.map.begin(), font_data.map.end(),
+            [](const auto& left, const auto& right) {
                 return left.second.offset.y < right.second.offset.y;
 
             })->second.offset.y;
@@ -463,10 +456,10 @@ fn make_font(font_data: mut fonts::ft_data_t) -> fonts::font_t
 }  // namespace
 
 
-fn application::load() -> bool
+auto application::load() noexcept -> bool
 {
     using namespace std::chrono_literals;
-    :let minimum_elapsed = std::chrono::duration_cast<std::chrono::microseconds>(1.0s) / (idle::application_frames_per_second / 2 + 5);
+    constexpr auto minimum_elapsed = std::chrono::duration_cast<std::chrono::microseconds>(1.0s) / (idle::application_frames_per_second / 2 + 5);
 
     room_ctrl.sleep();
 
@@ -475,30 +468,30 @@ fn application::load() -> bool
 
     LOGI("Asset refresh requested");
 
-    let mut la: idle::lodge {
+    idle::lodge la {
         idle::image_t::load_from_assets_immediate("path4368.png"),
         idle::image_t::load_from_assets_immediate("space-1.png")
     };
 
-    let mut lt = std::chrono::steady_clock::now();
+    auto lt = std::chrono::steady_clock::now();
     bool success = false;
 
-    let mut loader_thread: std::thread {
+    std::thread loader_thread {
         [&promise = success, &flag = la.load_status]
         {
-            let freetype: fonts::freetype_glue{};
+            const fonts::freetype_glue freetype {};
 
-            if (let unicode_font = platform::asset::hold(idle::config::regular_font_asset))
+            if (const auto unicode_font = platform::asset::hold(idle::config::regular_font_asset))
             {
-                if (let mut ft = freetype(ext_ascii_plus_math, unicode_font.view(), fonts::texture_quality::ok))
+                if (auto ft = freetype(ext_ascii_plus_math, unicode_font.view(), fonts::texture_quality::ok))
                 {
                     opengl.fonts.regular.emplace(make_font(std::move(*ft)));
                 }
             }
 
-            if (let title_font = platform::asset::hold(idle::config::title_font_asset))
+            if (const auto title_font = platform::asset::hold(idle::config::title_font_asset))
             {
-                if (let mut ft = freetype(ext_ascii, title_font.view(), fonts::texture_quality::poor))
+                if (auto ft = freetype(ext_ascii, title_font.view(), fonts::texture_quality::poor))
                 {
                     opengl.fonts.title.emplace(make_font(std::move(*ft)));
                 }
@@ -523,7 +516,7 @@ fn application::load() -> bool
             {
                 lt += minimum_elapsed;
                 {
-                    let rg: render_guard{};
+                    const render_guard rg {};
                     la.draw(opengl);
                 }
                 window.buffer_swap();
@@ -541,7 +534,7 @@ fn application::load() -> bool
     if (!!window.has_opengl())
     {
         {
-            let rg: render_guard{};
+            const render_guard rg {};
 
             opengl.prog.normal.use();
             opengl.prog.normal.set_identity();
