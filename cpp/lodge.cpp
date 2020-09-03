@@ -36,13 +36,17 @@ void lodge::draw(const graphics::core& gl) const noexcept
 
     if (alpha < 1.f)
     {
-        gl.prog.normal.set_transform(math::matrices::uniform_scale<float>(sinf(alpha * F_TAU_4) *.5f + .5f, {(astronaut.right - astronaut.left) / 2, (astronaut.bottom - astronaut.top) / 2})
-            * math::matrices::uniform_scale(.6f) * math::matrices::translate<float>({gl.draw_size.x / 2 - 80.f, 25.f}));
+        auto mat_astro = math::matrices::uniform_scale<float>(std::sin(alpha * F_TAU_4) *.5f + .5f, {(astronaut.right - astronaut.left) / 2, (astronaut.bottom - astronaut.top) / 2});
+        math::transform::uniform_scale(mat_astro, .6f);
+        math::transform::translate(mat_astro, {gl.draw_size.x / 2 - 80.f, 25.f});
+        gl.prog.normal.set_transform(mat_astro);
         gl.prog.normal.set_color({1, 1, 1, alpha * alpha});
     }
     else
     {
-        gl.prog.normal.set_transform(math::matrices::uniform_scale(.6f) * math::matrices::translate<float>({gl.draw_size.x / 2 - 80.f, 25.f}));
+        auto mat_astro = math::matrices::uniform_scale<float>(.6f);
+        math::transform::translate(mat_astro, {gl.draw_size.x / 2 - 80.f, 25.f});
+        gl.prog.normal.set_transform(mat_astro);
     }
     picture.draw(gl.prog.normal, astronaut);
 
@@ -56,7 +60,11 @@ void lodge::draw(const graphics::core& gl) const noexcept
 
     gl.prog.normal.use();
     gl.prog.normal.set_color({1, 1, 1, 1});
-    gl.prog.normal.set_transform(math::matrices::rotate(math::degtorad<float>(90)) * math::matrices::uniform_scale(.4f) * math::matrices::translate<float>({gl.draw_size.x - 1.f, 1.f}));
+
+    auto mat_cp = math::matrices::rotate(math::degtorad<float>(90));
+    math::transform::uniform_scale(mat_cp, .4f);
+    math::transform::translate(mat_cp, {gl.draw_size.x - 1.f, 1.f});
+    gl.prog.normal.set_transform(mat_cp);
     picture.draw(gl.prog.normal, text_cp);
 }
 
@@ -72,7 +80,7 @@ void lodge::tick() noexcept
     }
 }
 
-auto lodge::is_done() const noexcept -> bool
+bool lodge::is_done() const noexcept
 {
     return (load_status.load(std::memory_order_acquire) && alpha == 0.f);
 }

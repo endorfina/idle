@@ -24,6 +24,15 @@
 namespace idle::stats
 {
 
+statistician::statistician() noexcept
+    : frame_count([]{
+                statistician::array_type out;
+                out.fill({.5f, 2.f});
+                return out;
+            }())
+{
+}
+
 void statistician::count_fps(const std::chrono::high_resolution_clock::time_point start_point) noexcept
 {
     if (iter >= frame_count.size())

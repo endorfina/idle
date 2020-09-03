@@ -42,7 +42,7 @@ class lodge
 
     void draw(const graphics::core& gl) const noexcept;
 
-    auto is_done() const noexcept -> bool;
+    bool is_done() const noexcept;
 };
 
 }  //namespace idle

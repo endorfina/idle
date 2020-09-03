@@ -34,13 +34,17 @@ constexpr auto time_minimum_elapsed = time_one_second / application_frames_per_s
 
 class statistician
 {
+    using array_type = std::array<point_t, idle::application_frames_per_second * 12>;
+
+    array_type frame_count;
     unsigned iter = 0;
-    std::array<point_t, idle::application_frames_per_second * 12> frame_count;
 
 public:
     void count_fps(const std::chrono::high_resolution_clock::time_point start_point) noexcept;
 
     void draw_fps(const graphics::core& gl) const noexcept;
+
+    statistician() noexcept;
 };
 
 class wall_clock
