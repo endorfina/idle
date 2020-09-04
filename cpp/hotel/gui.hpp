@@ -32,21 +32,18 @@ namespace idle::gui
 namespace internal
 {
 
-TEMPLATE_CHECK_METHOD(draw_background);
-TEMPLATE_CHECK_METHOD(draw_foreground);
-
 template<std::size_t I = 0, typename Tuple, typename...Vars>
 void elem_draw(const Tuple& tuple, const Vars&...vars) noexcept
 {
     constexpr auto tuple_size = std::tuple_size<Tuple>::value;
     using tuple_elem_type = typename std::tuple_element<I, Tuple>::type;
 
-    if constexpr (has_draw_background_method<tuple_elem_type>::value)
+    if constexpr (requires { &tuple_elem_type::draw_background; })
     {
         std::get<I>(tuple).draw_background(vars...);
     }
 
-    if constexpr (has_draw_foreground_method<tuple_elem_type>::value)
+    if constexpr (requires { &tuple_elem_type::draw_foreground; })
     {
         std::get<I>(tuple).draw_foreground(vars...);
     }
@@ -57,12 +54,11 @@ void elem_draw(const Tuple& tuple, const Vars&...vars) noexcept
     }
 }
 
-TEMPLATE_CHECK_METHOD(position_on);
-
 template<std::size_t I = 0, typename... Tp>
 void elem_update_position(point_t screen_size, std::tuple<Tp...>& tuple) noexcept
 {
-    if constexpr (has_position_on_method<typename std::tuple_element<I, std::tuple<Tp...>>::type>::value)
+    using tuple_elem_type = typename std::tuple_element<I, std::tuple<Tp...>>::type;
+    if constexpr (requires { &tuple_elem_type::position_on; })
     {
         std::get<I>(tuple).position_on(screen_size);
     }
@@ -72,15 +68,14 @@ void elem_update_position(point_t screen_size, std::tuple<Tp...>& tuple) noexcep
     }
 }
 
-TEMPLATE_CHECK_METHOD(trigger);
-
 template<std::size_t I = 0, typename Ret, typename Tuple, typename Func, typename...Vars>
 std::optional<Ret> elem_trigger(const point_t pointer, Tuple& tuple, Func&& func, Vars&&...vars) noexcept
 {
     constexpr auto tuple_size = std::tuple_size<Tuple>::value;
     constexpr auto elem_id = tuple_size - I - 1;
+    using tuple_elem_type = typename std::tuple_element<elem_id, Tuple>::type;
 
-    if constexpr (has_trigger_method<typename std::tuple_element<elem_id, Tuple>::type>::value)
+    if constexpr (requires { &tuple_elem_type::trigger; })
     {
         auto& elem = std::get<elem_id>(tuple);
 
@@ -245,7 +240,7 @@ struct button : buttonless<Pos, Width, Height>
 
             for (unsigned i = 0; i < fan_size; ++i)
             {
-                const float a = static_cast<float>(i) * F_TAU_2 / (fan_size - 1);
+                const float a = static_cast<float>(i) * math::tau_2 / (fan_size - 1);
 
                 //  the fan is rotationally symmetric
                 fan[i + 2 + fan_size] =

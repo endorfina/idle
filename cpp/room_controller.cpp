@@ -36,13 +36,6 @@ auto wait_one_frame(std::chrono::steady_clock::time_point new_time) noexcept
     return new_time;
 }
 
-
-TEMPLATE_CHECK_METHOD(on_resize);
-
-TEMPLATE_CHECK_METHOD(step);
-
-TEMPLATE_CHECK_METHOD(draw);
-
 template<typename T>
 struct is_hotel_room : std::false_type {};
 
@@ -64,7 +57,7 @@ void controller::resize(point_t size) noexcept
 
     std::visit([size](auto& room)
     {
-        if constexpr (has_on_resize_method<idle_remove_cvr(room)>::value)
+        if constexpr (requires { &idle_remove_cvr(room)::on_resize; })
         {
             room.on_resize(size);
         }
@@ -89,7 +82,7 @@ void controller::draw_frame(const graphics::core& gl) noexcept
 
         std::visit([&gl](auto& room)
         {
-            if constexpr (has_draw_method<idle_remove_cvr(room)>::value)
+            if constexpr (requires { &idle_remove_cvr(room)::draw; })
             {
                 room.draw(gl);
             }
@@ -136,6 +129,11 @@ void controller::awaken(const std::chrono::steady_clock::time_point clock) noexc
                                 {
                                     next_variant.rooms.emplace(door<typename type::opened_type>{});
                                 }
+                                else
+                                {
+                                    sleep();
+                                    haiku.crash("Unknown action requested");
+                                }
                             },
                             *maybe_action);
                     }
@@ -177,7 +175,7 @@ std::optional<hotel::keyring::variant> controller::do_step(const pointer_wrapper
                 static_assert(std::is_constructible_v<T>);
                 gate.open(current_variant);
 
-                if constexpr (has_on_resize_method<T>::value)
+                if constexpr (requires { &T::on_resize; })
                 {
                     std::get<T>(current_variant).on_resize(current_screen_size);
                 }
@@ -190,7 +188,7 @@ std::optional<hotel::keyring::variant> controller::do_step(const pointer_wrapper
 
     return std::visit([&cur] (auto& room) -> std::optional<hotel::keyring::variant>
         {
-            if constexpr (has_step_method<idle_remove_cvr(room)>::value)
+            if constexpr (requires { &idle_remove_cvr(room)::step; })
             {
                 return room.step(cur);
             }

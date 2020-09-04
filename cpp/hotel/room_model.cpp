@@ -81,7 +81,7 @@ constexpr auto skew_index(const S& source, const mat4x4_noopt_t& mat, std::index
     };
 }
 
-constexpr mat4x4_noopt_t skew_matrix = math::matrices::rotate<GLfloat>(F_TAU_8) * math::matrices::rotate_y<GLfloat>(F_TAU_4 / 3);
+constexpr mat4x4_noopt_t skew_matrix = math::matrices::rotate<GLfloat>(math::tau_8) * math::matrices::rotate_y<GLfloat>(math::tau_4 / 3);
 
 template<unsigned...Deg, typename Rig, auto Size>
 constexpr auto skew(const std::array<Rig, Size>& anim) noexcept
@@ -99,14 +99,14 @@ constexpr auto skew(const std::array<Rig, Size>& anim) noexcept
 
 constexpr glass::closet::humanoid hueman{};
 
-constexpr float walk_leg_raise = F_TAU_8 / 6.f;
-constexpr float walk_knee_bend = F_TAU_8;
-constexpr float walk_foot_raise = F_TAU_8 * -.6f;
-constexpr float walk_hip_swing = F_TAU_8 / 12.f;
+constexpr float walk_leg_raise = math::tau_8 / 6.f;
+constexpr float walk_knee_bend = math::tau_8;
+constexpr float walk_foot_raise = math::tau_8 * -.6f;
+constexpr float walk_hip_swing = math::tau_8 / 12.f;
 
-constexpr float walk_shoulder_swing = F_TAU_8 / 16.f;
-constexpr float walk_arm_raise = F_TAU_8 / 8.f;
-constexpr float walk_elbow_bend = F_TAU_8 / 4.f;
+constexpr float walk_shoulder_swing = math::tau_8 / 16.f;
+constexpr float walk_arm_raise = math::tau_8 / 8.f;
+constexpr float walk_elbow_bend = math::tau_8 / 4.f;
 
 constexpr auto walking_muscle_digest = glass::muscle
     {
@@ -119,8 +119,8 @@ constexpr auto walking_muscle_digest = glass::muscle
                 h.get_lowerbody().root.angle.z += walk_hip_swing;
 
                 auto& shoulders = h.get_shoulders();
-                shoulders.right[1].angle.x += F_TAU_8 * .61f;
-                shoulders.left[1].angle.x -= F_TAU_8 * .61f;
+                shoulders.right[1].angle.x += math::tau_8 * .61f;
+                shoulders.left[1].angle.x -= math::tau_8 * .61f;
                 shoulders.right[0].angle.y += walk_arm_raise / 2;
                 shoulders.right[2].angle.y += walk_elbow_bend;
                 shoulders.left[0].angle.y -= walk_arm_raise / 2;
@@ -215,29 +215,29 @@ constexpr auto floating_muscle_digest = glass::muscle
             [](glass::closet::humanoid h)
             {
                 auto& [neck, face] = h.get_head().table;
-                neck.angle.y -= F_TAU_8 * .2f;
-                h.get_upperbody().root.angle.y -= F_TAU_8 *.8f;
-                h.get_lowerbody().root.angle.y -= F_TAU_8 *.7f;
+                neck.angle.y -= math::tau_8 * .2f;
+                h.get_upperbody().root.angle.y -= math::tau_8 *.8f;
+                h.get_lowerbody().root.angle.y -= math::tau_8 *.7f;
 
                 auto& shoulders = h.get_shoulders();
-                // shoulders.right[1].angle.x += F_TAU_8 * .61f;
-                // shoulders.left[1].angle.x -= F_TAU_8 * .61f;
-                shoulders.right[0].angle.y -= F_TAU_8 * .1f;
-                shoulders.right[2].angle.y += F_TAU_8 * .1f;
-                shoulders.right[2].angle.z -= F_TAU_8 * .1f;
-                shoulders.left[0].angle.y += F_TAU_8 * .1f;
-                shoulders.left[2].angle.y += F_TAU_8 * .1f;
-                shoulders.left[2].angle.z += F_TAU_8 * .1f;
+                // shoulders.right[1].angle.x += math::tau_8 * .61f;
+                // shoulders.left[1].angle.x -= math::tau_8 * .61f;
+                shoulders.right[0].angle.y -= math::tau_8 * .1f;
+                shoulders.right[2].angle.y += math::tau_8 * .1f;
+                shoulders.right[2].angle.z -= math::tau_8 * .1f;
+                shoulders.left[0].angle.y += math::tau_8 * .1f;
+                shoulders.left[2].angle.y += math::tau_8 * .1f;
+                shoulders.left[2].angle.z += math::tau_8 * .1f;
 
                 auto& hips = h.get_hips();
-                hips.right[0].angle.y += F_TAU_8 *.3f;
-                hips.right[1].angle.x += F_TAU_8 *.19f;
-                hips.right[2].angle.y -= F_TAU_8 *.1f;
-                hips.right[3].angle.y += F_TAU_8;
-                hips.left[0].angle.y += F_TAU_8 * .5f;
-                hips.left[1].angle.x -= F_TAU_8 *.19f;
-                hips.left[2].angle.y += F_TAU_8 * .5f;
-                hips.left[3].angle.y += F_TAU_8;
+                hips.right[0].angle.y += math::tau_8 *.3f;
+                hips.right[1].angle.x += math::tau_8 *.19f;
+                hips.right[2].angle.y -= math::tau_8 *.1f;
+                hips.right[3].angle.y += math::tau_8;
+                hips.left[0].angle.y += math::tau_8 * .5f;
+                hips.left[1].angle.x -= math::tau_8 *.19f;
+                hips.left[2].angle.y += math::tau_8 * .5f;
+                hips.left[3].angle.y += math::tau_8;
 
                 return h;
             },
@@ -245,25 +245,25 @@ constexpr auto floating_muscle_digest = glass::muscle
             [](glass::closet::humanoid h)
             {
                 auto& [neck, face] = h.get_head().table;
-                neck.angle.y -= F_TAU_8 * .001f;
-                h.get_upperbody().root.angle.y -= F_TAU_8 *.05f;
-                h.get_lowerbody().root.angle.y -= F_TAU_8 *.05f;
+                neck.angle.y -= math::tau_8 * .001f;
+                h.get_upperbody().root.angle.y -= math::tau_8 *.05f;
+                h.get_lowerbody().root.angle.y -= math::tau_8 *.05f;
 
                 auto& shoulders = h.get_shoulders();
-                // shoulders.right[1].angle.x += F_TAU_8 * .61f;
-                // shoulders.left[1].angle.x -= F_TAU_8 * .61f;
-                shoulders.right[0].angle.y += F_TAU_8 * .01f;
-                shoulders.right[2].angle.y += F_TAU_8 * .4f;
-                shoulders.right[2].angle.z -= F_TAU_8 * .3f;
-                shoulders.left[0].angle.y -= F_TAU_8 * .01f;
-                shoulders.left[2].angle.y += F_TAU_8 * .4f;
-                shoulders.left[2].angle.z += F_TAU_8;
+                // shoulders.right[1].angle.x += math::tau_8 * .61f;
+                // shoulders.left[1].angle.x -= math::tau_8 * .61f;
+                shoulders.right[0].angle.y += math::tau_8 * .01f;
+                shoulders.right[2].angle.y += math::tau_8 * .4f;
+                shoulders.right[2].angle.z -= math::tau_8 * .3f;
+                shoulders.left[0].angle.y -= math::tau_8 * .01f;
+                shoulders.left[2].angle.y += math::tau_8 * .4f;
+                shoulders.left[2].angle.z += math::tau_8;
 
                 auto& hips = h.get_hips();
-                hips.right[0].angle.y += F_TAU_8 *.1f;
-                hips.right[2].angle.y += F_TAU_8 *.05f;
-                hips.left[0].angle.y -= F_TAU_8 * .2f;
-                hips.left[2].angle.y -= F_TAU_8 * .1f;
+                hips.right[0].angle.y += math::tau_8 *.1f;
+                hips.right[2].angle.y += math::tau_8 *.05f;
+                hips.left[0].angle.y -= math::tau_8 * .2f;
+                hips.left[2].angle.y -= math::tau_8 * .1f;
 
                 return h;
             }
@@ -320,7 +320,7 @@ void room::draw(const graphics::core& gl) const noexcept
 std::optional<keyring::variant> room::step(const pointer_wrapper& cursor) noexcept
 {
     auto work_copy = model_anim.load(std::memory_order_relaxed);
-    timer += .12f / F_TAU_2 * uni_time_factor;
+    timer += .12f / math::tau_2 * uni_time_factor;
 
     if (timer >= 1.f)
     {

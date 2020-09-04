@@ -29,27 +29,6 @@
 #include "gl_programs.hpp"
 #include "fonts.hpp"
 
-#define TEMPLATE_CHECK_METHOD(fname) template<typename T, typename = void>\
-    struct has_##fname##_method : std::false_type {};\
-    template<typename T>\
-    struct has_##fname##_method<\
-        T,\
-        std::enable_if_t<\
-            std::is_member_function_pointer_v<decltype(&T::fname)>\
-        >\
-    > : public std::true_type {}
-
-#define TEMPLATE_CHECK_MEMBER(fname) template<typename T, typename = void>\
-    struct has_##fname##_member : std::false_type {};\
-    template<typename T>\
-    struct has_##fname##_member<\
-        T,\
-        std::enable_if_t<\
-            std::is_member_pointer_v<decltype(&T::fname)>\
-        >\
-    > : public std::true_type {}
-
-
 namespace graphics
 {
 

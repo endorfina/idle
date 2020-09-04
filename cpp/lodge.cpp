@@ -36,7 +36,7 @@ void lodge::draw(const graphics::core& gl) const noexcept
 
     if (alpha < 1.f)
     {
-        auto mat_astro = math::matrices::uniform_scale<float>(std::sin(alpha * F_TAU_4) *.5f + .5f, {(astronaut.right - astronaut.left) / 2, (astronaut.bottom - astronaut.top) / 2});
+        auto mat_astro = math::matrices::uniform_scale<float>(std::sin(alpha * math::tau_4) *.5f + .5f, {(astronaut.right - astronaut.left) / 2, (astronaut.bottom - astronaut.top) / 2});
         math::transform::uniform_scale(mat_astro, .6f);
         math::transform::translate(mat_astro, {gl.draw_size.x / 2 - 80.f, 25.f});
         gl.prog.normal.set_transform(mat_astro);

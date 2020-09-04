@@ -168,9 +168,9 @@ std::optional<ft_data_t> create_font(const font_face_t freetype_font_face, const
     }};
 }
 
-FT_Library library;
-unsigned library_ref_count = 0;
-bool library_loaded = false;
+constinit FT_Library library;
+constinit unsigned library_ref_count = 0;
+constinit bool library_loaded = false;
 
 }  // namespace
 

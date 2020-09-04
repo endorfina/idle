@@ -38,7 +38,7 @@ namespace
 // These need to be global to allow for proper clean up with X11
 
 idle::controller room_ctrl{};
-graphics::core opengl{};
+constinit graphics::core opengl{};
 
 }  // namespace
 
@@ -382,11 +382,11 @@ auto application::real_main() noexcept -> int
                 = app.clock >= app.pause->finish_time ? 1.f
                     : std::cos(static_cast<float>(
                             (app.pause->finish_time - app.clock) / std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::seconds(2))
-                        ) * F_TAU_4);
+                        ) * math::tau_4);
 
             app.pause->shift += .018f;
-            if (app.pause->shift > F_TAU)
-                app.pause->shift -= F_TAU;
+            if (app.pause->shift > math::tau)
+                app.pause->shift -= math::tau;
         }
 
         if (app.window.has_opengl())

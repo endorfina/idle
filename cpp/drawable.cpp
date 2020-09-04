@@ -329,7 +329,7 @@ void fill_circle(const graphics::program_t& prog, point_t center, const float ra
         point_t v[steps + 2];
         v[0] = {center.x, center.y};
         for (unsigned int i = 0; i <= steps; ++i) {
-            const float a = i * F_TAU / steps;
+            const float a = i * math::tau / steps;
             v[1 + i] = {center.x + cosf(a) * radius, center.y + sinf(a) * radius};
         }
 
@@ -345,7 +345,7 @@ void draw_circle(const graphics::program_t& prog, point_t center, const float ra
         point_t v[steps + 1];
         v[0] = {center.x, center.y};
         for (unsigned int i = 0; i <= steps; ++i) {
-            const float a = i * F_TAU / steps;
+            const float a = i * math::tau / steps;
             v[i] = {center.x + cosf(a) * radius, center.y + sinf(a) * radius};
         }
         prog.position_vertex(reinterpret_cast<const GLfloat*>(v));
@@ -414,7 +414,7 @@ void fill_round_rectangle(const graphics::program_t& prog, const rect_t &rect, c
         std::array<point_t, (ROUND_RECTANGLE_DRAW_STEPS + 1) * 4 + 2> v;
         v[0] = {(rect.left + rect.right) / 2, (rect.top + rect.bottom) / 2};
         for (unsigned i = 0; i <= ROUND_RECTANGLE_DRAW_STEPS; ++i) {
-            const float a = i * F_TAU_4 / ROUND_RECTANGLE_DRAW_STEPS;
+            const float a = i * math::tau_4 / ROUND_RECTANGLE_DRAW_STEPS;
             v[i + 1] = {rect.left + radius - cosf(a) * radius, rect.top + radius - sinf(a) * radius};
             v[i + 2 + ROUND_RECTANGLE_DRAW_STEPS] = {rect.right - radius + sinf(a) * radius, rect.top + radius - cosf(a) * radius};
             v[i + 3 + ROUND_RECTANGLE_DRAW_STEPS * 2] = {rect.right - radius + cosf(a) * radius, rect.bottom - radius + sinf(a) * radius};

@@ -97,7 +97,7 @@ void font_t::draw_custom_animation(const graphics::text_program_t& rcp, const st
         {
             if (i >= start)
             {
-                if (anim[1].scale < F_TAU_4)
+                if (anim[1].scale < math::tau_4)
                     rcp.set_color(col, col.a * (1 - math::sqr(std::cos(anim->scale))));
 
                 auto mat = math::matrices::uniform_scale<float>(1 - std::cos(anim->scale) / 2);

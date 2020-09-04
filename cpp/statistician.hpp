@@ -44,7 +44,14 @@ public:
 
     void draw_fps(const graphics::core& gl) const noexcept;
 
-    statistician() noexcept;
+    constexpr statistician() noexcept
+        : frame_count([]{
+                    statistician::array_type out;
+                    out.fill({.5f, 2.f});
+                    return out;
+                }())
+    {
+    }
 };
 
 class wall_clock

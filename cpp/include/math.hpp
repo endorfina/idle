@@ -22,44 +22,23 @@
 #include <type_traits>
 #include <array>
 #include <algorithm>
+#include <numbers>
 
 #ifndef  __clang__  // gcc is love
 #include <cmath>
 #endif
 
-#include <memory.h> // memcpy
-
-#define F_E         2.7182818284590452354f  /* e */
-#define F_LOG2E     1.4426950408889634074f  /* log 2e */
-#define F_LOG10E    0.43429448190325182765f /* log 10e */
-#define F_LN2       0.69314718055994530942f /* log e2 */
-#define F_LN10      2.30258509299404568402f /* log e10 */
-#define F_PI        3.14159265358979323846f /* pi */
-#define F_PI_2      1.57079632679489661923f /* pi/2 */
-#define F_PI_4      0.78539816339744830962f /* pi/4 */
-#define F_1_PI      0.31830988618379067154f /* 1/pi */
-#define F_2_PI      0.63661977236758134308f /* 2/pi */
-#define F_2_SQRTPI  1.12837916709551257390f /* 2/sqrt(pi) */
-#define F_SQRT2     1.41421356237309504880f /* sqrt(2) */
-#define F_SQRT1_2   0.70710678118654752440f /* 1/sqrt(2) */
-
-#define F_TAU       6.28318530717958647692f /* tau */
-#define F_TAU_2     F_PI    /* tau/2 */
-#define F_TAU_4     F_PI_2  /* tau/4 */
-#define F_TAU_8     F_PI_4  /* tau/4 */
-
-#ifndef M_PI
-#define M_PI F_PI
-#endif
-
-#ifndef M_PI_2
-#define M_PI_2 F_PI_2
-#endif
-
 namespace math
 {
+template<typename T>
+concept floating = std::is_floating_point_v<T>;
 
-template <typename T>
+inline constexpr float tau_2 = std::numbers::pi_v<float>;
+inline constexpr float tau = tau_2 * 2;
+inline constexpr float tau_4 = tau_2 / 2;
+inline constexpr float tau_8 = tau_2 / 4;
+
+template<typename T>
 constexpr T sqr(T x) noexcept
 {
     return x * x;
@@ -69,21 +48,22 @@ constexpr T sqr(T x) noexcept
 namespace ce
 {
 
-template <typename T>
+template<typename T>
 constexpr T abs(T x) noexcept
 {
     return x >= 0 ? x : -x;
 }
 
+
 namespace detail
 {
-    template <typename T>
+    template<floating T>
     constexpr bool epsilon_equal(T x, T y) noexcept
     {
         return abs(x - y) <= std::numeric_limits<T>::epsilon();
     }
 
-    template <typename N, typename F>
+    template<typename N, floating F>
     constexpr F power(F x, N nth) noexcept
     {
         if (nth == 0)
@@ -100,7 +80,7 @@ namespace detail
             return F{1} / power<N, F>(x, -nth);
     }
 
-    template <typename T>
+    template<floating T>
     constexpr T sqrt(const T x, T guess) noexcept
     {
         while (true)
@@ -113,21 +93,18 @@ namespace detail
     }
 }  // namespace detail
 
-template <typename T>
-constexpr auto sqrt(T x) noexcept
+template<floating T>
+constexpr T sqrt(T x) noexcept
 {
     if (x == 0)
         return 0.f;
 
-    if constexpr (std::is_floating_point_v<T>)
-        return detail::sqrt(x, x);
-    else
-        return detail::sqrt<float>(x, x);
+    return detail::sqrt(x, x);
 }
 
 namespace detail
 {
-    template <typename T>
+    template<floating T>
     constexpr T cbrt(const T x, T guess) noexcept
     {
         while (true)
@@ -140,24 +117,21 @@ namespace detail
     }
 }  // namespace detail
 
-template <typename T>
-constexpr auto cbrt(T x) noexcept
+template<floating T>
+constexpr T cbrt(T x) noexcept
 {
-    if constexpr (std::is_floating_point_v<T>)
-        return detail::cbrt(x, T{1});
-    else
-        return detail::cbrt<float>(x, 1.f);
+    return detail::cbrt(x, T{1});
 }
 
-template <typename T>
-constexpr auto hypot(T x, T y) noexcept
+template<floating T>
+constexpr T hypot(T x, T y) noexcept
 {
     return sqrt(x * x + y * y);
 }
 
 namespace detail
 {
-    template <typename T>
+    template<floating T>
     constexpr T exp(const T x, T sum, T n, int i, T t) noexcept
     {
         while (true)
@@ -172,18 +146,15 @@ namespace detail
     }
 }  // namespace detail
 
-template <typename T>
-constexpr auto exp(T x) noexcept
+template<floating T>
+constexpr T exp(T x) noexcept
 {
-    if constexpr (std::is_floating_point_v<T>)
-        return detail::exp(x, T{1}, T{1}, 2, x);
-    else
-        return detail::exp<float>(x, 1.f, 1.f, 2, x);
+    return detail::exp(x, T{1}, T{1}, 2, x);
 }
 
 namespace detail
 {
-    template <typename T>
+    template<floating T>
     constexpr T trigonometry(const T x, T sum, T n, int i, int s, T t) noexcept
     {
         while (true)
@@ -200,58 +171,50 @@ namespace detail
     }
 }  // namespace detail
 
-template <typename T>
-constexpr auto sin(T x) noexcept
+template<floating T>
+constexpr T sin(T x) noexcept
 {
-    if constexpr (std::is_floating_point_v<T>)
-        return detail::trigonometry(x, x, T{6}, 4, -1, x * x * x);
-    else
-        return detail::trigonometry<float>(x, x, 6.f, 4, -1, x * x * x);
+    return detail::trigonometry(x, x, T{6}, 4, -1, x * x * x);
 }
 
-template <typename T>
-constexpr auto cos(T x) noexcept
+template<floating T>
+constexpr T cos(T x) noexcept
 {
-    if constexpr (std::is_floating_point_v<T>)
-        return detail::trigonometry(x, T{1}, T{2}, 3, -1, x * x);
-    else
-        return detail::trigonometry<float>(x, 1.f, 2.f, 3, -1, x * x);
+    return detail::trigonometry(x, T{1}, T{2}, 3, -1, x * x);
 }
 
-template <typename T>
-constexpr auto tan(T x) noexcept
+template<floating T>
+constexpr T tan(T x) noexcept
 {
-    static_assert(std::is_floating_point_v<T>);
-    const auto c = cos(x);
-    if (c == 0)
-        return std::numeric_limits<T>::infinity();
-    return sin(x) / c;
+    if (const auto c = cos(x); c != 0)
+        return sin(x) / c;
+    return std::numeric_limits<T>::infinity();
 }
 
 namespace detail
 {
-    template <typename T>
+    template<floating T>
     constexpr T atan_term(T x2, int k) noexcept
     {
         return (T{2} * static_cast<T>(k) * x2)
             / ((T{2} * static_cast<T>(k) + T{1}) * (T{1} + x2));
     }
 
-    template <typename T>
+    template<floating T>
     constexpr T atan_product(T x, int k) noexcept
     {
         return k == 1 ? atan_term(x * x, k) :
             atan_term(x * x, k) * atan_product(x, k-1);
     }
 
-    template <typename T>
+    template<floating T>
     constexpr T atan_sum(T x, T sum, int n) noexcept
     {
         return sum + atan_product(x, n) == sum ? sum :
             atan_sum(x, sum + atan_product(x, n), n+1);
     }
 
-    template <typename T>
+    template<floating T>
     constexpr T inverse_trigonometry(const T x, T sum, int n, T t) noexcept
     {
         while (true)
@@ -267,60 +230,60 @@ namespace detail
 
 }  // namespace detail
 
-template <typename T>
-constexpr auto asin(T x) noexcept
+template<floating T>
+constexpr T asin(T x) noexcept
 {
     if (x <= -1)
-        return F_TAU_2 / -2.f;
+        return tau_2 / -2.f;
     if (x >= 1)
-        return F_TAU_4;
+        return tau_4;
 
-    if constexpr (std::is_floating_point_v<T>)
-        return detail::inverse_trigonometry(x, x, 1, x * x * x / 2.f);
-    else
-        return detail::inverse_trigonometry<float>(x, x, 1, x * x * x / 2.f);
+    return detail::inverse_trigonometry(x, x, 1, x * x * x / 2.f);
 }
 
-template <typename T>
-constexpr auto acos(T x) noexcept
+template<floating T>
+constexpr T acos(T x) noexcept
 {
     if (x <= -1)
-        return F_TAU_2;
+        return tau_2;
     if (x >= 1)
         return 0.f;
 
-    return F_TAU_4 - asin(x);
+    return tau_4 - asin(x);
 }
 
-template <typename T>
-constexpr auto atan(T x) noexcept
+template<floating T>
+constexpr T atan(T x) noexcept
 {
-    if constexpr (std::is_floating_point_v<T>)
-        return x / (T{1} + x * x) * detail::atan_sum(x, T{1}, 1);
-    else
-        return x / (1.f + x * x) * detail::atan_sum<float>(x, 1.f, 1);
+    return x / (T{1} + x * x) * detail::atan_sum(x, T{1}, 1);
 }
 
-template <typename T>
+template<floating T>
 constexpr T atan2(T x, T y) noexcept
 {
-    return x > 0 ? atan(y/x) :
-        y >= 0 && x < 0 ? atan(y/x) + static_cast<T>(M_PI) :
-        y < 0 && x < 0 ? atan(y/x) - static_cast<T>(M_PI) :
-        y > 0 && x == 0 ? static_cast<T>(M_PI_2) :
-        -static_cast<T>(M_PI_2);
+    if (x > 0)
+        return atan(y/x);
+    if (y >= 0 && x < 0)
+        return atan(y/x) + static_cast<T>(tau_2);
+    if (y < 0 && x < 0)
+        return atan(y/x) - static_cast<T>(tau_2);
+    if (y > 0 && x == 0)
+        return static_cast<T>(tau_4);
+    return -static_cast<T>(tau_4);
 }
+
+#ifdef TURN_THIS_OFF
 
 namespace detail
 {
-    template <typename T>
+    template<floating T>
     constexpr T floor2(T x, T guess, T inc) noexcept
     {
         return guess + inc <= x ? floor2(x, guess + inc, inc) :
             inc <= T{1} ? guess : floor2(x, guess, inc/T{2});
     }
 
-    template <typename T>
+    template<floating T>
     constexpr T floor(T x, T guess, T inc) noexcept
     {
         return
@@ -336,14 +299,14 @@ namespace detail
             floor(x, guess, inc/T{8});
     }
 
-    template <typename T>
+    template<floating T>
     constexpr T ceil2(T x, T guess, T dec) noexcept
     {
         return guess - dec >= x ? ceil2(x, guess - dec, dec) :
             dec <= T{1} ? guess : ceil2(x, guess, dec/T{2});
     }
 
-    template <typename T>
+    template<floating T>
     constexpr T ceil(T x, T guess, T dec) noexcept
     {
         return
@@ -361,10 +324,6 @@ namespace detail
 }  // namespace detail
 
 constexpr float ceil(float x) noexcept;
-constexpr double ceil(double x) noexcept;
-
-template <typename T>
-constexpr float ceil(T x) noexcept;
 
 constexpr float floor(float x) noexcept
 {
@@ -373,20 +332,6 @@ constexpr float floor(float x) noexcept
             x, 0.0f,
             detail::power<int>(2.0f, std::numeric_limits<float>::max_exponent-1)
         );
-}
-constexpr double floor(double x) noexcept
-{
-    return x < 0 ? -ceil(-x) :
-        detail::floor(
-            x, 0.0,
-            detail::power<int>(2.0, std::numeric_limits<double>::max_exponent-1)
-        );
-}
-
-template<typename T>
-constexpr std::enable_if_t<std::is_integral_v<T>, double> floor(T x) noexcept
-{
-    return static_cast<double>(x);
 }
 
 constexpr float ceil(float x) noexcept
@@ -407,18 +352,7 @@ constexpr double ceil(double x) noexcept
         );
 }
 
-template <typename T>
-constexpr std::enable_if_t<std::is_integral_v<T>, float> ceil(T x) noexcept
-{
-    return static_cast<float>(x);
-}
-
 constexpr float trunc(float x) noexcept
-{
-    return x >= 0 ? floor(x) : -floor(-x);
-}
-
-constexpr double trunc(double x) noexcept
 {
     return x >= 0 ? floor(x) : -floor(-x);
 }
@@ -427,19 +361,8 @@ constexpr float round(float x) noexcept
 {
     return x >= 0 ? floor(x + 0.5f) :
         ceil(x - 0.5f);
-}
-constexpr double round(double x) noexcept
-{
-    return x >= 0 ? floor(x + 0.5) :
-        ceil(x - 0.5);
-}
 
 constexpr float fmod(float x, float y) noexcept
-{
-    return x - trunc(x / y) * y;
-}
-
-constexpr double fmod(double x, double y) noexcept
 {
     return x - trunc(x / y) * y;
 }
@@ -449,27 +372,23 @@ constexpr float remainder(float x, float y) noexcept
     return x - y * round(x / y);
 }
 
-constexpr double remainder(double x, double y) noexcept
-{
-    return x - y * round(x / y);
-}
+#endif  // TURN_THIS_OFF
 
 }  // namespace ce
 
-template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
-constexpr bool is_power_of_2(const T a) noexcept
+template<typename T>
+constexpr bool is_power_of_2(const T a) noexcept requires std::is_integral_v<T>
 {
-    using int_t = std::conditional_t<sizeof(T) >= sizeof(int_fast32_t), T, std::conditional_t<std::is_signed_v<T>, int_fast32_t, uint_fast32_t>>;
-    for (int_t it = 1, max = static_cast<int_t>(a); it <= max && it > 0; it *= 2)
-        if (it == max)
+    for (T it = 1; it <= a && it > 0; it *= 2)
+        if (it == a)
             return true;
     return false;
 }
 
-template<typename T>
-constexpr std::enable_if_t<std::is_floating_point_v<T>, float> degtorad(T a) noexcept
+template<floating T>
+constexpr T degtorad(T a) noexcept
 {
-    return a * T{M_PI} / T{180};
+    return a * std::numbers::pi_v<T> / T{180};
 }
 
 
@@ -929,11 +848,9 @@ constexpr static bool invert_matrix(table_type &mat_) noexcept
     return false;
 }
 
-template<typename T>
+template<floating T>
 struct matrix4x4_bare
 {
-    static_assert(std::is_arithmetic_v<T>);
-
     using value_type = T;
     using table_type = std::array<value_type, 16>;
 
@@ -952,7 +869,7 @@ struct matrix4x4_bare
 
 }  // namespace meta
 
-template<typename T, unsigned Level = 0>
+template<floating T, unsigned Level = 0>
 struct matrix4x4 : meta::matrix4x4_bare<T>
 {
     using bare_type = meta::matrix4x4_bare<T>;
@@ -971,7 +888,7 @@ struct matrix4x4 : meta::matrix4x4_bare<T>
     }
 };
 
-template <typename U, unsigned O1, unsigned O2>
+template<floating U, unsigned O1, unsigned O2>
 constexpr matrix4x4<U, std::max(O1, O2)> operator*(const matrix4x4<U, O1>& lhs, const matrix4x4<U, O2>& rhs) noexcept
 {
     if constexpr (O1 || O2)
@@ -980,15 +897,15 @@ constexpr matrix4x4<U, std::max(O1, O2)> operator*(const matrix4x4<U, O1>& lhs, 
         return meta::multiplication_2d(lhs.values, rhs.values);
 }
 
-template<typename T, unsigned O>
-constexpr point2<T> operator*(const matrix4x4<T, O>& mat, const point2<T> p) noexcept
+template<floating T>
+constexpr point2<T> operator*(const meta::matrix4x4_bare<T>& mat, const point2<T> p) noexcept
 {
     return { mat[0] * p.x + mat[4] * p.y + mat[12],
              mat[1] * p.x + mat[5] * p.y + mat[13] };
 }
 
-template<typename T, unsigned O>
-constexpr point3<T> operator*(const matrix4x4<T, O>& mat, const point3<T> p) noexcept
+template<floating T>
+constexpr point3<T> operator*(const meta::matrix4x4_bare<T>& mat, const point3<T> p) noexcept
 {
     return { mat[0] * p.x + mat[4] * p.y + mat[8] * p.z + mat[12],
              mat[1] * p.x + mat[5] * p.y + mat[9] * p.z + mat[13],
@@ -998,7 +915,7 @@ constexpr point3<T> operator*(const matrix4x4<T, O>& mat, const point3<T> p) noe
 namespace matrices
 {
 
-template<typename T>
+template<floating T>
 constexpr auto translate(const point2<T> &p) noexcept
 {
     matrix4x4<T, 0> mat;
@@ -1007,7 +924,7 @@ constexpr auto translate(const point2<T> &p) noexcept
     return mat;
 }
 
-template<typename T>
+template<floating T>
 constexpr matrix4x4<T, 1> translate(const point3<T> &p) noexcept
 {
     matrix4x4<T, 1> mat;
@@ -1017,7 +934,7 @@ constexpr matrix4x4<T, 1> translate(const point3<T> &p) noexcept
     return mat;
 }
 
-template<typename T>
+template<floating T>
 constexpr auto scale(const point2<T> sc) noexcept
 {
     matrix4x4<T, 0> mat;
@@ -1026,7 +943,7 @@ constexpr auto scale(const point2<T> sc) noexcept
     return mat;
 }
 
-template<typename T>
+template<floating T>
 constexpr matrix4x4<T, 1> scale(const point3<T> sc) noexcept
 {
     matrix4x4<T, 1> mat;
@@ -1036,7 +953,7 @@ constexpr matrix4x4<T, 1> scale(const point3<T> sc) noexcept
     return mat;
 }
 
-template<typename T>
+template<floating T>
 constexpr auto scale(const point2<T> sc, const point2<T> p) noexcept
 {
     matrix4x4<T, 0> mat;
@@ -1047,7 +964,7 @@ constexpr auto scale(const point2<T> sc, const point2<T> p) noexcept
     return mat;
 }
 
-template<typename T>
+template<floating T>
 constexpr auto uniform_scale(const T sc) noexcept
 {
     matrix4x4<T, 0> mat;
@@ -1056,7 +973,7 @@ constexpr auto uniform_scale(const T sc) noexcept
     return mat;
 }
 
-template<typename T>
+template<floating T>
 constexpr auto uniform_scale(const T sc, const point2<T> p) noexcept
 {
     matrix4x4<T, 0> mat;
@@ -1067,7 +984,7 @@ constexpr auto uniform_scale(const T sc, const point2<T> p) noexcept
     return mat;
 }
 
-template<typename T>
+template<floating T>
 constexpr matrix4x4<T, 1> rotate_x(const T rad) noexcept
 {
     matrix4x4<T, 1> mat;
@@ -1076,7 +993,7 @@ constexpr matrix4x4<T, 1> rotate_x(const T rad) noexcept
     return mat;
 }
 
-template<typename T>
+template<floating T>
 constexpr matrix4x4<T, 1> rotate_y(const T rad) noexcept
 {
     matrix4x4<T, 1> mat;
@@ -1085,7 +1002,7 @@ constexpr matrix4x4<T, 1> rotate_y(const T rad) noexcept
     return mat;
 }
 
-template<typename T>
+template<floating T>
 constexpr auto rotate(const T rad) noexcept
 {
     matrix4x4<T, 0> mat;
@@ -1094,7 +1011,7 @@ constexpr auto rotate(const T rad) noexcept
     return mat;
 }
 
-template<typename T>
+template<floating T>
 constexpr auto rotate(const T rad, const point2<T> &p) noexcept
 {
     matrix4x4<T, 0> mat;
@@ -1106,7 +1023,7 @@ constexpr auto rotate(const T rad, const point2<T> &p) noexcept
     return mat;
 }
 
-template<typename T>
+template<floating T>
 constexpr matrix4x4<T, 1> orthof(const T left, const T right, const T top, const T bottom, const T near, const T far) noexcept
 {
     matrix4x4<T, 1> mat;
@@ -1124,10 +1041,9 @@ constexpr matrix4x4<T, 1> orthof(const T left, const T right, const T top, const
     return mat;
 }
 
-template<int Near, int Far, typename T>
-constexpr matrix4x4<T, 1> orthof_static(const T left, const T right, const T top, const T bottom) noexcept
+template<int Near, int Far, floating T>
+constexpr matrix4x4<T, 1> orthof_static(const T left, const T right, const T top, const T bottom) noexcept requires (Near != Far)
 {
-    static_assert(Far != Near);
     matrix4x4<T, 1> mat;
 
     if (right != left && top != bottom)
@@ -1148,7 +1064,7 @@ constexpr matrix4x4<T, 1> orthof_static(const T left, const T right, const T top
 namespace transform
 {
 
-template<typename T>
+template<floating T>
 constexpr void translate(meta::matrix4x4_bare<T>& m, const point2<T> &p) noexcept
 {
     const auto co = m;
@@ -1165,7 +1081,7 @@ constexpr void translate(meta::matrix4x4_bare<T>& m, const point2<T> &p) noexcep
     m[13] += co[15] * p.y;
 }
 
-template<typename T>
+template<floating T>
 constexpr void translate(meta::matrix4x4_bare<T>& m, const point3<T> &p) noexcept
 {
     const auto co = m;
@@ -1186,7 +1102,7 @@ constexpr void translate(meta::matrix4x4_bare<T>& m, const point3<T> &p) noexcep
     m[14] += co[15] * p.z;
 }
 
-template<typename T>
+template<floating T>
 constexpr void scale(meta::matrix4x4_bare<T>& m, const point2<T> &sc) noexcept
 {
     m[0] *= sc.x;
@@ -1202,7 +1118,7 @@ constexpr void scale(meta::matrix4x4_bare<T>& m, const point2<T> &sc) noexcept
     m[13] *= sc.y;
 }
 
-template<typename T>
+template<floating T>
 constexpr void scale(meta::matrix4x4_bare<T>& m, const point3<T> &sc) noexcept
 {
     m[0] *= sc.x;
@@ -1222,7 +1138,7 @@ constexpr void scale(meta::matrix4x4_bare<T>& m, const point3<T> &sc) noexcept
     m[14] *= sc.z;
 }
 
-template<typename T>
+template<floating T>
 constexpr void uniform_scale(meta::matrix4x4_bare<T>& m, const T sc) noexcept
 {
     m[0] *= sc;
@@ -1238,7 +1154,7 @@ constexpr void uniform_scale(meta::matrix4x4_bare<T>& m, const T sc) noexcept
     m[13] *= sc;
 }
 
-template<typename T>
+template<floating T>
 constexpr void uniform_scale_3d(meta::matrix4x4_bare<T>& m, const T sc) noexcept
 {
     m[0] *= sc;
@@ -1258,7 +1174,7 @@ constexpr void uniform_scale_3d(meta::matrix4x4_bare<T>& m, const T sc) noexcept
     m[14] *= sc;
 }
 
-template<typename T>
+template<floating T>
 constexpr void rotate_x(meta::matrix4x4_bare<T>& m, const T rad) noexcept
 {
     const auto co = m;
@@ -1278,7 +1194,7 @@ constexpr void rotate_x(meta::matrix4x4_bare<T>& m, const T rad) noexcept
     m[14] = co[13] * s + co[14] * c;
 }
 
-template<typename T>
+template<floating T>
 constexpr void rotate_y(meta::matrix4x4_bare<T>& m, const T rad) noexcept
 {
     const auto co = m;
@@ -1298,7 +1214,7 @@ constexpr void rotate_y(meta::matrix4x4_bare<T>& m, const T rad) noexcept
     m[14] = co[12] * -s + co[14] * c;
 }
 
-template<typename T>
+template<floating T>
 constexpr void rotate_z(meta::matrix4x4_bare<T>& m, const T rad) noexcept
 {
     const auto co = m;
@@ -1319,32 +1235,6 @@ constexpr void rotate_z(meta::matrix4x4_bare<T>& m, const T rad) noexcept
 }
 
 }  // namespace transform
-
-template<typename Uint>
-struct field
-{
-    Uint bits;
-
-    constexpr void set(const Uint val) noexcept
-    {
-        bits |= val;
-    }
-
-    constexpr void reset(const Uint val) noexcept
-    {
-        bits &= ~val;
-    }
-
-    constexpr bool test(const Uint val) const noexcept
-    {
-        return !! (bits & val);
-    }
-
-    constexpr void flip() noexcept
-    {
-        bits = ~bits;
-    }
-};
 
 }  // namespace math
 

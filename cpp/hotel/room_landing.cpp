@@ -105,11 +105,11 @@ auto shift_appendages(std::array<float, Size>& ray_array, Rand& rando) noexcept 
     using random_int = std::uniform_int_distribution<unsigned int>;
     using random_float = std::uniform_real_distribution<float>;
 
-    const float offset = random_float{-F_TAU_4, F_TAU_2}(rando);
+    const float offset = random_float{-math::tau_4, math::tau_2}(rando);
 
     for (unsigned i = 0; i < Size; ++i)
     {
-        const float val = std::sin(i * (F_TAU * 13.f / Size) + offset);
+        const float val = std::sin(i * (math::tau * 13.f / Size) + offset);
         const float amp = std::pow(val, 5);
         ray_array[i] = .061f * (val + amp);
     }
@@ -179,8 +179,8 @@ auto room::step(const pointer_wrapper& pointer) noexcept -> std::optional<keyrin
     using random_float = std::uniform_real_distribution<float>;
 
     thing.rotation += .01f / application_frames_per_second;
-    if (thing.rotation > F_TAU)
-        thing.rotation -= F_TAU;
+    if (thing.rotation > math::tau)
+        thing.rotation -= math::tau;
 
     if (!destination && !--thing.counter)
     {
@@ -280,7 +280,7 @@ void luminous_cloud::draw(const graphics::core& gl) const noexcept
         std::array<point_t, blob_array_len> out{};
         float angle = 0.f;
         static_assert(blob_array_len > 4);
-        constexpr float step = F_TAU / static_cast<float>(blob_array_len - 2);
+        constexpr float step = math::tau / static_cast<float>(blob_array_len - 2);
 
         for (unsigned i = 1; i < blob_array_len; ++i)
         {
@@ -298,7 +298,7 @@ void luminous_cloud::draw(const graphics::core& gl) const noexcept
     {
         if (it.fade > 0.f)
         {
-            const float alpha = (std::cos(F_TAU_2 * (1.f + it.fade * 2)) + 1.f) / 6;
+            const float alpha = (std::cos(math::tau_2 * (1.f + it.fade * 2)) + 1.f) / 6;
             const float scale = it.scale + (it.noise - it.fade * 5.f) * 9.f;
 
             gl.view_mask();
@@ -319,7 +319,7 @@ void luminous_cloud::draw(const graphics::core& gl) const noexcept
 
 void room::draw(const graphics::core& gl) const noexcept
 {
-    const auto alpha_sine = std::sin(std::min<float>(thing.alpha, 1.f) * F_TAU_4);
+    const auto alpha_sine = std::sin(std::min<float>(thing.alpha, 1.f) * math::tau_4);
     gl.prog.fill.use();
     gl.prog.fill.set_identity();
     gl.prog.fill.set_view_identity();
@@ -338,7 +338,7 @@ void room::draw(const graphics::core& gl) const noexcept
     gl.prog.gradient.set_secondary_color(dim_color, math::sqr(alpha_sine));
     gl.prog.gradient.set_view_transform(math::matrices::translate(point_t{gl.draw_size.x / 2.f, gl.draw_size.y / 2.f}));
 
-    constexpr auto div = F_TAU / static_cast<float>(std::tuple_size<great_crimson_thing::arm_t>::value);
+    constexpr auto div = math::tau / static_cast<float>(std::tuple_size<great_crimson_thing::arm_t>::value);
     constexpr auto array_len = std::tuple_size<great_crimson_thing::arm_t>::value + 2;
 
     constexpr std::array<float, array_len> black_interpolation_values = []()
@@ -396,7 +396,7 @@ void room::draw(const graphics::core& gl) const noexcept
     // TODO: Use a picture as the title
     // UPDATE: lmao, let's see about that!
 
-    const auto fadeout_alpha_sine = std::sin(std::max<float>(thing.alpha + 1.f, 2.f) * F_TAU_4) + 1.f;
+    const auto fadeout_alpha_sine = std::sin(std::max<float>(thing.alpha + 1.f, 2.f) * math::tau_4) + 1.f;
 
     if (thing.alpha < .15f)
     {
