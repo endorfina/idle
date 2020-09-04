@@ -58,7 +58,7 @@ struct x11_display
 };
 
 #ifdef X11_USE_CLIENTMESSAGE
-Atom wmDeleteMessage;
+constinit Atom wmDeleteMessage;
 #endif
 
 int x_fatal_error_handler(Display *) noexcept
@@ -106,7 +106,7 @@ context::context() noexcept
 
     if(!display) {
         LOGE("Cannot connect to X server");
-        commands.insert(command::CloseWindow);
+        commands.insert(command::close_window);
         return;
     }
 
@@ -115,23 +115,25 @@ context::context() noexcept
         || ((glx_major == 1) && (glx_minor < 3)) || (glx_major < 1))
     {
         LOGE("Invalid GLX version");
-        commands.insert(command::CloseWindow);
+        commands.insert(command::close_window);
         return;
     }
 
+    using x_free = decltype([](void* ptr){ XFree(ptr); });
+
     GLXFBConfig bestFbc; // Get framebuffers
     int fbcount;
-    if (const std::unique_ptr<GLXFBConfig[], decltype(&XFree)> fbc{
-            glXChooseFBConfig(display.get(), DefaultScreen(display.get()), attributes, &fbcount),
-            XFree })
+    if (const std::unique_ptr<GLXFBConfig[], x_free> fbc{
+                glXChooseFBConfig(display.get(), DefaultScreen(display.get()), attributes, &fbcount)
+            })
     {
         int best_fbc = -1, worst_fbc = -1, best_num_samp = -1, worst_num_samp = 999;
 
         for (int i = 0; i < fbcount; ++i)
         {
-            if (const std::unique_ptr<XVisualInfo, decltype(&XFree)> vi{
-                    glXGetVisualFromFBConfig(display.get(), fbc[i]),
-                    XFree })
+            if (const std::unique_ptr<XVisualInfo, x_free> vi{
+                        glXGetVisualFromFBConfig(display.get(), fbc[i])
+                    })
             {
                 int samp_buf, samples;
                 glXGetFBConfigAttrib(display.get(), fbc[i], GLX_SAMPLE_BUFFERS, &samp_buf);
@@ -155,18 +157,16 @@ context::context() noexcept
     else
     {
         LOGE("Failed to retrieve a framebuffer config");
-        commands.insert(command::CloseWindow);
+        commands.insert(command::close_window);
         return;
     }
 
-    const std::unique_ptr<XVisualInfo, decltype(&XFree)> visualinfo{
-            glXGetVisualFromFBConfig(display.get(), bestFbc),
-            XFree };
+    const std::unique_ptr<XVisualInfo, x_free> visualinfo{ glXGetVisualFromFBConfig(display.get(), bestFbc) };
 
     if(!visualinfo)
     {
         LOGE("No appropriate visual found");
-        commands.insert(command::CloseWindow);
+        commands.insert(command::close_window);
         return;
     }
 
@@ -186,7 +186,7 @@ context::context() noexcept
     {
         LOGE("Failed to create a window");
         XFreeColormap(display.get(), x.colormap);
-        commands.insert(command::CloseWindow);
+        commands.insert(command::close_window);
         return;
     }
     XStoreName(display.get(), x.window, "idle/crimson");
@@ -203,7 +203,7 @@ context::context() noexcept
         XDestroyWindow(display.get(), x.window);
         XFreeColormap(display.get(), x.colormap);
         LOGE("Failed to create a proper gl context");
-        commands.insert(command::CloseWindow);
+        commands.insert(command::close_window);
         return;
     }
 
@@ -231,7 +231,7 @@ context::context() noexcept
         glXDestroyContext(display.get(), x.context);
         XDestroyWindow(display.get(), x.window);
         XFreeColormap(display.get(), x.colormap);
-        commands.insert(command::CloseWindow);
+        commands.insert(command::close_window);
         return;
     }
     else if (const auto amt = glTest.GetNumMissing(); amt > 0)
@@ -246,8 +246,8 @@ context::context() noexcept
     x.display = display.release();
 
     resize_request.emplace(initial_width, initial_height);
-    commands.insert(command::InitWindow);
-    commands.insert(command::GainedFocus); // TODO: Make X handle focus as to reduce resource usage when idle
+    commands.insert(command::init_window);
+    commands.insert(command::gained_focus); // TODO: Make X handle focus as to reduce resource usage when idle
 }
 
 void context::buffer_swap() noexcept
@@ -294,13 +294,13 @@ void context::event_loop_back(bool) noexcept
             case KeyPress:
                 if (xev.xkey.keycode == 0x9)
                 {
-                    commands.insert(command::PausePressed);
+                    commands.insert(command::pause_pressed);
                 }
                 break;
 
 #ifdef X11_USE_CLIENTMESSAGE
             case ClientMessage:
-                commands.insert(command::CloseWindow);
+                commands.insert(command::close_window);
                 return;
 #endif
 
@@ -353,9 +353,7 @@ asset asset::hold(std::string path) noexcept
 {
     path.insert(0, "assets/");
 
-    if (const std::unique_ptr<FILE, decltype(&std::fclose)> f{
-            std::fopen(path.c_str(), "rb"),
-            std::fclose })
+    if (const std::unique_ptr<FILE, decltype([](FILE* f){ std::fclose(f); })> f{ std::fopen(path.c_str(), "rb") })
     {
         std::fseek(f.get(), 0, SEEK_END);
 

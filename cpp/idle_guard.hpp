@@ -34,6 +34,6 @@ struct is_optional<std::optional<T>> : std::true_type {};
 
 #define idle_remove_cvr(x) std::remove_cv_t<std::remove_reference_t<decltype(x)>>
 
-#define idle_try(optional) static_assert(::idle::meta::is_optional<idle_remove_cvr(optional)>::value, "idle_try requires std::optional"); \
+#define idle_guard(optional) static_assert(::idle::meta::is_optional<idle_remove_cvr(optional)>::value, "idle_guard requires std::optional"); \
     if (auto try_result = (optional)) { return { std::move(*try_result) }; }
 

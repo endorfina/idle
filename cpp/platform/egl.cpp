@@ -55,16 +55,6 @@ struct egl_display
 
 static_assert(sizeof(egl_display) <= sizeof(context::data_t));
 
-/* all higher than 4 are OK with me */
-constexpr EGLint attributes[]
-{
-    EGL_RED_SIZE, 4,
-    EGL_GREEN_SIZE, 4,
-    EGL_BLUE_SIZE, 4,
-    EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
-    EGL_NONE
-};
-
 std::optional<resize_request_t> create_window(egl_display& egl) noexcept
 {
     // initialize OpenGL ES and EGL
@@ -84,6 +74,16 @@ std::optional<resize_request_t> create_window(egl_display& egl) noexcept
 
         const auto sconfig = [get_display]()->EGLConfig
         {
+            /* all higher than 4 are OK with me */
+            static constexpr EGLint attributes[]
+            {
+                EGL_RED_SIZE, 4,
+                EGL_GREEN_SIZE, 4,
+                EGL_BLUE_SIZE, 4,
+                EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+                EGL_NONE
+            };
+
             EGLint numConfigs;
             eglChooseConfig(get_display, attributes, nullptr, 0, &numConfigs);
             if (!numConfigs)
@@ -181,7 +181,7 @@ int32_t android_handle_input(android_app * app, AInputEvent* event) noexcept
         {
             int key = AKeyEvent_getKeyCode(event);
             if (key == AKEYCODE_BACK) {
-                win.commands.insert(command::PausePressed);
+                win.commands.insert(command::pause_pressed);
                 return 1;
             }
         }
@@ -197,32 +197,32 @@ void android_handle_command(struct android_app* app, const int32_t cmd) noexcept
 
     switch (cmd) {
         case APP_CMD_SAVE_STATE:
-            win.commands.insert(command::SaveState);
+            win.commands.insert(command::save_state);
             break;
 
         case APP_CMD_INIT_WINDOW:
             // The window is being shown, get it ready.
             if (!!app->window && (win.resize_request = create_window(egl_display::cast(win.data))))
             {
-                win.commands.insert(command::InitWindow);
+                win.commands.insert(command::init_window);
             }
             else
             {
                 LOGE("Cannot create the window!");
-                win.commands.insert(command::CloseWindow);
+                win.commands.insert(command::close_window);
             }
             break;
 
         case APP_CMD_TERM_WINDOW:
-            win.commands.insert(command::GLCleanUp);
+            win.commands.insert(command::gl_clean_up);
             break;
 
         case APP_CMD_GAINED_FOCUS:
-            win.commands.insert(command::GainedFocus);
+            win.commands.insert(command::gained_focus);
             break;
 
         case APP_CMD_LOST_FOCUS:
-            win.commands.insert(command::LostFocus);
+            win.commands.insert(command::lost_focus);
             break;
 
         default:
@@ -272,7 +272,7 @@ void context::event_loop_back(bool block_if_possible) noexcept
         if (!!egl.android->destroyRequested)
         {
             LOGW("Activity destruction requested.");
-            commands.insert(command::CloseWindow);
+            commands.insert(command::close_window);
         }
 
         block_if_possible = false;
@@ -345,9 +345,9 @@ asset asset::hold(std::string path) noexcept
 
 asset asset::hold(const char * path) noexcept
 {
-    std::unique_ptr<AAsset, decltype(&AAsset_close)> file{
-            AAssetManager_open(android_activity->activity->assetManager, path, AASSET_MODE_BUFFER),
-            AAsset_close };
+    std::unique_ptr<AAsset, decltype([](AAsset* a){ AAsset_close(a); })> file{
+            AAssetManager_open(android_activity->activity->assetManager, path, AASSET_MODE_BUFFER)
+        };
 
     if (auto data = file ? AAsset_getBuffer(file.get()) : nullptr; !data)
     {

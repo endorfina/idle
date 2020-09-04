@@ -25,20 +25,21 @@ namespace platform
 
 enum class command : uint_fast8_t
 {
-    SaveState,
-    InitWindow,
-    CloseWindow,
-    GainedFocus,
-    LostFocus,
-    GLCleanUp,
-    PausePressed
+    save_state,
+    init_window,
+    close_window,
+    gained_focus,
+    lost_focus,
+    gl_clean_up,
+    pause_pressed
 };
 
-struct command_queue_t
+class command_queue_t
 {
     unsigned count = 0;
     std::array<command, (sizeof(void*) * 2) / sizeof(command)> raw_queue;
 
+public:
     bool is_full() const noexcept;
 
     const command * begin() const noexcept;

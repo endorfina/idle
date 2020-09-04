@@ -56,23 +56,23 @@ auto application::execute_commands(const bool is_nested) noexcept -> bool
         for (const auto cmd : window.commands)
             switch (cmd)
             {
-            case ::platform::command::InitWindow:
-                LOGD(log_prefix, "InitWindow");
+            case ::platform::command::init_window:
+                LOGD(log_prefix, "init_window");
 
                 if (!is_nested) perform_load = true;
                 break;
 
-            case ::platform::command::SaveState:
-                LOGD(log_prefix, "SaveState");
+            case ::platform::command::save_state:
+                LOGD(log_prefix, "save_state");
                 break;
 
-            case ::platform::command::GainedFocus:
-                LOGD(log_prefix, "GainedFocus");
+            case ::platform::command::gained_focus:
+                LOGD(log_prefix, "gained_focus");
                 update_display = true;
                 break;
 
-            case ::platform::command::LostFocus:
-                LOGD(log_prefix, "LostFocus");
+            case ::platform::command::lost_focus:
+                LOGD(log_prefix, "lost_focus");
                 if (update_display)
                 {
                     draw();
@@ -80,8 +80,8 @@ auto application::execute_commands(const bool is_nested) noexcept -> bool
                 }
                 break;
 
-            case ::platform::command::GLCleanUp:
-                LOGD(log_prefix, "GLCleanUp");
+            case ::platform::command::gl_clean_up:
+                LOGD(log_prefix, "gl_clean_up");
                 update_display = false;
                 if (pause)
                 {
@@ -92,15 +92,15 @@ auto application::execute_commands(const bool is_nested) noexcept -> bool
                 window.terminate_display();
                 break;
 
-            case ::platform::command::CloseWindow:
-                LOGD(log_prefix, "CloseWindow");
+            case ::platform::command::close_window:
+                LOGD(log_prefix, "close_window");
                 opengl.clean();
                 window.terminate_display();
                 shutdown_was_requested = true;
                 return false;
 
-            case ::platform::command::PausePressed:
-                LOGD(log_prefix, "PausePressed");
+            case ::platform::command::pause_pressed:
+                LOGD(log_prefix, "pause_pressed");
                 room_ctrl.sleep();
                 if (!pause)
                 {
