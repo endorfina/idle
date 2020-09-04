@@ -22,6 +22,7 @@
 
 #include "room_controller.hpp"
 #include "draw_text.hpp"
+#include "idle_guard.hpp"
 
 namespace idle
 {

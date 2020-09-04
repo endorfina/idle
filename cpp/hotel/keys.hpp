@@ -16,12 +16,10 @@
     You should have received a copy of the GNU General Public License
     along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
-#pragma once
 
-// #include <math.hpp>
+#pragma once
 #include <variant>
 #include <string_view>
-#include <idle/idle_try.hpp>
 
 namespace idle::hotel
 {

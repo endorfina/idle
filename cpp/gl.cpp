@@ -21,6 +21,7 @@
 #include <zlib.hpp>
 #include <math.hpp>
 #include "gl.hpp"
+#include <cstring>
 #include <embedded_shaders.hpp>
 
 // void printGLString(const char *name, GLenum s)

@@ -27,7 +27,7 @@
 
 TEST(math_absolute_value)
 {
-    const float bob = -F_TAU;
+    const float bob = -math::tau;
     const auto wow = math::ce::abs(bob);
     EXPECT_TRUE(wow == -bob);
     EXPECT_FALSE(bob == wow);
@@ -35,8 +35,8 @@ TEST(math_absolute_value)
 
 TEST(math_trig)
 {
-    const float bob = sin(F_TAU_4);
-    const float wow = cos(F_TAU_4);
+    const float bob = sin(math::tau_4);
+    const float wow = cos(math::tau_4);
     EXPECT_TRUE(math::ce::detail::epsilon_equal(bob, 1.0f));
     EXPECT_TRUE(math::ce::detail::epsilon_equal(wow, 0.f));
 }

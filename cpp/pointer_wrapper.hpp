@@ -31,11 +31,9 @@ struct pointer_wrapper
     float touch = 0.f;
 };
 
-struct pointer_keeper
+class pointer_keeper
 {
     pointer_wrapper pointer;
-
-private:
     int single_press_previous_state = 0, double_tap_timer = 0;
 
 public:

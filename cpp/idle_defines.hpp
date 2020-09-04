@@ -20,7 +20,6 @@
 
 #include <math.hpp>
 #include "platform/opengl_core_adaptive.hpp"
-#include "idle_try.hpp"
 
 namespace idle
 {
