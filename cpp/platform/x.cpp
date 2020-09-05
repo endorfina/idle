@@ -31,6 +31,7 @@
 #include <log.hpp>
 #include "context.hpp"
 #include "asset_access.hpp"
+#include <almost_cpp20.hpp>
 
 namespace platform
 {

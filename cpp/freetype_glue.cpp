@@ -29,6 +29,7 @@
 
 #include "freetype_glue.hpp"
 #include <log.hpp>
+#include <almost_cpp20.hpp>
 
 namespace fonts
 {

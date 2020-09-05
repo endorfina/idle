@@ -32,18 +32,23 @@ namespace idle::gui
 namespace internal
 {
 
+idle_check_method_boilerplate(draw_background);
+idle_check_method_boilerplate(draw_foreground);
+idle_check_method_boilerplate(trigger);
+idle_check_method_boilerplate(position_on);
+
 template<std::size_t I = 0, typename Tuple, typename...Vars>
 void elem_draw(const Tuple& tuple, const Vars&...vars) noexcept
 {
     constexpr auto tuple_size = std::tuple_size<Tuple>::value;
     using tuple_elem_type = typename std::tuple_element<I, Tuple>::type;
 
-    if constexpr (requires { &tuple_elem_type::draw_background; })
+    if constexpr(idle_has_method(tuple_elem_type, draw_background))
     {
         std::get<I>(tuple).draw_background(vars...);
     }
 
-    if constexpr (requires { &tuple_elem_type::draw_foreground; })
+    if constexpr(idle_has_method(tuple_elem_type, draw_foreground))
     {
         std::get<I>(tuple).draw_foreground(vars...);
     }
@@ -58,7 +63,7 @@ template<std::size_t I = 0, typename... Tp>
 void elem_update_position(point_t screen_size, std::tuple<Tp...>& tuple) noexcept
 {
     using tuple_elem_type = typename std::tuple_element<I, std::tuple<Tp...>>::type;
-    if constexpr (requires { &tuple_elem_type::position_on; })
+    if constexpr(idle_has_method(tuple_elem_type, position_on))
     {
         std::get<I>(tuple).position_on(screen_size);
     }
@@ -75,7 +80,7 @@ std::optional<Ret> elem_trigger(const point_t pointer, Tuple& tuple, Func&& func
     constexpr auto elem_id = tuple_size - I - 1;
     using tuple_elem_type = typename std::tuple_element<elem_id, Tuple>::type;
 
-    if constexpr (requires { &tuple_elem_type::trigger; })
+    if constexpr(idle_has_method(tuple_elem_type, trigger))
     {
         auto& elem = std::get<elem_id>(tuple);
 

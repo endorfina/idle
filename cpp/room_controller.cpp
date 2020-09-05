@@ -43,6 +43,10 @@ struct is_hotel_room : std::false_type {};
 template<typename T>
 struct is_hotel_room<hotel::keyring::somewhere_else<T>> : std::true_type {};
 
+idle_check_method_boilerplate(draw);
+idle_check_method_boilerplate(step);
+idle_check_method_boilerplate(on_resize);
+
 }  // namespace
 
 
@@ -58,7 +62,7 @@ void controller::resize(point_t size) noexcept
 
     std::visit([size](auto& room)
     {
-        if constexpr (requires { &idle_remove_cvr(room)::on_resize; })
+        if constexpr(idle_has_method(idle_remove_cvr(room), on_resize))
         {
             room.on_resize(size);
         }
@@ -83,7 +87,7 @@ void controller::draw_frame(const graphics::core& gl) noexcept
 
         std::visit([&gl](auto& room)
         {
-            if constexpr (requires { &idle_remove_cvr(room)::draw; })
+            if constexpr(idle_has_method(idle_remove_cvr(room), draw))
             {
                 room.draw(gl);
             }
@@ -176,7 +180,7 @@ std::optional<hotel::keyring::variant> controller::do_step(const pointer_wrapper
                 static_assert(std::is_constructible_v<T>);
                 gate.open(current_variant);
 
-                if constexpr (requires { &T::on_resize; })
+                if constexpr(idle_has_method(T, on_resize))
                 {
                     std::get<T>(current_variant).on_resize(current_screen_size);
                 }
@@ -189,7 +193,7 @@ std::optional<hotel::keyring::variant> controller::do_step(const pointer_wrapper
 
     return std::visit([&cur] (auto& room) -> std::optional<hotel::keyring::variant>
         {
-            if constexpr (requires { &idle_remove_cvr(room)::step; })
+            if constexpr(idle_has_method(idle_remove_cvr(room), step))
             {
                 return room.step(cur);
             }

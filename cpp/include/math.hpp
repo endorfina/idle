@@ -22,18 +22,35 @@
 #include <type_traits>
 #include <array>
 #include <algorithm>
+
+#if __has_include(<numbers>)
 #include <numbers>
+#endif
 
 #ifndef  __clang__  // gcc is love
 #include <cmath>
 #endif
 
+#include "almost_cpp20.hpp"
+
 namespace math
 {
+#ifdef __cpp_concepts
 template<typename T>
 concept floating = std::is_floating_point_v<T>;
+#else
+#define floating typename
+#endif
 
-inline constexpr float tau_2 = std::numbers::pi_v<float>;
+#if __has_include(<numbers>)
+template<floating T>
+inline constexpr T pi = std::numbers::pi_v<T>;
+#else
+template<typename T>
+inline constexpr T pi = T(3.14159265358979323846);
+#endif
+
+inline constexpr float tau_2 = pi<float>;
 inline constexpr float tau = tau_2 * 2;
 inline constexpr float tau_4 = tau_2 / 2;
 inline constexpr float tau_8 = tau_2 / 4;
@@ -377,7 +394,7 @@ constexpr float remainder(float x, float y) noexcept
 }  // namespace ce
 
 template<typename T>
-constexpr bool is_power_of_2(const T a) noexcept requires std::is_integral_v<T>
+constexpr bool is_power_of_2(const T a) noexcept idle_weak_requires(std::is_integral_v<T>)
 {
     for (T it = 1; it <= a && it > 0; it *= 2)
         if (it == a)
@@ -388,7 +405,7 @@ constexpr bool is_power_of_2(const T a) noexcept requires std::is_integral_v<T>
 template<floating T>
 constexpr T degtorad(T a) noexcept
 {
-    return a * std::numbers::pi_v<T> / T{180};
+    return a * pi<T> / T{180};
 }
 
 
@@ -1042,7 +1059,7 @@ constexpr matrix4x4<T, 1> orthof(const T left, const T right, const T top, const
 }
 
 template<int Near, int Far, floating T>
-constexpr matrix4x4<T, 1> orthof_static(const T left, const T right, const T top, const T bottom) noexcept requires (Near != Far)
+constexpr matrix4x4<T, 1> orthof_static(const T left, const T right, const T top, const T bottom) noexcept idle_weak_requires(Near != Far)
 {
     matrix4x4<T, 1> mat;
 
@@ -1237,4 +1254,8 @@ constexpr void rotate_z(meta::matrix4x4_bare<T>& m, const T rad) noexcept
 }  // namespace transform
 
 }  // namespace math
+
+#ifdef floating
+#undef floating
+#endif
 
