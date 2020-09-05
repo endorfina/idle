@@ -345,8 +345,9 @@ asset asset::hold(std::string path) noexcept
 
 asset asset::hold(const char * path) noexcept
 {
-    std::unique_ptr<AAsset, decltype([](AAsset* a){ AAsset_close(a); })> file{
-            AAssetManager_open(android_activity->activity->assetManager, path, AASSET_MODE_BUFFER)
+    std::unique_ptr<AAsset, decltype(&AAsset_close)> file{
+            AAssetManager_open(android_activity->activity->assetManager, path, AASSET_MODE_BUFFER),
+            AAsset_close
         };
 
     if (auto data = file ? AAsset_getBuffer(file.get()) : nullptr; !data)
