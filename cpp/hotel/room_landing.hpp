@@ -108,14 +108,14 @@ struct luminous_cloud
     {
         float fade_decr = 0.f, scale = 1.f;
         point_t position, speed;
-        float noise, fade = 0.f;
+        float fade = 0.f;
+        color_t distortion;
     };
 
     std::array<flying_polyp, 80> table;
     std::atomic_bool flag = false;
 
-    template<typename Rando>
-    void step(Rando& gen) noexcept;
+    void step() noexcept;
 
     template<unsigned rX, unsigned rY, typename Rando>
     void spark(point_t position, Rando& rando) noexcept;

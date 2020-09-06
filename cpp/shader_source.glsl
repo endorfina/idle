@@ -32,17 +32,17 @@ uniform vec4 u_offset;
 
 void main() {
   vec2 coords = vec2(var_mapped_vec.x, var_mapped_vec.y * u_offset.x);
-  // vec2 dis_coords = coords * u_offset.y + vec2(u_offset.w, u_offset.z);
+  vec2 dis_coords = coords * u_offset.y + vec2(u_offset.w, u_offset.z);
 
-  // vec4 dis = texture2D(u_tex, dis_coords);
-  // vec2 dis_shift = vec2(dis.r - 0.5, (dis.g - 0.5) * u_offset.x) / 8.0;
+  vec4 dis = texture2D(u_tex, dis_coords);
+  vec2 dis_shift = vec2(dis.r - 0.5, (dis.g - 0.5) * u_offset.x) / 6.0;
 
-  // coords = vec2(
-  //             max(0.0, min(1.0,
-  //                     coords.x + dis_shift.x)),
-  //             max(0.0, min(u_offset.x,
-  //                     coords.y + dis_shift.y))
-  //           );
+  coords = vec2(
+              max(0.0, min(2.991 * u_offset.w,
+                      coords.x - dis_shift.x)),
+              max(0.0, min(0.999 * u_offset.z,
+                      coords.y + dis_shift.y))
+            );
 
   vec2 mask_coords = coords * u_offset.y;
   mask_coords.y += u_offset.z;

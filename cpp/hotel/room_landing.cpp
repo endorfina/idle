@@ -22,6 +22,7 @@
 #include <idle/drawable.hpp>
 #include <idle/hsv.hpp>
 #include "room_landing.hpp"
+#include <idle/idle_guard.hpp>
 
 namespace idle::hotel::landing
 {
@@ -136,24 +137,23 @@ void luminous_cloud::spark(point_t position, Rando& rando) noexcept
 
     std::generate(table.begin(), table.end(), [&]()->flying_polyp
         {
+            const auto direction = point_t{ generator(rando), generator(rando) };
             return
             {
                 .fade_decr = ((generator(rando) - 1.f) * .00244f - .00398f) * uni_time_factor,
                 .scale = (generator(rando) + 1.f) * 10.f + 60.f,
                 .position = position + point_t{ generator(rando) * rX, generator(rando) * rY },
-                .speed = point_t{ generator(rando) * .5f, generator(rando) * .3f } * uni_time_factor,
-                .noise = 0.f,
-                .fade = 1.f
+                .speed = point_t{ direction.x * .38f, direction.y * .23f } * uni_time_factor,
+                .fade = 1.f,
+                .distortion = color_t{ .5f + direction.x * .5f, .5f + direction.y * .5f, .5f, 0 }
             };
         });
 
     flag.store(true, std::memory_order_release);
 }
 
-template<typename Rando>
-void luminous_cloud::step(Rando& rando) noexcept
+void luminous_cloud::step() noexcept
 {
-    std::uniform_real_distribution<float> generator{ -1.f, 1.f };
     bool is_empty = true;
 
     for (auto& it : table)
@@ -164,8 +164,6 @@ void luminous_cloud::step(Rando& rando) noexcept
             it.position += it.speed;
 
             it.speed *= .99f;
-
-            it.noise = generator(rando);
 
             is_empty = false;
         }
@@ -196,13 +194,13 @@ auto room::step(const pointer_wrapper& pointer) noexcept -> std::optional<keyrin
     random_float dist_float2{ 5000.f, 43758.5453f };
     std::generate(noise_seed.begin(), noise_seed.end(),
             [this, &dist_float2](){ return dist_float2(fast_random_device); });
-    random_float dist_float4{ -.9f, .9f };
+    random_float dist_float4{ -.75f, .75f };
     std::generate(menu_visual_noise.begin(), menu_visual_noise.end(),
             [this, &dist_float4](){ return dist_float4(fast_random_device); });
 
     if (polyps.flag.load(std::memory_order_relaxed))
     {
-        polyps.step(fast_random_device);
+        polyps.step();
     }
 
     if (thing.alpha < 1.f)
@@ -300,13 +298,19 @@ void luminous_cloud::draw(const graphics::core& gl) const noexcept
         if (it.fade > 0.f)
         {
             const float alpha = (std::cos(math::tau_2 * (1.f + it.fade * 2)) + 1.f) / 6;
-            const float scale = it.scale + (it.noise - it.fade * 5.f) * 9.f;
+            const float scale = it.scale - it.fade * 45.f;
 
             gl.view_mask();
             gl.prog.gradient.set_color(not_white);
             gl.prog.gradient.set_secondary_color(not_white, alpha * .067f);
             gl.prog.gradient.set_view_transform(math::matrices::translate<float>(it.position));
             gl.prog.gradient.set_transform(math::matrices::uniform_scale<float>(scale));
+            gl::DrawArrays(gl::TRIANGLE_FAN, 0, blob_array_len);
+
+            gl.view_distortion();
+            gl.prog.gradient.set_color(it.distortion);
+            gl.prog.gradient.set_secondary_color(it.distortion, alpha * .5f);
+            gl.prog.gradient.set_transform(math::matrices::uniform_scale<float>(scale / 7));
             gl::DrawArrays(gl::TRIANGLE_FAN, 0, blob_array_len);
 
             gl.view_normal();
@@ -316,6 +320,20 @@ void luminous_cloud::draw(const graphics::core& gl) const noexcept
             gl::DrawArrays(gl::TRIANGLE_FAN, 0, blob_array_len);
         }
     }
+
+    // for (const auto& it : small_table)
+    // {
+    //     if (it.fade > 0.f)
+    //     {
+    //         const float alpha = (std::cos(math::tau_2 * (1.f + it.fade * 2)) + 1.f) / 20;
+    //         gl.view_distortion();
+    //         gl.prog.gradient.set_color(it.distortion);
+    //         gl.prog.gradient.set_secondary_color(it.distortion, alpha);
+    //         gl.prog.gradient.set_view_transform(math::matrices::translate<float>(gl.draw_size / 2 +  it.position));
+    //         gl.prog.gradient.set_transform(math::matrices::uniform_scale<float>(it.scale));
+    //         gl::DrawArrays(gl::TRIANGLE_FAN, 0, blob_array_len);
+    //     }
+    // }
 }
 
 void room::draw(const graphics::core& gl) const noexcept
@@ -398,13 +416,6 @@ void room::draw(const graphics::core& gl) const noexcept
     // UPDATE: lmao, let's see about that!
 
     const auto fadeout_alpha_sine = std::sin(std::max<float>(thing.alpha + 1.f, 2.f) * math::tau_4) + 1.f;
-
-    // gl.view_distortion();
-
-    // gl.prog.gradient.use();
-    // gl.prog.gradient.set_secondary_color({std::cos(thing.rotation * 12), std::sin(thing.rotation * 12), .5f, .6f});
-    // gl.prog.gradient.set_color({.5f, .5f, .5f, 0.f});
-    // gl::DrawArrays(gl::TRIANGLE_FAN, 0, array_len);
 
     gl.view_mask();
 

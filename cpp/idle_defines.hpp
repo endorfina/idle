@@ -32,7 +32,11 @@ using rect_t = math::rect<GLfloat>;
 
 enum class text_align { near, center, far };
 
+#ifdef IDLE_DOUBLE_THE_FPS /*BABY*/
+constexpr unsigned long application_frames_per_second = 120;
+#else
 constexpr unsigned long application_frames_per_second = 60;
+#endif
 
 constexpr float uni_time_factor = 60.f / static_cast<float>(application_frames_per_second);
 
