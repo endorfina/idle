@@ -434,6 +434,11 @@ void noise_program_t::set_tertiary_color(const idle::color_t& c) const noexcept
     gl::Uniform4f(tertiary_color_handle, c.r, c.g, c.b, c.a);
 }
 
+void noise_program_t::set_quaternary_color(const idle::color_t& c) const noexcept
+{
+    gl::Uniform4f(quaternary_color_handle, c.r, c.g, c.b, c.a);
+}
+
 void noise_program_t::set_seed(const idle::point_t seed) const noexcept
 {
     gl::Uniform2f(noise_seed_handle, seed.x, seed.y);
@@ -506,6 +511,7 @@ void noise_program_t::prepare() noexcept
     textured_program_t::prepare();
     secondary_color_handle = load_uniform(program_id, "u_color_2");
     tertiary_color_handle = load_uniform(program_id, "u_color_3");
+    quaternary_color_handle = load_uniform(program_id, "u_color_4");
     noise_seed_handle = load_uniform(program_id, "u_seed");
 
     report_opengl_errors("noise_program_t::prepare()");

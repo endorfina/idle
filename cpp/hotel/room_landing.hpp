@@ -59,7 +59,7 @@ struct landing_button : gui::shapes::buttonless<gui::positions::from_center<X, Y
     void draw_foreground(const graphics::core& gl, const button_state& st) const noexcept
     {
         gl.prog.text.use();
-        gl.prog.text.set_color({ .62f, 0, .48f, st.alpha });
+        gl.prog.text.set_color({ .6f, 0, .35f, st.alpha });
 
         constexpr auto text = []() -> std::string_view
         {

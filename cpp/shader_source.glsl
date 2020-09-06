@@ -32,17 +32,17 @@ uniform vec4 u_offset;
 
 void main() {
   vec2 coords = vec2(var_mapped_vec.x, var_mapped_vec.y * u_offset.x);
-  vec2 dis_coords = coords * u_offset.y + vec2(u_offset.w, u_offset.z);
+  // vec2 dis_coords = coords * u_offset.y + vec2(u_offset.w, u_offset.z);
 
-  vec4 dis = texture2D(u_tex, dis_coords);
-  vec2 dis_shift = vec2(dis.r - 0.5, (dis.g - 0.5) * u_offset.x) / 8.0;
+  // vec4 dis = texture2D(u_tex, dis_coords);
+  // vec2 dis_shift = vec2(dis.r - 0.5, (dis.g - 0.5) * u_offset.x) / 8.0;
 
-  coords = vec2(
-              max(0.0, min(1.0,
-                      coords.x + dis_shift.x)),
-              max(0.0, min(u_offset.x,
-                      coords.y + dis_shift.y))
-            );
+  // coords = vec2(
+  //             max(0.0, min(1.0,
+  //                     coords.x + dis_shift.x)),
+  //             max(0.0, min(u_offset.x,
+  //                     coords.y + dis_shift.y))
+  //           );
 
   vec2 mask_coords = coords * u_offset.y;
   mask_coords.y += u_offset.z;
@@ -186,7 +186,7 @@ void main() {
 #ifdef GL_ES
 precision highp float;
 #endif
-uniform vec4 u_color, u_color_2, u_color_3;
+uniform vec4 u_color, u_color_2, u_color_3, u_color_4;
 varying vec2 var_mapped_vec;
 uniform vec2 u_seed;
 
@@ -202,10 +202,10 @@ float snoise(vec2 co)  // straight up textbook rand
 
 void main() {
     float dist = min(distance(var_mapped_vec, vec2(0.5, 0.5)) * 1.49, 1.0);
-    vec4 sum_color = u_color_2 + (u_color_3 - u_color_2) * dist;
+    vec4 noisy_color = u_color_3 + (u_color_4 - u_color_3) * dist;
+    vec4 base_color = u_color + (u_color_2 - u_color) * dist;
     vec2 seed = var_mapped_vec * 5000.0 + u_seed;
-    // regular u_color is the base
-    gl_FragColor = u_color + (sum_color - u_color) * snoise(seed);
+    gl_FragColor = base_color + (noisy_color - base_color) * snoise(seed);
 }
 
 @@ textv

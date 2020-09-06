@@ -46,27 +46,28 @@ void draw_dim_noise(const graphics::noise_program_t& noise, const point_t size, 
         0, 1, 1, 1
     };
 
-    float white = 1, red = 1;
+    float base_inner_color_val = 1,
+          base_outer_color_val = 1,
+          center_color_val = 1;
+
+    const auto faster_alpha = std::min<float>(alpha * 3, 1);
+    float base_color_alpha = std::min<float>(faster_alpha * 2.4f, 1);
 
     if (fadeout < 1)
     {
-        const auto w = (fadeout - .6f) / .4f;
-        white = std::max<float>(0, w);
-
-        red = fadeout > .6f ? w
-            : (fadeout - .6f) / -.6f;
+        base_outer_color_val = std::max<float>(0, fadeout * 2 - 1.f);
+        base_inner_color_val = std::min<float>(1, fadeout * 2 + .2f);
+        center_color_val = std::clamp<float>(fadeout * 1.8f - .6f, 0, 1);
     }
 
-    const auto faster_alpha = std::min<float>(alpha * 3, 1);
+    noise.set_color(color_t::greyscale(base_inner_color_val, base_color_alpha));
 
-    // this makes the noise easier at the beginning
-    noise.set_color({white, white, white, std::min<float>(faster_alpha * 2.4f, 1)});
-    noise.set_secondary_color({
-            math::sqr((alpha - .3f) / .7f) * white,
-            .912f * white,
-            .912f * white,
-            faster_alpha * red});
-    noise.set_tertiary_color({0, 0, 0, faster_alpha});
+    noise.set_secondary_color(color_t::greyscale(base_outer_color_val, base_color_alpha));
+
+    noise.set_tertiary_color({ math::sqr((alpha - .3f) / .7f) * (center_color_val / .95f), center_color_val, center_color_val, faster_alpha });
+
+    noise.set_quaternary_color(color_t::greyscale(0, faster_alpha));
+
     noise.set_seed(seed);
     noise.position_vertex(vert);
     noise.texture_vertex(faux_tex_coords);
@@ -211,10 +212,10 @@ auto room::step(const pointer_wrapper& pointer) noexcept -> std::optional<keyrin
 
     if (destination)
     {
-        thing.alpha = std::min<float>(thing.alpha + (impatient ? .005f : .0019f) * uni_time_factor, 2.f);
-        // thing.alpha = std::min<float>(thing.alpha + .0008f * uni_time_factor, 2.f);
+        constexpr float alpha_step = .0022f * uni_time_factor;
+        thing.alpha = std::min<float>(thing.alpha + (impatient ? alpha_step * 4 : alpha_step /* * .2f */), 2.f);
 
-        if (thing.alpha > 1.811f)
+        if (thing.alpha > 1.98f)
         {
             return std::move(destination);
         }
@@ -225,7 +226,7 @@ auto room::step(const pointer_wrapper& pointer) noexcept -> std::optional<keyrin
     }
     else if (pointer.single_press)
     {
-        auto sparkler = [this](const auto& butt)
+        const auto sparkler = [this](const auto& butt)
             {
                 cause_spark(polyps, butt, fast_random_device);
             };
@@ -311,7 +312,7 @@ void luminous_cloud::draw(const graphics::core& gl) const noexcept
             gl.view_normal();
             gl.prog.gradient.set_color(not_red);
             gl.prog.gradient.set_secondary_color(not_red * color_t::greyscale(it.fade), alpha);
-            gl.prog.gradient.set_transform(math::matrices::uniform_scale<float>(scale / 6));
+            gl.prog.gradient.set_transform(math::matrices::uniform_scale<float>(scale / 4));
             gl::DrawArrays(gl::TRIANGLE_FAN, 0, blob_array_len);
         }
     }
@@ -397,14 +398,6 @@ void room::draw(const graphics::core& gl) const noexcept
     // UPDATE: lmao, let's see about that!
 
     const auto fadeout_alpha_sine = std::sin(std::max<float>(thing.alpha + 1.f, 2.f) * math::tau_4) + 1.f;
-
-    if (thing.alpha < .15f)
-    {
-        const float info_alpha = 1.f - std::max(thing.alpha - .1f, 0.f) * 20;
-        gl.prog.text.use();
-        gl.prog.text.set_color(color_t::greyscale(0, info_alpha));
-        draw_text<text_align::near, text_align::far>(*gl.fonts.title, gl.prog.text, "GPL v3\nCC-BY-SA-4.0", {10, gl.draw_size.y - 10}, 12);
-    }
 
     // gl.view_distortion();
 

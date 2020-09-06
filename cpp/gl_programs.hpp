@@ -16,8 +16,8 @@
     You should have received a copy of the GNU General Public License
     along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
-#pragma once
 
+#pragma once
 #include "idle_defines.hpp"
 
 namespace graphics
@@ -48,7 +48,9 @@ struct program_t
 
 private:
     GLuint position_handle = 0;
-    GLint model_handle = 0, view_handle = 0, color_handle = 0;
+    GLint model_handle = 0,
+          view_handle = 0,
+          color_handle = 0;
 
 public:
     void set_transform(const idle::mat4x4_t& f) const noexcept;
@@ -88,7 +90,10 @@ public:
 struct noise_program_t : textured_program_t
 {
 private:
-    GLint secondary_color_handle = 0, tertiary_color_handle = 0, noise_seed_handle = 0;
+    GLint secondary_color_handle = 0,
+          tertiary_color_handle = 0,
+          quaternary_color_handle = 0,
+          noise_seed_handle = 0;
 
 public:
     void prepare() noexcept;
@@ -96,6 +101,8 @@ public:
     void set_secondary_color(const idle::color_t& c) const noexcept;
 
     void set_tertiary_color(const idle::color_t& c) const noexcept;
+
+    void set_quaternary_color(const idle::color_t& c) const noexcept;
 
     void set_seed(idle::point_t seed) const noexcept;
 };
