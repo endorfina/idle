@@ -143,6 +143,16 @@ struct symmetry
     static constexpr unsigned prime_branch_len = Value::prime_branch_len;
 };
 
+template<auto Label, typename Elem>
+struct label
+{
+    Elem elem;
+
+    static constexpr unsigned size = Elem::size;
+    static constexpr unsigned oddness = Elem::oddness;
+    static constexpr unsigned prime_branch_len = Elem::prime_branch_len;
+};
+
 }  // namespace blocks
 
 namespace meta
@@ -177,6 +187,58 @@ constexpr void apply_for_all(const Callable& func, blocks::joint<Nodes...>& node
 
         if constexpr (Index + 1 < sizeof...(Nodes))
             apply_for_all<Index + 1>(func, node);
+    }
+}
+
+template<auto Label, typename Elem, typename Callable>
+constexpr void apply_for_all(const Callable& func, blocks::label<Label, Elem>& label) noexcept
+{
+    apply_for_all(func, label.elem);
+}
+
+
+template<auto Label, typename T = void>
+constexpr bool has_label = false;
+
+template<auto Label, typename...Nodes>
+constexpr bool has_label<Label, blocks::joint<Nodes...>> = (false || ... || has_label<Label, Nodes>);
+
+template<auto Key, auto Label, typename Elem>
+constexpr bool has_label<Key, blocks::label<Label, Elem>> = (Key == Label) || has_label<Key, Elem>;
+
+
+template<auto Key, auto Label, typename Elem>
+constexpr auto& find_label(blocks::label<Label, Elem>& label) noexcept;
+
+template<auto Label, unsigned Index = 0, typename...Nodes>
+constexpr auto& find_label(blocks::joint<Nodes...>& node) noexcept
+{
+    static_assert(sizeof...(Nodes) > 0);
+
+    if constexpr (has_label<Label, typename std::tuple_element<Index, typename blocks::joint<Nodes...>::tuple_type>::type>)
+    {
+        return find_label<Label>(node.template branch<Index>());
+    }
+    else if constexpr (Index + 1 < sizeof...(Nodes))
+    {
+        return find_label<Label, Index + 1>(node);
+    }
+    else
+    {
+        throw;  // stops compilation
+    }
+}
+
+template<auto Key, auto Label, typename Elem>
+constexpr auto& find_label(blocks::label<Label, Elem>& label) noexcept
+{
+    if constexpr (Key == Label)
+    {
+        return label.elem;
+    }
+    else
+    {
+        return find_label<Key>(label.elem);
     }
 }
 
@@ -257,6 +319,12 @@ private:
         return to_lines(index, s.right, mat);
     }
 
+    template<auto Label, typename Elem>
+    constexpr meta::index_pair to_lines(const meta::index_pair index, const blocks::label<Label, Elem>& l, const mat4x4_noopt_t& mat) noexcept
+    {
+        return to_lines(index, l.elem, mat);
+    }
+
 public:
     constexpr deep_tree(const joint_type& root, const mat4x4_noopt_t& mat) noexcept
     {
@@ -329,43 +397,39 @@ public:
 namespace closet
 {
 
+enum struct parts
+{
+    shoulders,
+    hips,
+    upperbody,
+    lowerbody,
+    head
+};
+
 struct humanoid : blocks::joint
                 <
-                    blocks::joint
+                    blocks::label<parts::upperbody, blocks::joint
                     <
-                        blocks::segment<2>,
-                        blocks::symmetry<blocks::segment<4>>
-                    >,
+                        blocks::label<parts::head, blocks::segment<2>>,
+                        blocks::label<parts::shoulders, blocks::symmetry<blocks::segment<4>>>
+                    >>,
 
-                    blocks::joint
+                    blocks::label<parts::lowerbody, blocks::joint
                     <
-                        blocks::symmetry<blocks::segment<4>>
-                    >
+                        blocks::label<parts::hips, blocks::symmetry<blocks::segment<4>>>
+                    >>
                 >
 {
-    constexpr decltype(auto) get_upperbody() noexcept
+    template<auto Key>
+    constexpr const auto& get_ref() const noexcept
     {
-        return branch<0>();
+        return meta::find_label<Key>(*this);
     }
 
-    constexpr decltype(auto) get_lowerbody() noexcept
+    template<auto Key>
+    constexpr auto& get_ref() noexcept
     {
-        return branch<1>();
-    }
-
-    constexpr decltype(auto) get_shoulders() noexcept
-    {
-        return get_upperbody().branch<1>();
-    }
-
-    constexpr decltype(auto) get_head() noexcept
-    {
-        return get_upperbody().branch<0>();
-    }
-
-    constexpr decltype(auto) get_hips() noexcept
-    {
-        return get_lowerbody().branch<0>();
+        return meta::find_label<Key>(*this);
     }
 
     constexpr void realign() noexcept
@@ -385,20 +449,20 @@ struct humanoid : blocks::joint
 
     constexpr humanoid() noexcept
     {
-        auto& [neck, face] = get_head().table;
+        auto& [neck, face] = get_ref<parts::head>().table;
         neck.length = 12;
         face.length = 14;
         face.angle.y = - (neck.angle.y = math::tau / 30);
 
-        auto& ub = get_upperbody().root;
-        auto& lb = get_lowerbody().root;
+        auto& ub = get_ref<parts::upperbody>().root;
+        auto& lb = get_ref<parts::lowerbody>().root;
 
         ub.length = lb.length = 15;
 
         lb.angle.y = math::tau_2;
 
-        auto& sh = get_shoulders();
-        auto& hp = get_hips();
+        auto& sh = get_ref<parts::shoulders>();
+        auto& hp = get_ref<parts::hips>();
 
         auto& arm = sh.left.table;
         auto& leg = hp.left.table;

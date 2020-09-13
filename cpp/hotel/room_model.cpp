@@ -115,10 +115,10 @@ constexpr auto walking_muscle_digest = glass::muscle
 
             [](glass::closet::humanoid h)
             {
-                h.get_upperbody().root.angle.z -= walk_shoulder_swing;
-                h.get_lowerbody().root.angle.z += walk_hip_swing;
+                h.get_ref<glass::closet::parts::upperbody>().root.angle.z -= walk_shoulder_swing;
+                h.get_ref<glass::closet::parts::lowerbody>().root.angle.z += walk_hip_swing;
 
-                auto& shoulders = h.get_shoulders();
+                auto& shoulders = h.get_ref<glass::closet::parts::shoulders>();
                 shoulders.right[1].angle.x += math::tau_8 * .61f;
                 shoulders.left[1].angle.x -= math::tau_8 * .61f;
                 shoulders.right[0].angle.y += walk_arm_raise / 2;
@@ -126,7 +126,7 @@ constexpr auto walking_muscle_digest = glass::muscle
                 shoulders.left[0].angle.y -= walk_arm_raise / 2;
                 shoulders.left[2].angle.y += walk_elbow_bend;
 
-                auto& hips = h.get_hips();
+                auto& hips = h.get_ref<glass::closet::parts::hips>();
                 hips.right[0].angle.y -= walk_leg_raise;
                 hips.right[2].angle.y += walk_knee_bend;
                 hips.right[3].angle.y += walk_leg_raise + walk_foot_raise;
@@ -139,15 +139,15 @@ constexpr auto walking_muscle_digest = glass::muscle
 
             [](glass::closet::humanoid h)
             {
-                h.get_upperbody().root.angle.z -= walk_shoulder_swing;
-                h.get_lowerbody().root.angle.z += walk_hip_swing;
+                h.get_ref<glass::closet::parts::upperbody>().root.angle.z -= walk_shoulder_swing;
+                h.get_ref<glass::closet::parts::lowerbody>().root.angle.z += walk_hip_swing;
 
-                auto& shoulders = h.get_shoulders();
+                auto& shoulders = h.get_ref<glass::closet::parts::shoulders>();
                 shoulders.right[0].angle.y += walk_arm_raise;
                 shoulders.left[0].angle.y -= walk_arm_raise;
                 shoulders.left[2].angle.y += walk_elbow_bend;
 
-                auto& hips = h.get_hips();
+                auto& hips = h.get_ref<glass::closet::parts::hips>();
 
                 hips.right[0].angle.y -= walk_leg_raise;
                 hips.right[2].angle.y -= walk_knee_bend;
@@ -161,15 +161,15 @@ constexpr auto walking_muscle_digest = glass::muscle
 
             [](glass::closet::humanoid h)
             {
-                h.get_upperbody().root.angle.z += walk_shoulder_swing * 2;
-                h.get_lowerbody().root.angle.z -= walk_hip_swing * 2;
+                h.get_ref<glass::closet::parts::upperbody>().root.angle.z += walk_shoulder_swing * 2;
+                h.get_ref<glass::closet::parts::lowerbody>().root.angle.z -= walk_hip_swing * 2;
 
-                auto& shoulders = h.get_shoulders();
+                auto& shoulders = h.get_ref<glass::closet::parts::shoulders>();
                 shoulders.right[0].angle.y -= walk_arm_raise * 3;
                 shoulders.left[0].angle.y += walk_arm_raise * 3;
                 shoulders.left[2].angle.y -= walk_elbow_bend;
 
-                auto& hips = h.get_hips();
+                auto& hips = h.get_ref<glass::closet::parts::hips>();
 
                 hips.right[0].angle.y += walk_leg_raise * 3;
                 hips.right[3].angle.y -= walk_leg_raise * 3;
@@ -183,15 +183,15 @@ constexpr auto walking_muscle_digest = glass::muscle
 
             [](glass::closet::humanoid h)
             {
-                h.get_upperbody().root.angle.z += walk_shoulder_swing;
-                h.get_lowerbody().root.angle.z -= walk_hip_swing;
+                h.get_ref<glass::closet::parts::upperbody>().root.angle.z += walk_shoulder_swing;
+                h.get_ref<glass::closet::parts::lowerbody>().root.angle.z -= walk_hip_swing;
 
-                auto& shoulders = h.get_shoulders();
+                auto& shoulders = h.get_ref<glass::closet::parts::shoulders>();
                 shoulders.right[0].angle.y -= walk_arm_raise;
                 shoulders.left[0].angle.y += walk_arm_raise;
                 shoulders.right[2].angle.y += walk_elbow_bend;
 
-                auto& hips = h.get_hips();
+                auto& hips = h.get_ref<glass::closet::parts::hips>();
 
                 hips.left[0].angle.y -= walk_leg_raise;
                 hips.left[2].angle.y -= walk_knee_bend;
@@ -214,12 +214,12 @@ constexpr auto floating_muscle_digest = glass::muscle
 
             [](glass::closet::humanoid h)
             {
-                auto& [neck, face] = h.get_head().table;
+                auto& [neck, face] = h.get_ref<glass::closet::parts::head>().table;
                 neck.angle.y -= math::tau_8 * .2f;
-                h.get_upperbody().root.angle.y -= math::tau_8 *.8f;
-                h.get_lowerbody().root.angle.y -= math::tau_8 *.7f;
+                h.get_ref<glass::closet::parts::upperbody>().root.angle.y -= math::tau_8 *.8f;
+                h.get_ref<glass::closet::parts::lowerbody>().root.angle.y -= math::tau_8 *.7f;
 
-                auto& shoulders = h.get_shoulders();
+                auto& shoulders = h.get_ref<glass::closet::parts::shoulders>();
                 // shoulders.right[1].angle.x += math::tau_8 * .61f;
                 // shoulders.left[1].angle.x -= math::tau_8 * .61f;
                 shoulders.right[0].angle.y -= math::tau_8 * .1f;
@@ -229,7 +229,7 @@ constexpr auto floating_muscle_digest = glass::muscle
                 shoulders.left[2].angle.y += math::tau_8 * .1f;
                 shoulders.left[2].angle.z += math::tau_8 * .1f;
 
-                auto& hips = h.get_hips();
+                auto& hips = h.get_ref<glass::closet::parts::hips>();
                 hips.right[0].angle.y += math::tau_8 *.3f;
                 hips.right[1].angle.x += math::tau_8 *.19f;
                 hips.right[2].angle.y -= math::tau_8 *.1f;
@@ -244,12 +244,12 @@ constexpr auto floating_muscle_digest = glass::muscle
 
             [](glass::closet::humanoid h)
             {
-                auto& [neck, face] = h.get_head().table;
+                auto& [neck, face] = h.get_ref<glass::closet::parts::head>().table;
                 neck.angle.y -= math::tau_8 * .001f;
-                h.get_upperbody().root.angle.y -= math::tau_8 *.05f;
-                h.get_lowerbody().root.angle.y -= math::tau_8 *.05f;
+                h.get_ref<glass::closet::parts::upperbody>().root.angle.y -= math::tau_8 *.05f;
+                h.get_ref<glass::closet::parts::lowerbody>().root.angle.y -= math::tau_8 *.05f;
 
-                auto& shoulders = h.get_shoulders();
+                auto& shoulders = h.get_ref<glass::closet::parts::shoulders>();
                 // shoulders.right[1].angle.x += math::tau_8 * .61f;
                 // shoulders.left[1].angle.x -= math::tau_8 * .61f;
                 shoulders.right[0].angle.y += math::tau_8 * .01f;
@@ -259,7 +259,7 @@ constexpr auto floating_muscle_digest = glass::muscle
                 shoulders.left[2].angle.y += math::tau_8 * .4f;
                 shoulders.left[2].angle.z += math::tau_8;
 
-                auto& hips = h.get_hips();
+                auto& hips = h.get_ref<glass::closet::parts::hips>();
                 hips.right[0].angle.y += math::tau_8 *.1f;
                 hips.right[2].angle.y += math::tau_8 *.05f;
                 hips.left[0].angle.y -= math::tau_8 * .2f;
