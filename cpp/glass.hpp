@@ -349,12 +349,14 @@ struct flat_tree
     explicit constexpr flat_tree(const deep_tree<Js...>& source) noexcept
         : lengths{source.lengths}
     {
-        // std::transform is unavailable in C++17
-
+#ifdef __cpp_lib_constexpr_algorithms
+        std::transform(source.table.begin(), source.table.end(), table.begin(), meta::flatten);
+#else
         for (unsigned i = 0; i < table.size(); ++i)
         {
             table[i] = meta::flatten(source.table[i]);
         }
+#endif
     }
 };
 
@@ -394,8 +396,6 @@ public:
     }
 };
 
-namespace closet
-{
 
 enum struct parts
 {
@@ -405,6 +405,9 @@ enum struct parts
     lowerbody,
     head
 };
+
+namespace closet
+{
 
 struct humanoid : blocks::joint
                 <
