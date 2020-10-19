@@ -5,7 +5,8 @@
 
 readonly PROGNAME=${0##*/}
 readonly BUILD_DIR='.cxx'
-readonly MOVED_BUILD_DIR='.cxx_moved'
+readonly SOURCE_DIR='cpp'
+readonly IMPORTANT_FILES=("$BUILD_DIR" 'Makefile' "$SOURCE_DIR/Makefile")
 
 if [[ -t 1 && -t 2 ]]
 then
@@ -17,16 +18,48 @@ else
     readonly color_norm=
 fi
 
+get_move_name()
+{
+    (dirname "$1"
+    echo -n '/.'
+    basename "$f" | sed 's~^\.~~'
+    echo -n '_moved'
+    ) | tr -d '\n'
+}
+
+save_important_stuff()
+{
+    local f moved
+    for f in "${IMPORTANT_FILES[@]}"
+    do
+        moved=$(get_move_name "$f")
+
+        if [[ -e $moved ]]
+        then
+            die_safely "'$moved' found." \
+                "🔧 Issued a cleanup but building may require manual aid." \
+                "(hint: rm -rf '$f')"
+        fi
+
+        mv "$f" "$moved" || die_safely "Failed to move '$f'"
+    done
+}
+
 cleanup()
 {
-    if [[ -d $MOVED_BUILD_DIR ]]
-    then
-        [[ -d $BUILD_DIR ]] && rm -rf "$BUILD_DIR"
-        mv "$MOVED_BUILD_DIR" "$BUILD_DIR"
+    local f moved
+    for f in "${IMPORTANT_FILES[@]}"
+    do
+        moved=$(get_move_name "$f")
 
-        echo '✨ Returned everything to normal ✨'
-    fi
+        if [[ -e $moved ]]
+        then
+            [[ -d $f ]] && rm -rf "$f"
+            mv -f "$moved" "$f"
+        fi
+    done
 
+    echo '✨ Returned everything to normal ✨'
 }
 
 die()
@@ -44,24 +77,6 @@ die_safely()
     cleanup
     die "$@"
 }
-
-cd "$(dirname "$0")" || die "Couldn't move to the root directory"
-
-if [[ -d $MOVED_BUILD_DIR ]]
-then
-    [[ -d $BUILD_DIR ]] \
-        || mv "$MOVED_BUILD_DIR" "$BUILD_DIR"
-
-    die "'$MOVED_BUILD_DIR' directory found." \
-        "🔧 Issued a fix but the issue may require manual aid." \
-        "(hint: rm -rf '$BUILD_DIR')"
-fi
-
-if [[ -d "$BUILD_DIR" ]]
-then
-    mv "$BUILD_DIR" "$MOVED_BUILD_DIR"
-    echo "Moved existing build files to '$MOVED_BUILD_DIR' 👻"
-fi
 
 try_builds()
 {
@@ -87,10 +102,14 @@ try_builds()
     done
 }
 
+cd "$(dirname "$0")" || die "Couldn't move to the root directory"
+
+save_important_stuff
+
 tmp_file=$(mktemp) || die_safely 'Failed to create a temp file'
 readonly tmp_file
 
-BUILDS=(
+readonly BUILDS=(
     llll
     dev
     J

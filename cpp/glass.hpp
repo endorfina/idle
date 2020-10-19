@@ -256,8 +256,92 @@ constexpr point_t flatten(const point_3d_t p) noexcept
     return { p.y, - p.z };
 }
 
+struct measure_point
+{
+    point_3d_t pos, angle;
+};
+
 }  // namespace meta
 
+
+template<typename...Js>
+struct pointy_tree
+{
+    using joint_type = blocks::joint<Js...>;
+
+    std::array<meta::measure_point, joint_type::size + joint_type::oddness> table{};
+    std::array<unsigned, 1 + joint_type::oddness> lengths{};
+
+private:
+    constexpr meta::index_pair to_lines(meta::index_pair index, const blocks::bone& b, const mat4x4_noopt_t& mat) noexcept
+    {
+        const auto rot = b.get_transform() * mat;
+        table[index[0]++] = { rot * point_3d_t{}, b.angle };
+        return index;
+    }
+
+    template<unsigned Size>
+    constexpr meta::index_pair to_lines(meta::index_pair index, const blocks::segment<Size>& s, mat4x4_noopt_t mat) noexcept
+    {
+        for (const auto& it : s.table)
+        {
+            mat.reverse_multiply(it.get_transform());
+            table[index[0]++] = { mat * point_3d_t{}, it.angle };
+        }
+
+        return index;
+    }
+
+    template<typename...Vars>
+    constexpr meta::index_pair to_lines(meta::index_pair index, const blocks::joint<Vars...>& j, const mat4x4_noopt_t& mat) noexcept
+    {
+        const auto rot = j.root.get_transform() * mat;
+        const auto branchoff_point = index[0];
+
+        table[index[0]++] = { rot * point_3d_t{}, j.root.angle };
+        index = to_lines(index, j.template branch<0>(), rot);
+
+        if constexpr (sizeof...(Vars) > 1)
+        {
+            tuple_visit<1>([&](const auto& it)
+                {
+                    lengths[index[1]++] = index[0];
+                    table[index[0]++] = table[branchoff_point];
+                    index = to_lines(index, it, rot);
+                },
+                j.branches);
+        }
+        return index;
+    }
+
+    template<typename Val>
+    constexpr meta::index_pair to_lines(meta::index_pair index, const blocks::symmetry<Val>& s, const mat4x4_noopt_t& mat) noexcept
+    {
+        const auto branchoff_point = index[0];
+        index = to_lines(index, s.left, mat);
+        lengths[index[1]++] = index[0];
+        table[index[0]++] = table[branchoff_point - 1];
+        return to_lines(index, s.right, mat);
+    }
+
+    template<auto Label, typename Elem>
+    constexpr meta::index_pair to_lines(const meta::index_pair index, const blocks::label<Label, Elem>& l, const mat4x4_noopt_t& mat) noexcept
+    {
+        return to_lines(index, l.elem, mat);
+    }
+
+public:
+    constexpr pointy_tree(const joint_type& root, const mat4x4_noopt_t& mat) noexcept
+    {
+        const auto [total_length, last_iter] = to_lines({0, 0}, root, mat);
+        lengths[last_iter] = total_length;
+
+        for (auto i = lengths.size() - 1; i > 0; --i)
+        {
+            lengths[i] -= lengths[i - 1];
+        }
+    }
+};
 
 template<typename...Js>
 struct deep_tree
