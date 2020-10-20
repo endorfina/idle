@@ -22,8 +22,8 @@ get_move_name()
 {
     (dirname "$1"
     echo -n '/.'
-    basename "$f" | sed 's~^\.~~'
-    echo -n '_moved'
+    basename "$1" | sed 's~^\.~~'
+    echo -n '_backup'
     ) | tr -d '\n'
 }
 
@@ -41,7 +41,7 @@ save_important_stuff()
                 "(hint: rm -rf '$f')"
         fi
 
-        mv "$f" "$moved" || die_safely "Failed to move '$f'"
+        mv -v "$f" "$moved" || die_safely "Failed to move '$f'"
     done
 }
 
@@ -55,7 +55,7 @@ cleanup()
         if [[ -e $moved ]]
         then
             [[ -d $f ]] && rm -rf "$f"
-            mv -f "$moved" "$f"
+            mv -vf "$moved" "$f"
         fi
     done
 
