@@ -7,6 +7,7 @@ readonly PROGNAME=${0##*/}
 readonly BUILD_DIR='.cxx'
 readonly SOURCE_DIR='cpp'
 readonly IMPORTANT_FILES=("$BUILD_DIR" 'Makefile' "$SOURCE_DIR/Makefile")
+tmp_file=
 
 if [[ -t 1 && -t 2 ]]
 then
@@ -59,6 +60,8 @@ cleanup()
         fi
     done
 
+    [[ -n $tmp_file && -f $tmp_file ]] && rm "$tmp_file"
+
     echo '✨ Returned everything to normal ✨'
 }
 
@@ -86,7 +89,7 @@ try_builds()
         ./configure.sh "$flags" -q \
             && time make -s \
             && make -s test \
-            || die_safely "Configuration '$color_red$flags$color_norm' has failed to build"
+            || die_safely 2>&1 "Configuration '$color_red$flags$color_norm' has failed to build"
 
         echo
 
@@ -120,7 +123,6 @@ try_builds "${BUILDS[@]}" 2> "$tmp_file"
 
 echo
 cat "$tmp_file"
-rm "$tmp_file"
 
 cleanup
 

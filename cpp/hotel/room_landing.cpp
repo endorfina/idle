@@ -248,6 +248,10 @@ auto room::step(const pointer_wrapper& pointer) noexcept -> std::optional<keyrin
                     break;
 #endif
 
+                case function::start:
+                    destination.emplace(keyring::somewhere_else<hotel::stage::room>{});
+                    break;
+
                 case function::cont:
                     destination.emplace(keyring::somewhere_else<hotel::landing::room>{});
                     break;

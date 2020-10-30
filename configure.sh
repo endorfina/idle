@@ -223,7 +223,7 @@ make_target()
   local name=$1
   shift
 
-  if [[ -n $command_file ]]
+  if [[ -r $command_file ]]
   then
     echo "$name:"
     sed -E -e "$*" "$command_file"

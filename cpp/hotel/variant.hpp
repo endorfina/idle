@@ -20,17 +20,17 @@
 #pragma once
 #include <variant>
 #include "room_landing.hpp"
-// #include "room_red.hpp"
+#include "room_stage.hpp"
 #include "room_model.hpp"
 
 namespace idle::hotel
 {
 using rooms = std::variant<
-    landing::room
+    landing::room,
 #ifdef IDLE_COMPILE_GALLERY
-    , model::room
+    model::room,
 #endif  // IDLE_COMPILE_GALLERY
-    // red_room
+    stage::room
 >;
 
 }

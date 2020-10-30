@@ -24,6 +24,7 @@ set(${PROJECT_NAME}-files
         statistician.cpp
         hotel/service.cpp
         hotel/room_landing.cpp
+        hotel/room_stage.cpp
         hotel/room_model.cpp
         room_controller.cpp
         lodge.cpp

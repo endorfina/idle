@@ -36,6 +36,11 @@ struct room;
 }
 #endif
 
+namespace stage
+{
+struct room;
+}
+
 namespace keyring
 {
 
@@ -50,6 +55,7 @@ using variant = std::variant<
 #ifdef IDLE_COMPILE_GALLERY
         somewhere_else<model::room>,
 #endif
+        somewhere_else<stage::room>,
         std::string_view
     >;
 
