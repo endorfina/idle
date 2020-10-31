@@ -47,7 +47,9 @@ public:
     constexpr statistician() noexcept
         : frame_count([]{
                     statistician::array_type out;
-                    out.fill({.5f, 2.f});
+                    // TODO: change back to fill()
+                    for (auto& it : out)
+                        it = {.5f, 2.f};
                     return out;
                 }())
     {

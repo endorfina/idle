@@ -28,6 +28,11 @@ namespace idle::hotel::stage
 
 void room::draw(const graphics::core& gl) const noexcept
 {
+    gl.prog.fill.use();
+    gl.prog.fill.set_identity();
+    gl.prog.fill.set_view_identity();
+    gl.prog.fill.set_color({0,0,0});
+    fill_screen(gl, gl.prog.fill);
 }
 
 std::optional<keyring::variant> room::step(const pointer_wrapper& cursor) noexcept
