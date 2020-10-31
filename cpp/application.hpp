@@ -51,7 +51,7 @@ public:
     ::platform::context window;
 
 private:
-    application() noexcept = default;
+    application() = default;
 
     auto execute_commands(const bool nested) noexcept -> bool;
 
