@@ -219,13 +219,10 @@ constexpr auto& find_label(blocks::joint<Nodes...>& node) noexcept
     {
         return find_label<Label>(node.template branch<Index>());
     }
-    else if constexpr (Index + 1 < sizeof...(Nodes))
-    {
-        return find_label<Label, Index + 1>(node);
-    }
     else
     {
-        throw;  // stops compilation
+        static_assert(Index + 1 < sizeof...(Nodes));
+        return find_label<Label, Index + 1>(node);
     }
 }
 

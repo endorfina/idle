@@ -201,7 +201,7 @@ void main() {
     float dist = min(distance(var_mapped_vec, vec2(0.5, 0.5)) * 1.49, 1.0);
     vec4 noisy_color = u_color_3 + (u_color_4 - u_color_3) * dist;
     vec4 base_color = u_color + (u_color_2 - u_color) * dist;
-    float noise_value = snoise(var_mapped_vec * 1000.0, u_seed.x);
+    float noise_value = snoise(var_mapped_vec * 80.0, u_seed.x);
     gl_FragColor = base_color + (noisy_color - base_color) * noise_value;
 }
 
