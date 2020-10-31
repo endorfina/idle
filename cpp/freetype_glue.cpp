@@ -136,12 +136,12 @@ std::optional<ft_data_t> create_font(const font_face_t freetype_font_face, const
 
         glyphs.emplace(charcode, glyph_t{
             { glyph->bitmap_left / static_cast<float>(cell_size),
-                - glyph->bitmap_top / static_cast<float>(cell_size) }, // offset
+                - glyph->bitmap_top / static_cast<float>(cell_size) },
 
             { texture_position.x * cell_size / static_cast<float>(resolution),
-                (texture_position.y * cell_size + 1) / static_cast<float>(resolution) }, // texture_position
+                (texture_position.y * cell_size + 1) / static_cast<float>(resolution) },
 
-            glyph->advance.x / static_cast<float>(64 * cell_size)}); // width
+            glyph->advance.x / static_cast<float>(64 * cell_size)});
 
         const unsigned base_offset = cell_size * (texture_position.x + texture_position.y * resolution);
         const unsigned gr = glyph->bitmap.rows;

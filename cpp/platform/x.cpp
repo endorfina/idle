@@ -78,19 +78,16 @@ int x_error_handler(Display *dpy, XErrorEvent *ev) noexcept
 
 static_assert(sizeof(x11_display) <= sizeof(context::data_t));
 
-} // namespace
+constexpr unsigned initial_width = 960, initial_height = 720;
 
-context::context() noexcept
+bool create_window(x11_display& x) noexcept
 {
-    auto& x = x11_display::cast(data);
-
-    LOGDD("context::context");
-
     x.display = nullptr;
 
     XSetWindowAttributes setwindowattributes;
 
-    GLint attributes[] {
+    GLint attributes[]
+    {
         GLX_X_RENDERABLE  , True,
         GLX_DRAWABLE_TYPE , GLX_WINDOW_BIT,
         GLX_RENDER_TYPE   , GLX_RGBA_BIT,
@@ -103,21 +100,20 @@ context::context() noexcept
         None
     };
 
-    std::unique_ptr<Display, decltype(&XCloseDisplay)> display{ XOpenDisplay(nullptr), XCloseDisplay };
+    std::unique_ptr<Display, decltype(&XCloseDisplay)> new_display{ XOpenDisplay(nullptr), XCloseDisplay };
 
-    if(!display) {
+    if (!new_display)
+    {
         LOGE("Cannot connect to X server");
-        commands.insert(command::close_window);
-        return;
+        return false;
     }
 
     if (int glx_major, glx_minor;
-        !glXQueryVersion(display.get(), &glx_major, &glx_minor)
+        !glXQueryVersion(new_display.get(), &glx_major, &glx_minor)
         || ((glx_major == 1) && (glx_minor < 3)) || (glx_major < 1))
     {
         LOGE("Invalid GLX version");
-        commands.insert(command::close_window);
-        return;
+        return false;
     }
 
     using x_free = decltype([](void* ptr){ XFree(ptr); });
@@ -125,7 +121,7 @@ context::context() noexcept
     GLXFBConfig bestFbc; // Get framebuffers
     int fbcount;
     if (const std::unique_ptr<GLXFBConfig[], x_free> fbc{
-                glXChooseFBConfig(display.get(), DefaultScreen(display.get()), attributes, &fbcount)
+                glXChooseFBConfig(new_display.get(), DefaultScreen(new_display.get()), attributes, &fbcount)
             })
     {
         int best_fbc = -1, worst_fbc = -1, best_num_samp = -1, worst_num_samp = 999;
@@ -133,12 +129,12 @@ context::context() noexcept
         for (int i = 0; i < fbcount; ++i)
         {
             if (const std::unique_ptr<XVisualInfo, x_free> vi{
-                        glXGetVisualFromFBConfig(display.get(), fbc[i])
+                        glXGetVisualFromFBConfig(new_display.get(), fbc[i])
                     })
             {
                 int samp_buf, samples;
-                glXGetFBConfigAttrib(display.get(), fbc[i], GLX_SAMPLE_BUFFERS, &samp_buf);
-                glXGetFBConfigAttrib(display.get(), fbc[i], GLX_SAMPLES, &samples);
+                glXGetFBConfigAttrib(new_display.get(), fbc[i], GLX_SAMPLE_BUFFERS, &samp_buf);
+                glXGetFBConfigAttrib(new_display.get(), fbc[i], GLX_SAMPLES, &samples);
 
                 if (best_fbc < 0 || (samp_buf && samples > best_num_samp))
                 {
@@ -158,20 +154,18 @@ context::context() noexcept
     else
     {
         LOGE("Failed to retrieve a framebuffer config");
-        commands.insert(command::close_window);
-        return;
+        return false;
     }
 
-    const std::unique_ptr<XVisualInfo, x_free> visualinfo{ glXGetVisualFromFBConfig(display.get(), bestFbc) };
+    const std::unique_ptr<XVisualInfo, x_free> visualinfo{ glXGetVisualFromFBConfig(new_display.get(), bestFbc) };
 
     if(!visualinfo)
     {
         LOGE("No appropriate visual found");
-        commands.insert(command::close_window);
-        return;
+        return false;
     }
 
-    x.colormap = XCreateColormap(display.get(), RootWindow(display.get(), visualinfo->screen), visualinfo->visual, AllocNone);
+    x.colormap = XCreateColormap(new_display.get(), RootWindow(new_display.get(), visualinfo->screen), visualinfo->visual, AllocNone);
 
     setwindowattributes.colormap = x.colormap;
     setwindowattributes.event_mask = ButtonPressMask | StructureNotifyMask | ButtonReleaseMask |
@@ -179,76 +173,89 @@ context::context() noexcept
                           KeyPressMask | // KeyReleaseMask |
                           PointerMotionMask | Button1MotionMask; // | VisibilityChangeMask | ExposureMask;
 
-    constexpr unsigned initial_width = 960, initial_height = 720;
-
-    x.window = XCreateWindow(display.get(), RootWindow(display.get(), visualinfo->screen), 0, 0, initial_width, initial_height, 0, visualinfo->depth, InputOutput, visualinfo->visual, CWColormap | CWEventMask, &setwindowattributes);
+    x.window = XCreateWindow(new_display.get(),
+            RootWindow(new_display.get(), visualinfo->screen),
+            0, 0,
+            initial_width, initial_height,
+            0, visualinfo->depth,
+            InputOutput, visualinfo->visual,
+            CWColormap | CWEventMask,
+            &setwindowattributes);
 
     if(!x.window)
     {
         LOGE("Failed to create a window");
-        XFreeColormap(display.get(), x.colormap);
-        commands.insert(command::close_window);
-        return;
+        XFreeColormap(new_display.get(), x.colormap);
+        return false;
     }
-    XStoreName(display.get(), x.window, "idle/crimson");
-    XMapWindow(display.get(), x.window);
+    XStoreName(new_display.get(), x.window, "idle/crimson");
+    XMapWindow(new_display.get(), x.window);
 
 
     auto default_error_handler = XSetErrorHandler(x_error_handler);
     XSetIOErrorHandler(x_fatal_error_handler);
 
-    x.context = glXCreateContext(display.get(), visualinfo.get(), NULL, True);
+    x.context = glXCreateContext(new_display.get(), visualinfo.get(), NULL, True);
 
     if (!x.context)
     {
-        XDestroyWindow(display.get(), x.window);
-        XFreeColormap(display.get(), x.colormap);
+        XDestroyWindow(new_display.get(), x.window);
+        XFreeColormap(new_display.get(), x.colormap);
         LOGE("Failed to create a proper gl context");
-        commands.insert(command::close_window);
-        return;
+        return false;
     }
 
 #ifdef X11_USE_CLIENTMESSAGE
-    wmDeleteMessage = XInternAtom(display.get(), "WM_DELETE_WINDOW", False);
-    XSetWMProtocols(display.get(), x.window, &wmDeleteMessage, 1);
+    wmDeleteMessage = XInternAtom(new_display.get(), "WM_DELETE_WINDOW", False);
+    XSetWMProtocols(new_display.get(), x.window, &wmDeleteMessage, 1);
 #endif
 
     // Sync to ensure any errors generated are processed.
-    XSync(display.get(), False);
+    XSync(new_display.get(), False);
     XSetErrorHandler(default_error_handler);
 
-    if (!glXIsDirect(display.get(), x.context))
+    if (!glXIsDirect(new_display.get(), x.context))
     {
         LOGE(u8"Indirect GLX rendering context obtained (\U0001f937 why\?\?)");
     }
 
-    glXMakeCurrent(display.get(), x.window, x.context);
+    glXMakeCurrent(new_display.get(), x.window, x.context);
 
 
     if (const static gl::exts::LoadTest glTest = gl::sys::LoadFunctions(); !glTest)
     {
         LOGE("Failed to load crucial OpenGL functions");
-        glXMakeCurrent(display.get(), None, NULL);
-        glXDestroyContext(display.get(), x.context);
-        XDestroyWindow(display.get(), x.window);
-        XFreeColormap(display.get(), x.colormap);
-        commands.insert(command::close_window);
-        return;
+        glXMakeCurrent(new_display.get(), None, NULL);
+        glXDestroyContext(new_display.get(), x.context);
+        XDestroyWindow(new_display.get(), x.window);
+        XFreeColormap(new_display.get(), x.colormap);
+        return false;
     }
     else if (const auto amt = glTest.GetNumMissing(); amt > 0)
     {
         LOGE("Number of functions that failed to load: %i.", amt);
     }
 
-    gl::ClearColor(background.r, background.g, background.b, 1);
-    gl::Clear(gl::COLOR_BUFFER_BIT);
-    glXSwapBuffers(display.get(), x.window);
+    x.display = new_display.release();
+    return true;
+}
 
-    x.display = display.release();
+} // namespace
 
-    resize_request.emplace(initial_width, initial_height);
-    commands.insert(command::init_window);
-    commands.insert(command::gained_focus); // TODO: Make X handle focus as to reduce resource usage when idle
+context::context() noexcept
+{
+    LOGDD("context::context");
+
+    if (!create_window(x11_display::cast(data)))
+    {
+        commands.insert(command::close_window);
+    }
+    else
+    {
+        resize_request.emplace(initial_width, initial_height);
+        commands.insert(command::init_window);
+        commands.insert(command::gained_focus); // TODO: Make X handle focus as to reduce resource usage when idle
+    }
 }
 
 void context::buffer_swap() noexcept
