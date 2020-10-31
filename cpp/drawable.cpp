@@ -34,7 +34,7 @@ namespace idle
 namespace
 {
 
-float proportional_to_nearest_sqr(const size_t w) noexcept
+constexpr float proportional_to_nearest_sqr(const size_t w) noexcept
 {
     size_t u = 1;
     while (u < w) u *= 2;
@@ -322,10 +322,6 @@ void fill_circle(const graphics::program_t& prog, point_t center, const float ra
 {
     if (radius > 0.f && steps > 4)
     {
-// #ifdef WIN32
-//             std::vector<float> _v((steps + 2) * 2);
-//             float * const v = _v.data();
-// #else
         point_t v[steps + 2];
         v[0] = {center.x, center.y};
         for (unsigned int i = 0; i <= steps; ++i) {
@@ -355,7 +351,8 @@ void draw_circle(const graphics::program_t& prog, point_t center, const float ra
 
 void fill_rectangle(const graphics::program_t& prog, const rect_t &rect) noexcept
 {
-    const float v[] = {
+    const float v[]
+    {
             rect.left, rect.top,  rect.right, rect.top,
             rect.left, rect.bottom, rect.right, rect.bottom
     };
@@ -366,7 +363,8 @@ void fill_rectangle(const graphics::program_t& prog, const rect_t &rect) noexcep
 
 void draw_rectangle(const graphics::program_t& prog, const rect_t &rect) noexcept
 {
-    const float v[] = {
+    const float v[]
+    {
             rect.left, rect.top,  rect.right, rect.top,
             rect.right, rect.bottom, rect.left, rect.bottom,
             rect.left, rect.top
@@ -384,7 +382,8 @@ void fill_screen(const graphics::core& gl, const graphics::program_t& prog) noex
 
 void fill_rectangle(const graphics::program_t& prog, point_t rect) noexcept
 {
-    const float v[] = {
+    const float v[]
+    {
             0, 0,  rect.x, 0,
             0, rect.y, rect.x, rect.y
     };
@@ -394,33 +393,37 @@ void fill_rectangle(const graphics::program_t& prog, point_t rect) noexcept
 
 void draw_rectangle(const graphics::program_t& prog, point_t rect) noexcept
 {
-    const float v[] = {
-            0, 0,  rect.x, 0,
-            rect.x, rect.y, 0, rect.y,
-            0, 0
+    const float v[]
+    {
+        0, 0,  rect.x, 0,
+        rect.x, rect.y, 0, rect.y,
+        0, 0
     };
     prog.position_vertex(v);
     gl::DrawArrays(gl::LINE_STRIP, 0, 5);
 }
 
-#define ROUND_RECTANGLE_DRAW_STEPS 5
-
 void fill_round_rectangle(const graphics::program_t& prog, const rect_t &rect, const float radius) noexcept
 {
-    if (radius <= 0.f) {
+    if (radius <= 0.f)
+    {
         fill_rectangle(prog, rect);
     }
-    else {
-        std::array<point_t, (ROUND_RECTANGLE_DRAW_STEPS + 1) * 4 + 2> v;
+    else
+    {
+        constexpr unsigned draw_steps = 5;
+        std::array<point_t, (draw_steps + 1) * 4 + 2> v;
         v[0] = {(rect.left + rect.right) / 2, (rect.top + rect.bottom) / 2};
-        for (unsigned i = 0; i <= ROUND_RECTANGLE_DRAW_STEPS; ++i) {
-            const float a = i * math::tau_4 / ROUND_RECTANGLE_DRAW_STEPS;
+
+        for (unsigned i = 0; i <= draw_steps; ++i)
+        {
+            const float a = i * math::tau_4 / draw_steps;
             v[i + 1] = {rect.left + radius - cosf(a) * radius, rect.top + radius - sinf(a) * radius};
-            v[i + 2 + ROUND_RECTANGLE_DRAW_STEPS] = {rect.right - radius + sinf(a) * radius, rect.top + radius - cosf(a) * radius};
-            v[i + 3 + ROUND_RECTANGLE_DRAW_STEPS * 2] = {rect.right - radius + cosf(a) * radius, rect.bottom - radius + sinf(a) * radius};
-            v[i + 4 + ROUND_RECTANGLE_DRAW_STEPS * 3] = {rect.left + radius - sinf(a) * radius, rect.bottom - radius + cosf(a) * radius};
+            v[i + 2 + draw_steps] = {rect.right - radius + sinf(a) * radius, rect.top + radius - cosf(a) * radius};
+            v[i + 3 + draw_steps * 2] = {rect.right - radius + cosf(a) * radius, rect.bottom - radius + sinf(a) * radius};
+            v[i + 4 + draw_steps * 3] = {rect.left + radius - sinf(a) * radius, rect.bottom - radius + cosf(a) * radius};
         }
-        v[5 + ROUND_RECTANGLE_DRAW_STEPS * 4] = {rect.left, rect.top + radius};
+        v[5 + draw_steps * 4] = {rect.left, rect.top + radius};
 
         prog.position_vertex(reinterpret_cast<const GLfloat*>(v.data()));
         gl::DrawArrays(gl::TRIANGLE_FAN, 0, v.size());
@@ -429,11 +432,13 @@ void fill_round_rectangle(const graphics::program_t& prog, const rect_t &rect, c
 
 void image_t::draw(const graphics::textured_program_t& prog) const noexcept
 {
-    const float v[] = {
+    const float v[]
+    {
             0, 0,  static_cast<float>(width), 0,
             0, static_cast<float>(height), static_cast<float>(width), static_cast<float>(height)
     };
-    const float t[] = {
+    const float t[]
+    {
             0, 0,   tex.x, 0,
             0, tex.y, tex.x, tex.y
     };
@@ -447,11 +452,13 @@ void image_t::draw(const graphics::textured_program_t& prog) const noexcept
 
 void image_t::draw(const graphics::textured_program_t& prog, point_t p) const noexcept
 {
-    const float v[] = {
+    const float v[]
+    {
             p.x, p.y,  p.x + width, p.y,
             p.x, p.y + height, p.x + width, p.y + height
     };
-    const float t[] = {
+    const float t[]
+    {
             0, 0,   tex.x, 0,
             0, tex.y, tex.x, tex.y
     };
@@ -464,12 +471,14 @@ void image_t::draw(const graphics::textured_program_t& prog, point_t p) const no
 
 void image_t::draw(const graphics::textured_program_t& prog, point_t p, const rect_t &rect) const noexcept
 {
-    const float _w = fabsf(rect.right - rect.left), _h = fabsf(rect.bottom - rect.top), tx = tex.x / width, ty = tex.y / height;
-    const float v[] = {
-            p.x, p.y,  p.x + _w, p.y,
-            p.x, p.y + _h, p.x + _w, p.y + _h
+    const float w = fabsf(rect.right - rect.left), h = fabsf(rect.bottom - rect.top), tx = tex.x / width, ty = tex.y / height;
+    const float v[]
+    {
+            p.x, p.y,  p.x + w, p.y,
+            p.x, p.y + h, p.x + w, p.y + h
     };
-    const float t[] = {
+    const float t[]
+    {
             rect.left * tx, rect.top * ty,  rect.right * tx, rect.top * ty,
             rect.left * tx, rect.bottom * ty, rect.right * tx, rect.bottom * ty
     };
@@ -482,12 +491,14 @@ void image_t::draw(const graphics::textured_program_t& prog, point_t p, const re
 
 void image_t::draw(const graphics::textured_program_t& prog, const rect_t &rect) const noexcept
 {
-    const float _w = fabsf(rect.right - rect.left), _h = fabsf(rect.bottom - rect.top), tx = tex.x / width, ty = tex.y / height;
-    const float v[] = {
-            0, 0,  _w, 0,
-            0, _h, _w, _h
+    const float w = fabsf(rect.right - rect.left), h = fabsf(rect.bottom - rect.top), tx = tex.x / width, ty = tex.y / height;
+    const float v[]
+    {
+            0, 0,  w, 0,
+            0, h, w, h
     };
-    const float t[] = {
+    const float t[]
+    {
             rect.left * tx, rect.top * ty,  rect.right * tx, rect.top * ty,
             rect.left * tx, rect.bottom * ty, rect.right * tx, rect.bottom * ty
     };

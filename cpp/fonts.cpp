@@ -108,7 +108,9 @@ void font_t::draw_custom_animation(const graphics::text_program_t& rcp, const st
                 ++anim;
             }
             else
+            {
                 draw_glyph(gi->second, rcp, cell_size, pos);
+            }
 
             pos.x += gi->second.width;
         }
@@ -118,7 +120,7 @@ void font_t::draw_custom_animation(const graphics::text_program_t& rcp, const st
     rcp.set_identity();
 }
 
-::idle::point_t font_t::get_extent(const std::string_view& str, const float size, unsigned int limit) const noexcept
+idle::point_t font_t::get_extent(const std::string_view& str, const float size, unsigned int limit) const noexcept
 {
     float max_line_width = 0;
     int line_amount = 1;
@@ -142,10 +144,8 @@ void font_t::draw_custom_animation(const graphics::text_program_t& rcp, const st
 
         if (!--limit) break;
     }
-    if (current_line_width > max_line_width)
-        max_line_width = current_line_width;
 
-    return { max_line_width, (min_y - max_y) + line_amount * size };
+    return { std::max(max_line_width, current_line_width), (min_y - max_y) + line_amount * size };
 }
 
 
