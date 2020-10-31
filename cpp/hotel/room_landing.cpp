@@ -191,7 +191,7 @@ auto room::step(const pointer_wrapper& pointer) noexcept -> std::optional<keyrin
         thing.legs[1][i] += (thing.legs[0][i] - thing.legs[1][i]) * (.005f * uni_time_factor);
     }
 
-    random_float dist_float2{ 5000.f, 43758.5453f };
+    random_float dist_float2{ 100.f, 1058.5453f };
     std::generate(noise_seed.begin(), noise_seed.end(),
             [this, &dist_float2](){ return dist_float2(fast_random_device); });
     random_float dist_float4{ -.75f, .75f };

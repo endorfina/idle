@@ -190,22 +190,19 @@ uniform vec4 u_color, u_color_2, u_color_3, u_color_4;
 varying vec2 var_mapped_vec;
 uniform vec2 u_seed;
 
-float snoise(vec2 co)  // straight up textbook rand
-{
-    float a = 12.9898;
-    float b = 78.233;
-    float c = 43758.5453;
-    float dt = dot(co, vec2(a, b));
-    float sn = mod(dt, 3.14);
-    return fract(sin(sn) * c);
+float snoise(vec2 val, float seed) {
+    vec2 a = val * 1.61803398874989484820459;
+    float b = distance(a, val);
+    float c = tan(b * seed);
+    return fract(c * val.y);
 }
 
 void main() {
     float dist = min(distance(var_mapped_vec, vec2(0.5, 0.5)) * 1.49, 1.0);
     vec4 noisy_color = u_color_3 + (u_color_4 - u_color_3) * dist;
     vec4 base_color = u_color + (u_color_2 - u_color) * dist;
-    vec2 seed = var_mapped_vec * 5000.0 + u_seed;
-    gl_FragColor = base_color + (noisy_color - base_color) * snoise(seed);
+    float noise_value = snoise(var_mapped_vec * 1000.0, u_seed.x);
+    gl_FragColor = base_color + (noisy_color - base_color) * noise_value;
 }
 
 @@ textv
