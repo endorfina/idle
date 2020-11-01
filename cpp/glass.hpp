@@ -198,13 +198,13 @@ constexpr void apply_for_all(const Callable& func, blocks::label<Label, Elem>& l
 
 
 template<auto Label, typename T = void>
-constexpr bool has_label = false;
+inline constexpr bool has_label = false;
 
 template<auto Label, typename...Nodes>
-constexpr bool has_label<Label, blocks::joint<Nodes...>> = (false || ... || has_label<Label, Nodes>);
+inline constexpr bool has_label<Label, blocks::joint<Nodes...>> = (false || ... || has_label<Label, Nodes>);
 
 template<auto Key, auto Label, typename Elem>
-constexpr bool has_label<Key, blocks::label<Label, Elem>> = (Key == Label) || has_label<Key, Elem>;
+inline constexpr bool has_label<Key, blocks::label<Label, Elem>> = (Key == Label) || has_label<Key, Elem>;
 
 
 template<auto Key, auto Label, typename Elem>

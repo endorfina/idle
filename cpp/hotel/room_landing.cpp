@@ -364,7 +364,7 @@ void room::draw(const graphics::core& gl) const noexcept
     constexpr auto div = math::tau / static_cast<float>(std::tuple_size<great_crimson_thing::arm_t>::value);
     constexpr auto array_len = std::tuple_size<great_crimson_thing::arm_t>::value + 2;
 
-    constexpr std::array<float, array_len> black_interpolation_values = []()
+    static constexpr std::array<float, array_len> black_interpolation_values = []()
     {
         std::array<float, array_len> out{};
         for (unsigned i = 1; i < array_len; ++i)
@@ -372,7 +372,7 @@ void room::draw(const graphics::core& gl) const noexcept
         return out;
     }();
 
-    constexpr std::array<float, array_len> red_interpolation_values = []()
+    static constexpr std::array<float, array_len> red_interpolation_values = []()
     {
         std::array<float, array_len> out{};
         out[0] = 1.1f;
@@ -415,9 +415,6 @@ void room::draw(const graphics::core& gl) const noexcept
     gl.prog.gradient.set_transform(math::matrices::rotate(thing.rotation) * math::matrices::uniform_scale(lower_draw_size * (.3f + .55f * alpha_sine) * adaptive_mult));
     gl.prog.gradient.interpolation_vertex(reinterpret_cast<const float *>(red_interpolation_values.data()));
     gl::DrawArrays(gl::TRIANGLE_FAN, 0, array_len);
-
-    // TODO: Use a picture as the title
-    // UPDATE: lmao, let's see about that!
 
     const auto fadeout_alpha_sine = std::sin(std::max<float>(thing.alpha + 1.f, 2.f) * math::tau_4) + 1.f;
 

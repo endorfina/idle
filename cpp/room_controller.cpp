@@ -159,6 +159,9 @@ constexpr char room_label[] = "UNNAMED";
 template<>
 constexpr char room_label<hotel::landing::room>[] = "LANDING";
 
+template<>
+constexpr char room_label<hotel::stage::room>[] = "STAGE";
+
 #ifdef IDLE_COMPILE_GALLERY
 template<>
 constexpr char room_label<hotel::model::room>[] = "MODEL";

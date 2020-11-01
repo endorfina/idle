@@ -21,6 +21,9 @@
 #include <variant>
 #include <string_view>
 
+// This file is required, because each room::step()
+// needs to be able to return each other room
+
 namespace idle::hotel
 {
 
