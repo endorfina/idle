@@ -218,17 +218,28 @@ namespace detail
     }
 
     template<floating T>
-    constexpr T atan_product(T x, int k) noexcept
+    constexpr T atan_product(const T val, int lim) noexcept
     {
-        return k == 1 ? atan_term(x * x, k) :
-            atan_term(x * x, k) * atan_product(x, k-1);
+        auto ret = T{1};
+        do
+        {
+            ret *= atan_term(val * val, lim);
+        }
+        while (--lim > 0);
+        return ret;
     }
 
     template<floating T>
-    constexpr T atan_sum(T x, T sum, int n) noexcept
+    constexpr T atan_sum(const T x, T sum, int n) noexcept
     {
-        return sum + atan_product(x, n) == sum ? sum :
-            atan_sum(x, sum + atan_product(x, n), n+1);
+        while (true)
+        {
+            const T new_sum = sum + atan_product(x, n);
+            if (epsilon_equal(sum, new_sum))
+                return sum;
+            sum = new_sum;
+            ++n;
+        }
     }
 
     template<floating T>
