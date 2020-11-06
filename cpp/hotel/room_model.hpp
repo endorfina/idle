@@ -31,16 +31,74 @@ namespace idle::hotel::model
 
 struct animation
 {
-    unsigned source, dest;
-    float interpolation;
+    unsigned source = 0, dest = 1;
+    float interpolation = 0.f;
+};
+
+enum class function : unsigned char
+{
+    none, show_bones, show_skin, rotate_model, exit_landing
+};
+
+template<function Id, int X, int Y, unsigned width, unsigned height>
+struct model_button : gui::shapes::button<gui::positions::edge_hugger<X, Y>, width, height>
+{
+    void draw_foreground(const graphics::core& gl) const noexcept
+    {
+        constexpr auto scheme = []() -> std::pair<std::string_view, color_t>
+        {
+            switch(Id)
+            {
+                case function::show_bones:
+                    return { "bone", { 1.f, .5f, .5f } };
+
+                case function::show_skin:
+                    return { "skin", { .5f, 1.f, .5f } };
+
+                case function::rotate_model:
+                    return { "rot", { .5f, .5f, 1.f } };
+
+                case function::exit_landing:
+                    return { "land", { .5f, .5f, .5f } };
+
+                default:
+                    return { "???", { 1.f, 1.f, 1.f } };
+            }
+        }();
+
+        gl.prog.text.use();
+        gl.prog.text.set_color(scheme.second);
+
+        draw_text<text_align::center, text_align::center>(*gl.fonts.regular, gl.prog.text, scheme.first, this->pos, height *.85f);
+    }
+
+    auto trigger() const noexcept -> function
+    {
+        return Id;
+    }
 };
 
 struct room
 {
+    template<function Id, int X, int Y>
+    using control_button = model_button<Id, X, Y, 30, 16>;
+
+    using gui_t = gui::interface
+        <
+            control_button<function::show_bones, -130, -10>,
+            control_button<function::show_skin, -95, -10>,
+            control_button<function::rotate_model, -60, -10>,
+            control_button<function::exit_landing, -20, -10>
+        >;
+    gui_t gui;
+
     float timer = 0.f;
     unsigned char facing = 0;
+    bool show_bones = false, show_skin = true;
 
-    std::atomic<animation> model_anim = animation{0, 1, 0.f};
+    std::atomic<animation> model_anim;
+
+    void on_resize(point_t) noexcept;
 
     std::optional<keyring::variant> step(const pointer_wrapper& cursor) noexcept;
 

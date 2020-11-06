@@ -236,18 +236,17 @@ constexpr auto walking_muscle_digest = glass::muscle
 struct blob_mesh
 {
     std::array<point_t, 20> pts;
+    std::array<point_t, 4> pts2;
 
-    void draw(const graphics::core& gl) const noexcept
-    {
-        gl.prog.fill.position_vertex(reinterpret_cast<const GLfloat*>(pts.data()));
-        gl::DrawArrays(gl::TRIANGLE_FAN, 0, pts.size());
-    }
-
-    void draw_interpolated(const graphics::core& gl, const blob_mesh& another) const noexcept
+    void draw(const graphics::core& gl, const blob_mesh& another) const noexcept
     {
         gl.prog.double_fill.position_vertex(reinterpret_cast<const GLfloat*>(pts.data()));
         gl.prog.double_fill.destination_vertex(reinterpret_cast<const GLfloat*>(another.pts.data()));
         gl::DrawArrays(gl::TRIANGLE_FAN, 0, pts.size());
+
+        gl.prog.double_fill.position_vertex(reinterpret_cast<const GLfloat*>(pts2.data()));
+        gl.prog.double_fill.destination_vertex(reinterpret_cast<const GLfloat*>(another.pts2.data()));
+        gl::DrawArrays(gl::TRIANGLE_STRIP, 0, pts2.size());
     }
 };
 
@@ -256,12 +255,18 @@ constexpr auto human_paint = [] (const auto& tree)
 {
     using joint_type = typename idle_remove_cvr(tree)::joint_type;
     constexpr unsigned head_index = glass::label_index<glass::parts::head, joint_type>;
-    const auto pt = glass::meta::flatten(tree.table[head_index]);
+    const std::array<point_t, 3> neck
+    {
+        glass::meta::flatten(tree.table[head_index]),
+        glass::meta::flatten(tree.table[head_index + 1]),
+        glass::meta::flatten(tree.table[head_index + 2])
+    };
+    const auto pt = (neck[1] + neck[2]) / 2.f;
     blob_mesh mesh{};
     mesh.pts[0] = pt;
 
     constexpr unsigned steps = 18;
-    constexpr float radius = 5.f;
+    constexpr float radius = 8.f;
 
     for (unsigned i = 1; i <= steps; ++i)
     {
@@ -269,6 +274,16 @@ constexpr auto human_paint = [] (const auto& tree)
         mesh.pts[i] = {pt.x + math::const_math::cos(a) * radius, pt.y + math::const_math::sin(a) * radius};
     }
     mesh.pts.back() = mesh.pts[1];
+
+    const auto inv_vec = point_t{ neck[1].y - neck[0].y, neck[0].x - neck[1].x };
+    const auto shift_vec = (inv_vec / math::const_math::sqrt(inv_vec.x * inv_vec.x + inv_vec.y * inv_vec.y)) * 2.f;
+
+    mesh.pts2 = {
+        point_t{neck[0] + shift_vec},
+        point_t{neck[0] - shift_vec},
+        point_t{neck[1] + shift_vec},
+        point_t{neck[1] - shift_vec}
+    };
     return mesh;
 };
 
@@ -341,7 +356,7 @@ constexpr auto floating_muscle_digest = glass::muscle
 constexpr auto floating = skew_lines<0, 45, 90, 135, 180, 225, 270, 315>(floating_muscle_digest);
 
 template<typename Models, typename Paints>
-void draw_bones(const Models& models, const Paints& paints, const graphics::core& gl, const animation anim) noexcept
+void draw_bones(const Models& models, const bool show_bones, const Paints& paints, const bool show_skin, const graphics::core& gl, const animation anim) noexcept
 {
     gl.prog.fill.use();
     gl.prog.fill.set_color({1,0,0});
@@ -357,13 +372,20 @@ void draw_bones(const Models& models, const Paints& paints, const graphics::core
     }
 
     gl.prog.double_fill.use();
-    gl.prog.double_fill.set_color({1,1,1,.9f});
     const auto view = math::matrices::uniform_scale(2.f) * math::matrices::translate(gl.draw_size / 2.f);
     gl.prog.double_fill.set_view_transform(view);
     gl.prog.double_fill.set_interpolation(anim.interpolation);
 
-    models[anim.source % models.size()].draw_interpolated(gl, models[anim.dest % models.size()]);
-    paints[anim.source % models.size()].draw_interpolated(gl, paints[anim.dest % models.size()]);
+    if (show_skin)
+    {
+        gl.prog.double_fill.set_color(color_t::greyscale(.78f));
+        paints[anim.source % models.size()].draw(gl, paints[anim.dest % models.size()]);
+    }
+    if (show_bones)
+    {
+        gl.prog.double_fill.set_color({1,1,1,.9f});
+        models[anim.source % models.size()].draw_interpolated(gl, models[anim.dest % models.size()]);
+    }
 }
 
 constexpr auto& drawn_model = walking_lines;
@@ -385,10 +407,21 @@ void room::draw(const graphics::core& gl) const noexcept
     draw_text<text_align::center, text_align::center>(*gl.fonts.title, gl.prog.text, "Model", gl.draw_size / 2.f, 48);
 
     gl::LineWidth(2.f);
-    draw_bones(drawn_model[facing], walking_paint[facing], gl, model_anim.load(std::memory_order_relaxed));
+    draw_bones(
+        drawn_model[facing],
+        show_bones,
+        walking_paint[facing],
+        show_skin,
+        gl, model_anim.load(std::memory_order_relaxed));
+
+    gl.prog.fill.use();
+    gl.prog.fill.set_identity();
+    gl.prog.fill.set_view_identity();
+    gl.prog.fill.set_color(greyscale, .5f);
+    gui.draw(gl);
 }
 
-std::optional<keyring::variant> room::step(const pointer_wrapper& cursor) noexcept
+std::optional<keyring::variant> room::step(const pointer_wrapper& pointer) noexcept
 {
     auto work_copy = model_anim.load(std::memory_order_relaxed);
     timer += .12f / math::tau_2 * uni_time_factor;
@@ -408,19 +441,46 @@ std::optional<keyring::variant> room::step(const pointer_wrapper& cursor) noexce
     work_copy.interpolation = timer;
     model_anim.store(work_copy, std::memory_order_relaxed);
 
-    if (cursor.single_press)
+    if (pointer.single_press)
     {
-        if (static_cast<unsigned>(facing) + 1 >= drawn_model.size())
+        if (const auto dest = gui.click<function>(pointer.cursor.pos, [](const auto&){}))
         {
-            facing = 0;
-        }
-        else
-        {
-            ++facing;
+            switch (*dest)
+            {
+                case function::exit_landing:
+                    return { keyring::somewhere_else<hotel::landing::room>{} };
+
+                case function::rotate_model:
+                    if (static_cast<unsigned>(facing) + 1 >= drawn_model.size())
+                    {
+                        facing = 0;
+                    }
+                    else
+                    {
+                        ++facing;
+                    }
+                    break;
+
+                case function::show_skin:
+                    show_skin = !show_skin;
+                    break;
+
+                case function::show_bones:
+                    show_bones = !show_bones;
+                    break;
+
+                default:
+                    break;
+            }
         }
     }
 
     return {};
+}
+
+void room::on_resize(const point_t screen_size) noexcept
+{
+    gui.resize(screen_size);
 }
 
 }  // namespace idle::hotel::model

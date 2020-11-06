@@ -78,7 +78,7 @@ int x_error_handler(Display *dpy, XErrorEvent *ev) noexcept
 
 static_assert(sizeof(x11_display) <= sizeof(context::data_t));
 
-constexpr unsigned initial_width = 960, initial_height = 720;
+constexpr unsigned initial_width = 1280, initial_height = 720;
 
 bool create_window(x11_display& x) noexcept
 {

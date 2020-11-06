@@ -42,7 +42,7 @@ constinit graphics::core opengl{};
 
 }  // namespace
 
-auto application::execute_commands(const bool is_nested) noexcept -> bool
+bool application::execute_commands(const bool is_nested) noexcept
 {
     window.event_loop_back(!update_display);
 
@@ -149,7 +149,7 @@ auto application::execute_commands(const bool is_nested) noexcept -> bool
 namespace
 {
 
-auto setup_unmasked_buffer_frame(const graphics::render_buffer_t& rb, const idle::color_t& bg) noexcept -> GLint
+GLint setup_unmasked_buffer_frame(const graphics::render_buffer_t& rb, const idle::color_t& bg) noexcept
 {
     GLint default_frame_buffer;
     gl::GetIntegerv(gl::FRAMEBUFFER_BINDING, &default_frame_buffer);
@@ -164,34 +164,35 @@ auto setup_unmasked_buffer_frame(const graphics::render_buffer_t& rb, const idle
 
 void fill_frame_with_color(const idle::color_t& color) noexcept
 {
-    opengl.prog.fill.use();
-    opengl.prog.fill.set_identity();
-    opengl.prog.fill.set_view_identity();
     opengl.prog.fill.set_color(color);
     opengl.prog.fill.position_vertex(opengl.draw_bounds_verts.data());
     gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
 }
 
-auto setup_drawing_buffer_frame(const graphics::render_buffer_t& rb, const idle::color_t& bg) noexcept -> GLint
+GLint setup_drawing_buffer_frame(const graphics::render_buffer_t& rb, const idle::color_t& bg) noexcept
 {
     GLint default_frame_buffer;
     gl::GetIntegerv(gl::FRAMEBUFFER_BINDING, &default_frame_buffer);
     gl::BindFramebuffer(gl::FRAMEBUFFER, rb.buffer_frame);
 
-    opengl.view_mask();
-
     gl::ClearColor(bg.r, bg.g, bg.b, 1);
     gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
 
+    opengl.prog.fill.use();
+    opengl.prog.fill.set_identity();
+    opengl.prog.fill.set_view_identity();
+
+    opengl.view_mask();
     fill_frame_with_color({1,1,1,1});
 
-    opengl.view_distortion();
-
-    fill_frame_with_color({.5f,.5f,.5f,1});
-
+    constexpr idle::color_t draw_background{ .35f, .3f, .35f };
     opengl.view_normal();
+    fill_frame_with_color(draw_background);
+
     return default_frame_buffer;
 }
+
+constexpr auto uniform_background = idle::color_t::greyscale(.5f);
 
 class render_guard
 {
@@ -199,7 +200,7 @@ class render_guard
 
 public:
     render_guard()
-        : default_frame_buffer(setup_drawing_buffer_frame(*opengl.render_buffer_masked, ::platform::background))
+        : default_frame_buffer(setup_drawing_buffer_frame(*opengl.render_buffer_masked, uniform_background))
     {}
 
     ~render_guard()
@@ -291,11 +292,11 @@ pause_menu::pause_menu(const unsigned blur_downscale) noexcept
 {
     const graphics::render_buffer_t intermediate_buffer {opengl.render_buffer_masked->internal_size, opengl.render_quality};
     const auto intermediate_masked_buffer = opengl.new_render_buffer(blur_downscale);
-    const auto def = setup_drawing_buffer_frame(intermediate_buffer, platform::background);
+    const auto def = setup_drawing_buffer_frame(intermediate_buffer, uniform_background);
 
     room_ctrl.draw_frame(opengl);
 
-    setup_unmasked_buffer_frame(*buffers[0], platform::background);
+    setup_unmasked_buffer_frame(*buffers[0], uniform_background);
     opengl.prog.render_masked.draw_buffer(intermediate_buffer);
 
     opengl.prog.render_blur.use();
@@ -346,7 +347,7 @@ void application::draw() noexcept
 
 #define PRINT_SIZE(obj) LOGD("# sizeof " #obj " = %zu", sizeof(obj))
 
-auto application::real_main() noexcept -> int
+int application::real_main() noexcept
 {
     application app {};
 
@@ -410,17 +411,17 @@ auto application::real_main() noexcept -> int
 namespace
 {
 
-constexpr auto ext_ascii_plus_math(const unsigned long c) noexcept -> bool
+constexpr bool ext_ascii_plus_math(const unsigned long c) noexcept
 {
     return (c >= 0x20 && c < 0x17f) || (c >= 0x20b && c < 0x370) || (c > 0x390 && c <= 0x3fc);
 }
 
-constexpr auto ext_ascii(const unsigned long c) noexcept -> bool
+constexpr bool ext_ascii(const unsigned long c) noexcept
 {
     return (c >= 0x20 && c < 0x17f);
 }
 
-auto make_font(fonts::ft_data_t font_data) noexcept -> fonts::font_t
+fonts::font_t make_font(fonts::ft_data_t font_data) noexcept
 {
     auto image = graphics::unique_texture(idle::image_t::load_from_memory(
                 font_data.width, font_data.width,
@@ -457,7 +458,7 @@ auto make_font(fonts::ft_data_t font_data) noexcept -> fonts::font_t
 }  // namespace
 
 
-auto application::load() noexcept -> bool
+bool application::load() noexcept
 {
     using namespace std::chrono_literals;
     constexpr auto minimum_elapsed = std::chrono::duration_cast<std::chrono::microseconds>(1.0s) / (idle::application_frames_per_second / 2 + 5);
@@ -538,8 +539,12 @@ auto application::load() noexcept -> bool
             const render_guard rg {};
 
             opengl.prog.normal.use();
-            opengl.prog.normal.set_identity();
-            opengl.prog.normal.set_view_identity();
+            opengl.prog.normal.set_transform(math::matrices::translate<float>(opengl.draw_size / -2));
+
+            const auto inv_ratio = opengl.draw_size.y / opengl.draw_size.x;
+            auto mat = math::matrices::scale<float>({ inv_ratio, 1 });
+            math::transform::translate(mat, opengl.draw_size / 2);
+            opengl.prog.normal.set_view_transform(mat);
 
             gl::ActiveTexture(gl::TEXTURE0);
             opengl.prog.normal.set_color({1, 1, 1, 1});
@@ -547,6 +552,9 @@ auto application::load() noexcept -> bool
             opengl.prog.normal.position_vertex(opengl.draw_bounds_verts.data());
             opengl.prog.normal.texture_vertex(opengl.texture_bounds_verts.data());
             gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
+
+            opengl.prog.normal.set_identity();
+            opengl.prog.normal.set_view_identity();
         }
         window.buffer_swap();
         std::this_thread::sleep_for(std::chrono::seconds(5));

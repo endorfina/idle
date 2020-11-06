@@ -27,22 +27,15 @@
 namespace idle::hotel
 {
 
-namespace landing
-{
-struct room;
-}
+#define idle_declare_room(name) namespace name { struct room; }
+
+idle_declare_room(landing)
+
+idle_declare_room(stage)
 
 #ifdef IDLE_COMPILE_GALLERY
-namespace model
-{
-struct room;
-}
+idle_declare_room(model)
 #endif
-
-namespace stage
-{
-struct room;
-}
 
 namespace keyring
 {
@@ -63,6 +56,8 @@ using variant = std::variant<
     >;
 
 }  // namespace keyring
+
+#undef idle_declare_room
 
 }  // namespace idle::hotel
 
