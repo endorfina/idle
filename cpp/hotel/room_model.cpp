@@ -378,12 +378,12 @@ void draw_bones(const Models& models, const bool show_bones, const Paints& paint
 
     if (show_skin)
     {
-        gl.prog.double_fill.set_color(color_t::greyscale(.78f));
+        gl.prog.double_fill.set_color({ .61f, .63f, 1.f });
         paints[anim.source % models.size()].draw(gl, paints[anim.dest % models.size()]);
     }
     if (show_bones)
     {
-        gl.prog.double_fill.set_color({1,1,1,.9f});
+        gl.prog.double_fill.set_color({ 1, 1, 1, .9f });
         models[anim.source % models.size()].draw_interpolated(gl, models[anim.dest % models.size()]);
     }
 }

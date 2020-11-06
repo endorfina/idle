@@ -273,7 +273,7 @@ bool core::setup_graphics() noexcept
 
 bool core::resize(const buffer_size window_size) noexcept
 {
-    if (window_size.x * 4 / 5 < window_size.y)
+    if (window_size.x * 5 / 6 < window_size.y)
     {
         LOGW("Vertical mode has been disabled");
         return false;

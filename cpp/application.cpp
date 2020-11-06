@@ -137,7 +137,11 @@ bool application::execute_commands(const bool is_nested) noexcept
             if (!!resize_result)
             {
                 room_ctrl.resize(opengl.draw_size);
-                earliest_available_resize = now + std::chrono::milliseconds(500);
+                earliest_available_resize = now + std::chrono::milliseconds(400);
+            }
+            else
+            {
+                earliest_available_resize = now + std::chrono::milliseconds(200);
             }
         }
     }
