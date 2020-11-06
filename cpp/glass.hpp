@@ -246,99 +246,75 @@ constexpr void sync_right(blocks::symmetry<Val>& sym) noexcept
     apply_for_all([](auto& b) { b.angle *= point_3d_t{-1.f, 1.f, -1.f}; }, sym.right);
 }
 
-using index_pair = std::array<unsigned, 2>;
+struct index_pair
+{
+    unsigned table, lengths;
+};
 
 constexpr point_t flatten(const point_3d_t p) noexcept
 {
     return { p.y, - p.z };
 }
 
-struct measure_point
+template<auto Key>
+constexpr unsigned get_label_index(const unsigned index, const blocks::bone& b) noexcept
 {
-    point_3d_t pos, angle;
-};
+    return index + 1;
+}
+
+template<auto Key, unsigned Size>
+constexpr unsigned get_label_index(const unsigned index, const blocks::segment<Size>& s) noexcept
+{
+    return index + Size;
+}
+
+template<auto Key, typename Val>
+constexpr unsigned get_label_index(unsigned index, const blocks::symmetry<Val>& s) noexcept;
+
+template<auto Key, auto Label, typename Elem>
+constexpr unsigned get_label_index(const unsigned index, const blocks::label<Label, Elem>& l) noexcept;
+
+template<auto Label, unsigned Index = 0, typename...Nodes>
+constexpr unsigned get_label_index(const unsigned index, const blocks::joint<Nodes...>& node) noexcept
+{
+    static_assert(sizeof...(Nodes) > 0);
+
+    if constexpr (Index + 1 < sizeof...(Nodes)
+            && !has_label<Label, typename std::tuple_element<Index, typename blocks::joint<Nodes...>::tuple_type>::type>)
+    {
+        const auto new_index = get_label_index<Label>(index + 1, node.template branch<Index>());
+        return get_label_index<Label, Index + 1>(new_index, node);
+    }
+    else
+    {
+        return get_label_index<Label>(index + 1, node.template branch<Index>());
+    }
+}
+
+template<auto Key, typename Val>
+constexpr unsigned get_label_index(unsigned index, const blocks::symmetry<Val>& s) noexcept
+{
+    index = get_label_index<Key>(index, s.left);
+    return get_label_index<Key>(index + 1, s.right);
+}
+
+template<auto Key, auto Label, typename Elem>
+constexpr unsigned get_label_index(const unsigned index, const blocks::label<Label, Elem>& l) noexcept
+{
+    if constexpr (Key == Label)
+    {
+        return index > 0 ? index - 1 : 0;
+    }
+    else
+    {
+        return get_label_index<Key>(index, l.elem);
+    }
+}
 
 }  // namespace meta
 
-
-template<typename...Js>
-struct pointy_tree
-{
-    using joint_type = blocks::joint<Js...>;
-
-    std::array<meta::measure_point, joint_type::size + joint_type::oddness> table{};
-    std::array<unsigned, 1 + joint_type::oddness> lengths{};
-
-private:
-    constexpr meta::index_pair to_lines(meta::index_pair index, const blocks::bone& b, const mat4x4_noopt_t& mat) noexcept
-    {
-        const auto rot = b.get_transform() * mat;
-        table[index[0]++] = { rot * point_3d_t{}, b.angle };
-        return index;
-    }
-
-    template<unsigned Size>
-    constexpr meta::index_pair to_lines(meta::index_pair index, const blocks::segment<Size>& s, mat4x4_noopt_t mat) noexcept
-    {
-        for (const auto& it : s.table)
-        {
-            mat.reverse_multiply(it.get_transform());
-            table[index[0]++] = { mat * point_3d_t{}, it.angle };
-        }
-
-        return index;
-    }
-
-    template<typename...Vars>
-    constexpr meta::index_pair to_lines(meta::index_pair index, const blocks::joint<Vars...>& j, const mat4x4_noopt_t& mat) noexcept
-    {
-        const auto rot = j.root.get_transform() * mat;
-        const auto branchoff_point = index[0];
-
-        table[index[0]++] = { rot * point_3d_t{}, j.root.angle };
-        index = to_lines(index, j.template branch<0>(), rot);
-
-        if constexpr (sizeof...(Vars) > 1)
-        {
-            tuple_visit<1>([&](const auto& it)
-                {
-                    lengths[index[1]++] = index[0];
-                    table[index[0]++] = table[branchoff_point];
-                    index = to_lines(index, it, rot);
-                },
-                j.branches);
-        }
-        return index;
-    }
-
-    template<typename Val>
-    constexpr meta::index_pair to_lines(meta::index_pair index, const blocks::symmetry<Val>& s, const mat4x4_noopt_t& mat) noexcept
-    {
-        const auto branchoff_point = index[0];
-        index = to_lines(index, s.left, mat);
-        lengths[index[1]++] = index[0];
-        table[index[0]++] = table[branchoff_point - 1];
-        return to_lines(index, s.right, mat);
-    }
-
-    template<auto Label, typename Elem>
-    constexpr meta::index_pair to_lines(const meta::index_pair index, const blocks::label<Label, Elem>& l, const mat4x4_noopt_t& mat) noexcept
-    {
-        return to_lines(index, l.elem, mat);
-    }
-
-public:
-    constexpr pointy_tree(const joint_type& root, const mat4x4_noopt_t& mat) noexcept
-    {
-        const auto [total_length, last_iter] = to_lines({0, 0}, root, mat);
-        lengths[last_iter] = total_length;
-
-        for (auto i = lengths.size() - 1; i > 0; --i)
-        {
-            lengths[i] -= lengths[i - 1];
-        }
-    }
-};
+template<auto Label, class Struct, typename = std::enable_if_t<meta::has_label<Label, Struct>>>
+inline constexpr unsigned label_index = meta::get_label_index<Label>(0u, Struct{});
 
 template<typename...Js>
 struct deep_tree
@@ -352,7 +328,7 @@ private:
     constexpr meta::index_pair to_lines(meta::index_pair index, const blocks::bone& b, const mat4x4_noopt_t& mat) noexcept
     {
         const auto rot = b.get_transform() * mat;
-        table[index[0]++] = rot * point_3d_t{};
+        table[index.table++] = rot * point_3d_t{};
         return index;
     }
 
@@ -362,7 +338,7 @@ private:
         for (const auto& it : s.table)
         {
             mat.reverse_multiply(it.get_transform());
-            table[index[0]++] = mat * point_3d_t{};
+            table[index.table++] = mat * point_3d_t{};
         }
 
         return index;
@@ -372,17 +348,17 @@ private:
     constexpr meta::index_pair to_lines(meta::index_pair index, const blocks::joint<Vars...>& j, const mat4x4_noopt_t& mat) noexcept
     {
         const auto rot = j.root.get_transform() * mat;
-        const auto branchoff_point = index[0];
+        const auto branchoff_point = index.table;
 
-        table[index[0]++] = rot * point_3d_t{};
+        table[index.table++] = rot * point_3d_t{};
         index = to_lines(index, j.template branch<0>(), rot);
 
         if constexpr (sizeof...(Vars) > 1)
         {
             tuple_visit<1>([&](const auto& it)
                 {
-                    lengths[index[1]++] = index[0];
-                    table[index[0]++] = table[branchoff_point];
+                    lengths[index.lengths++] = index.table;
+                    table[index.table++] = table[branchoff_point];
                     index = to_lines(index, it, rot);
                 },
                 j.branches);
@@ -393,10 +369,10 @@ private:
     template<typename Val>
     constexpr meta::index_pair to_lines(meta::index_pair index, const blocks::symmetry<Val>& s, const mat4x4_noopt_t& mat) noexcept
     {
-        const auto branchoff_point = index[0];
+        const auto branchoff_point = index.table;
         index = to_lines(index, s.left, mat);
-        lengths[index[1]++] = index[0];
-        table[index[0]++] = table[branchoff_point - 1];
+        lengths[index.lengths++] = index.table;
+        table[index.table++] = table[branchoff_point - 1];
         return to_lines(index, s.right, mat);
     }
 

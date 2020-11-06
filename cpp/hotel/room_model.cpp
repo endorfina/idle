@@ -24,6 +24,7 @@
 #include "room_model.hpp"
 
 #include <idle/glass.hpp>
+#include <idle/idle_guard.hpp>
 
 namespace idle::hotel::model
 {
@@ -69,7 +70,7 @@ struct line_mesh
 };
 
 template<typename S, auto...Is>
-constexpr auto skew_index(const S& source, const mat4x4_noopt_t& mat, std::index_sequence<Is...>) noexcept
+constexpr auto skew_lines_index(const S& source, const mat4x4_noopt_t& mat, std::index_sequence<Is...>) noexcept
 {
     return std::array{
         line_mesh{
@@ -84,11 +85,38 @@ constexpr auto skew_index(const S& source, const mat4x4_noopt_t& mat, std::index
 constexpr mat4x4_noopt_t skew_matrix = math::matrices::rotate<GLfloat>(math::tau_8) * math::matrices::rotate_y<GLfloat>(math::tau_4 / 3);
 
 template<unsigned...Deg, typename Rig, auto Size>
-constexpr auto skew(const std::array<Rig, Size>& anim) noexcept
+constexpr auto skew_lines(const std::array<Rig, Size>& anim) noexcept
 {
-    auto fun = [&anim] (const float deg)
+    const auto fun = [&anim] (const float deg)
+    {
+        return skew_lines_index(
+                anim,
+                math::matrices::rotate<float>(math::degtorad<float>(deg)) * skew_matrix,
+                std::make_index_sequence<Size>{});
+    };
+
+    return std::array { fun(static_cast<float>(Deg)) ... };
+}
+
+template<typename P, typename S, auto...Is>
+constexpr auto skew_index(const P& paint, const S& source, const mat4x4_noopt_t& mat, std::index_sequence<Is...>) noexcept
+{
+    return std::array{
+        paint(
+            glass::deep_tree(
+                source[Is],
+                mat
+            )) ...
+    };
+}
+
+template<unsigned...Deg, typename Painter, typename Rig, auto Size>
+constexpr auto skew(const Painter& paint, const std::array<Rig, Size>& anim) noexcept
+{
+    const auto fun = [&paint, &anim] (const float deg)
     {
         return skew_index(
+                paint,
                 anim,
                 math::matrices::rotate<float>(math::degtorad<float>(deg)) * skew_matrix,
                 std::make_index_sequence<Size>{});
@@ -99,7 +127,7 @@ constexpr auto skew(const std::array<Rig, Size>& anim) noexcept
 
 constexpr glass::closet::humanoid hueman{};
 
-constexpr float walk_leg_raise = math::tau_8 / 6.f;
+constexpr float walk_leg_raise = math::tau_8 / 5.f;
 constexpr float walk_knee_bend = math::tau_8;
 constexpr float walk_foot_raise = math::tau_8 * -.6f;
 constexpr float walk_hip_swing = math::tau_8 / 12.f;
@@ -205,7 +233,47 @@ constexpr auto walking_muscle_digest = glass::muscle
         )
     }.animate(hueman);
 
-constexpr auto walking = skew<0, 45, 90, 135, 180, 225, 270, 315>(walking_muscle_digest);
+struct blob_mesh
+{
+    std::array<point_t, 20> pts;
+
+    void draw(const graphics::core& gl) const noexcept
+    {
+        gl.prog.fill.position_vertex(reinterpret_cast<const GLfloat*>(pts.data()));
+        gl::DrawArrays(gl::TRIANGLE_FAN, 0, pts.size());
+    }
+
+    void draw_interpolated(const graphics::core& gl, const blob_mesh& another) const noexcept
+    {
+        gl.prog.double_fill.position_vertex(reinterpret_cast<const GLfloat*>(pts.data()));
+        gl.prog.double_fill.destination_vertex(reinterpret_cast<const GLfloat*>(another.pts.data()));
+        gl::DrawArrays(gl::TRIANGLE_FAN, 0, pts.size());
+    }
+};
+
+
+constexpr auto human_paint = [] (const auto& tree)
+{
+    using joint_type = typename idle_remove_cvr(tree)::joint_type;
+    constexpr unsigned head_index = glass::label_index<glass::parts::head, joint_type>;
+    const auto pt = glass::meta::flatten(tree.table[head_index]);
+    blob_mesh mesh{};
+    mesh.pts[0] = pt;
+
+    constexpr unsigned steps = 18;
+    constexpr float radius = 5.f;
+
+    for (unsigned i = 1; i <= steps; ++i)
+    {
+        const float a = i * math::tau / steps;
+        mesh.pts[i] = {pt.x + math::const_math::cos(a) * radius, pt.y + math::const_math::sin(a) * radius};
+    }
+    mesh.pts.back() = mesh.pts[1];
+    return mesh;
+};
+
+constexpr auto walking_lines = skew_lines<0, 45, 90, 135, 180, 225, 270, 315>(walking_muscle_digest);
+constexpr auto walking_paint = skew<0, 45, 90, 135, 180, 225, 270, 315>(human_paint, walking_muscle_digest);
 
 constexpr auto floating_muscle_digest = glass::muscle
     {
@@ -270,10 +338,10 @@ constexpr auto floating_muscle_digest = glass::muscle
         )
     }.animate(hueman);
 
-constexpr auto floating = skew<0, 45, 90, 135, 180, 225, 270, 315>(floating_muscle_digest);
+constexpr auto floating = skew_lines<0, 45, 90, 135, 180, 225, 270, 315>(floating_muscle_digest);
 
-template<typename Models>
-void draw_bones(const Models& models, const graphics::core& gl, const animation anim) noexcept
+template<typename Models, typename Paints>
+void draw_bones(const Models& models, const Paints& paints, const graphics::core& gl, const animation anim) noexcept
 {
     gl.prog.fill.use();
     gl.prog.fill.set_color({1,0,0});
@@ -295,7 +363,10 @@ void draw_bones(const Models& models, const graphics::core& gl, const animation 
     gl.prog.double_fill.set_interpolation(anim.interpolation);
 
     models[anim.source % models.size()].draw_interpolated(gl, models[anim.dest % models.size()]);
+    paints[anim.source % models.size()].draw_interpolated(gl, paints[anim.dest % models.size()]);
 }
+
+constexpr auto& drawn_model = walking_lines;
 
 }  // namespace
 
@@ -314,7 +385,7 @@ void room::draw(const graphics::core& gl) const noexcept
     draw_text<text_align::center, text_align::center>(*gl.fonts.title, gl.prog.text, "Model", gl.draw_size / 2.f, 48);
 
     gl::LineWidth(2.f);
-    draw_bones(walking[facing], gl, model_anim.load(std::memory_order_relaxed));
+    draw_bones(drawn_model[facing], walking_paint[facing], gl, model_anim.load(std::memory_order_relaxed));
 }
 
 std::optional<keyring::variant> room::step(const pointer_wrapper& cursor) noexcept
@@ -328,7 +399,7 @@ std::optional<keyring::variant> room::step(const pointer_wrapper& cursor) noexce
 
         work_copy.source = work_copy.dest;
 
-        if (++work_copy.dest >= walking[0].size())
+        if (++work_copy.dest >= drawn_model[0].size())
         {
             work_copy.dest = 0;
         }
@@ -339,7 +410,7 @@ std::optional<keyring::variant> room::step(const pointer_wrapper& cursor) noexce
 
     if (cursor.single_press)
     {
-        if (static_cast<unsigned>(facing) + 1 >= walking.size())
+        if (static_cast<unsigned>(facing) + 1 >= drawn_model.size())
         {
             facing = 0;
         }
