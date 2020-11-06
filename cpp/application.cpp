@@ -557,7 +557,17 @@ bool application::load() noexcept
             opengl.prog.normal.set_view_identity();
         }
         window.buffer_swap();
-        std::this_thread::sleep_for(std::chrono::seconds(5));
+
+        do
+        {
+            if (!execute_commands(true))
+            {
+                LOGE("Stupid font splash screen called shut down.");
+                return false;
+            }
+            clock = wait_one_frame_with_skipping(clock);
+        }
+        while (!window.cursor.pressed);
     }
 #endif
 

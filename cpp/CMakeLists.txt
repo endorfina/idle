@@ -53,7 +53,7 @@ option(COMPILE_GALLERY "Rig testing gallery" OFF)
 
 option(COMPILE_FPS_COUNTERS "Performance measurement" OFF)
 
-option(COMPILE_FONT_DEBUG_SCREEN "Shows a 5s splash of the entire loaded font texture" OFF)
+option(COMPILE_FONT_DEBUG_SCREEN "Shows a splash of the entire loaded font texture" OFF)
 
 option(DOUBLE_THE_FPS "Double it!" OFF)
 
