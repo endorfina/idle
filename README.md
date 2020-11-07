@@ -6,7 +6,7 @@
 Idle is an OpenGL vector graphics engine targeted for X11 and Android's NDK, with strong focus on `constexpr`.
 Aside from more technical objectives, its original one was to help me deal with some lingering symptoms of ptsd.
 
-For information about *Crimson*, an example game developed alongside idle, please visit [its homepage](https://idle.endorfina.dev/crimson).
+For information about *√crimson*, an example math game developed alongside idle, please visit [its homepage](https://idle.endorfina.dev/crimson).
 
 ### Dependencies
 

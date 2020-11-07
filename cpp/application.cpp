@@ -22,7 +22,7 @@
 #include "drawable.hpp"
 #include "draw_text.hpp"
 #include "room_controller.hpp"
-#include "freetype_glue.hpp"
+#include "freetype/freetype_glue.hpp"
 #include "assets_config.hpp"
 #include "platform/asset_access.hpp"
 #include "lodge.hpp"

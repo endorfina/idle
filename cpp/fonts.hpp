@@ -21,7 +21,7 @@
 #include <string>
 #include <string_view>
 #include <math.hpp>
-#include "glyph.hpp"
+#include "freetype/glyph.hpp"
 #include "gl_programs.hpp"
 
 namespace fonts

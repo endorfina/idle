@@ -13,10 +13,6 @@ set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 
 message(STATUS "Build configured as \"${CMAKE_BUILD_TYPE}\"")
 
-if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    set(MACOSX TRUE)
-endif()
-
 set(${PROJECT_NAME}-files
         spinlock.cpp
         drawable.cpp
@@ -77,7 +73,6 @@ target_compile_definitions(lodepng PUBLIC LODEPNG_NO_COMPILE_ZLIB LODEPNG_NO_COM
 target_include_directories(lodepng INTERFACE lodepng)
 
 add_library(${PROJECT_NAME}-top INTERFACE)
-add_library(${PROJECT_NAME}-ft STATIC "freetype_glue.cpp")
 add_library(${PROJECT_NAME}-obj STATIC "${CMAKE_CURRENT_BINARY_DIR}/${SHADER_OUTPUT}")
 
 # When we build idle this will automatically re-generate the header,
@@ -98,10 +93,10 @@ add_dependencies(${PROJECT_NAME}-obj ${PROJECT_NAME}-generate-sh)
 target_include_directories(${PROJECT_NAME}-obj PRIVATE "${IDLE_INCLUDE_DIR}")
 
 target_compile_definitions(${PROJECT_NAME}-obj PRIVATE
-    "$<$<BOOL:${DOUBLE_THE_FPS}>:IDLE_DOUBLE_THE_FPS>"
-    "$<$<BOOL:${COMPILE_FPS_COUNTERS}>:IDLE_COMPILE_FPS_COUNTERS>"
-    "$<$<BOOL:${COMPILE_FONT_DEBUG_SCREEN}>:IDLE_COMPILE_FONT_DEBUG_SCREEN>"
-    "$<$<BOOL:${COMPILE_GALLERY}>:IDLE_COMPILE_GALLERY>")
+    $<$<BOOL:${DOUBLE_THE_FPS}>:IDLE_DOUBLE_THE_FPS>
+    $<$<BOOL:${COMPILE_FPS_COUNTERS}>:IDLE_COMPILE_FPS_COUNTERS>
+    $<$<BOOL:${COMPILE_FONT_DEBUG_SCREEN}>:IDLE_COMPILE_FONT_DEBUG_SCREEN>
+    $<$<BOOL:${COMPILE_GALLERY}>:IDLE_COMPILE_GALLERY>)
 
 if(MAKESHIFT_UNITY)
     jumbo(${PROJECT_NAME}-obj "${${PROJECT_NAME}-files}")
@@ -109,36 +104,28 @@ else()
     target_sources(${PROJECT_NAME}-obj PRIVATE ${${PROJECT_NAME}-files})
 endif()
 
-if(NOT MACOSX)
-    add_subdirectory(platform)
-endif()
-# add_subdirectory(soloud) # TODO: turn this back on when we need sound again
-
 target_include_directories(${PROJECT_NAME}-top INTERFACE include)
 target_compile_definitions(${PROJECT_NAME}-top INTERFACE "$<$<CONFIG:Debug>:DEBUG>" "LOG_LEVEL=${LOG_LEVEL}")
-target_compile_options(${PROJECT_NAME}-top INTERFACE -Wall -Wredundant-move)
 target_compile_features(${PROJECT_NAME}-top INTERFACE cxx_std_20)
-
-target_compile_options(${PROJECT_NAME}-top INTERFACE -fno-char8_t
-        "$<$<CXX_COMPILER_ID:GNU>:-fconstexpr-ops-limit=268435456>"
-        "$<$<CXX_COMPILER_ID:Clang>:-fconstexpr-steps=268435456>")
+target_compile_options(${PROJECT_NAME}-top INTERFACE
+        -Wall -Wredundant-move -fno-char8_t
+        $<$<CXX_COMPILER_ID:GNU>:-fconstexpr-ops-limit=268435456>
+        $<$<CXX_COMPILER_ID:Clang>:-fconstexpr-steps=268435456>)
 
 target_compile_definitions(lodepng PUBLIC "$<$<NOT:$<CONFIG:Debug>>:LODEPNG_NO_COMPILE_ERROR_TEXT>")
 
-target_link_libraries(${PROJECT_NAME}-ft PUBLIC ${PROJECT_NAME}-top)
-
 find_package(ZLIB REQUIRED)
+add_subdirectory(freetype)
+add_subdirectory(platform)
+# add_subdirectory(soloud) # TODO: turn this back on when we need sound again
+
 target_link_libraries(${PROJECT_NAME}-obj
             PUBLIC ${PROJECT_NAME}-top
             PRIVATE ${PROJECT_NAME}-ft
             PRIVATE lodepng
             PRIVATE ZLIB::ZLIB)
 
-if(ANDROID)
-    target_link_libraries(${PROJECT_NAME}-ft PRIVATE freetype)
-else()
-    find_package(Freetype REQUIRED)
-    target_link_libraries(${PROJECT_NAME}-ft PRIVATE Freetype::Freetype)
+if(NOT ANDROID)
     target_link_libraries(${PROJECT_NAME}-obj PRIVATE atomic)
 
     add_subdirectory(test)

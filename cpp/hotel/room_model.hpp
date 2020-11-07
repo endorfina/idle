@@ -80,15 +80,15 @@ struct model_button : gui::shapes::button<gui::positions::edge_hugger<X, Y>, wid
 
 struct room
 {
-    template<function Id, int X, int Y>
-    using control_button = model_button<Id, X, Y, 30, 16>;
+    template<function Id, int X, int Y = -16>
+    using control_button = model_button<Id, X, Y, 39, 22>;
 
     using gui_t = gui::interface
         <
-            control_button<function::show_bones, -130, -10>,
-            control_button<function::show_skin, -95, -10>,
-            control_button<function::rotate_model, -60, -10>,
-            control_button<function::exit_landing, -20, -10>
+            control_button<function::show_bones, -180>,
+            control_button<function::show_skin, -140>,
+            control_button<function::rotate_model, -100>,
+            control_button<function::exit_landing, -25>
         >;
     gui_t gui;
 
