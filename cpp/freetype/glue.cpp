@@ -27,7 +27,7 @@
 #include <freetype/ftoutln.h>
 #include <freetype/fttrigon.h>
 
-#include "freetype_glue.hpp"
+#include "glue.hpp"
 #include <log.hpp>
 #include <almost_cpp20.hpp>
 

@@ -1,4 +1,4 @@
-add_library(${PROJECT_NAME}-ft STATIC "freetype_glue.cpp")
+add_library(${PROJECT_NAME}-ft STATIC "glue.cpp")
 target_link_libraries(${PROJECT_NAME}-ft PUBLIC ${PROJECT_NAME}-top)
 
 if(ANDROID)

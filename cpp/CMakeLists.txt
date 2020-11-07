@@ -115,8 +115,8 @@ target_compile_options(${PROJECT_NAME}-top INTERFACE
 target_compile_definitions(lodepng PUBLIC "$<$<NOT:$<CONFIG:Debug>>:LODEPNG_NO_COMPILE_ERROR_TEXT>")
 
 find_package(ZLIB REQUIRED)
-add_subdirectory(freetype)
 add_subdirectory(platform)
+add_subdirectory(freetype)
 # add_subdirectory(soloud) # TODO: turn this back on when we need sound again
 
 target_link_libraries(${PROJECT_NAME}-obj
