@@ -139,8 +139,6 @@ constexpr float walk_elbow_bend = math::tau_8 / 4.f;
 constexpr auto walking_muscle_digest = glass::muscle
     {
         std::make_tuple(
-            // [](glass::closet::humanoid h) { return h; },
-
             [](glass::closet::humanoid h)
             {
                 h.get_ref<glass::parts::upperbody>().root.angle.z -= walk_shoulder_swing;
@@ -372,9 +370,11 @@ void draw_bones(const Models& models, const bool show_bones, const Paints& paint
     }
 
     gl.prog.double_fill.use();
-    const auto view = math::matrices::uniform_scale(2.f) * math::matrices::translate(gl.draw_size / 2.f);
-    gl.prog.double_fill.set_view_transform(view);
     gl.prog.double_fill.set_interpolation(anim.interpolation);
+
+    constexpr auto scale_mat = math::matrices::uniform_scale(2.f);
+    gl.prog.double_fill.set_transform(scale_mat);
+    gl.prog.double_fill.set_view_transform(math::matrices::translate(gl.draw_size / 2.f));
 
     if (show_skin)
     {
@@ -383,7 +383,7 @@ void draw_bones(const Models& models, const bool show_bones, const Paints& paint
     }
     if (show_bones)
     {
-        gl.prog.double_fill.set_color({ 1, 1, 1, .9f });
+        gl.prog.double_fill.set_color({ 1, 1, 1, .78f });
         models[anim.source % models.size()].draw_interpolated(gl, models[anim.dest % models.size()]);
     }
 }
