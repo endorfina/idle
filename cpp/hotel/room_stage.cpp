@@ -21,7 +21,7 @@
 #include <idle/drawable.hpp>
 #include "room_stage.hpp"
 
-#include <idle/glass.hpp>
+#include <idle/glass/glass.hpp>
 
 namespace idle::hotel::stage
 {

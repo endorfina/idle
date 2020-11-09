@@ -23,7 +23,7 @@
 #include <idle/drawable.hpp>
 #include "room_model.hpp"
 
-#include <idle/glass.hpp>
+#include <idle/glass/glass.hpp>
 #include <idle/idle_guard.hpp>
 
 namespace idle::hotel::model
@@ -83,7 +83,7 @@ constexpr auto skew_lines_index(const S& source, const mat4x4_noopt_t& mat, std:
 }
 
 template<unsigned...Deg, typename Rig, auto Size>
-constexpr auto skew_lines(const std::array<Rig, Size>& anim) noexcept
+constexpr auto make_lines(const std::array<Rig, Size>& anim) noexcept
 {
     const auto face = [&anim] (const float deg)
     {
@@ -202,8 +202,8 @@ constexpr auto walking_muscle_digest = glass::muscle
         )
     }.animate(hueman);
 
-constexpr auto walking_lines = skew_lines<0, 45, 90, 135, 180, 225, 270, 315>(walking_muscle_digest);
-constexpr auto walking_paint = glass::skew<0, 45, 90, 135, 180, 225, 270, 315>(glass::paint::human, walking_muscle_digest);
+constexpr auto walking_lines = make_lines<0, 45, 90, 135, 180, 225, 270, 315>(walking_muscle_digest);
+constexpr auto walking_paint = glass::make<0, 45, 90, 135, 180, 225, 270, 315>(glass::paint::human, walking_muscle_digest);
 
 constexpr auto floating_muscle_digest = glass::muscle
     {
