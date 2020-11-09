@@ -30,15 +30,6 @@ set(${PROJECT_NAME}-files
         application.cpp
         main_wrapper.cpp)
 
-set(IDLE_INCLUDE_DIR_BASENAME "${PROJECT_NAME}-include")
-set(IDLE_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/${IDLE_INCLUDE_DIR_BASENAME}")
-file(MAKE_DIRECTORY "${IDLE_INCLUDE_DIR}")
-
-set(SHADER_OUTPUT_BASENAME "embedded_shaders.hpp")
-set(SHADER_OUTPUT "${IDLE_INCLUDE_DIR_BASENAME}/${SHADER_OUTPUT_BASENAME}")
-set(SHADER_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/shader_source.glsl")
-set(SHADER_GENERATOR "${CMAKE_CURRENT_SOURCE_DIR}/generate.sh")
-
 set(LOG_LEVEL "2" CACHE STRING "Print or hide logs. 0 - nothing, 1 - error, 2 - warning, 3 - info, 4 - verbose")
 
 option(PRUNE_SYMBOLS "Removes symbols at build time" ON)
@@ -73,24 +64,7 @@ target_compile_definitions(lodepng PUBLIC LODEPNG_NO_COMPILE_ZLIB LODEPNG_NO_COM
 target_include_directories(lodepng INTERFACE lodepng)
 
 add_library(${PROJECT_NAME}-top INTERFACE)
-add_library(${PROJECT_NAME}-obj STATIC "${CMAKE_CURRENT_BINARY_DIR}/${SHADER_OUTPUT}")
-
-# When we build idle this will automatically re-generate the header,
-# provided either the shader source or the script had been modified.
-add_custom_target(${PROJECT_NAME}-generate-sh
-    COMMAND test
-        -r "${SHADER_OUTPUT}"
-        -a "${SHADER_OUTPUT}" -nt "${SHADER_SOURCE}"
-        -a "${SHADER_OUTPUT}" -nt "${SHADER_GENERATOR}"
-        && echo "🏮 ${SHADER_OUTPUT_BASENAME} is up-to-date."
-        || "${SHADER_GENERATOR}" < "${SHADER_SOURCE}" > "${SHADER_OUTPUT}"
-    BYPRODUCTS "${SHADER_OUTPUT}"
-    COMMENT "Preparing ${SHADER_OUTPUT}"
-    VERBATIM)
-
-add_dependencies(${PROJECT_NAME}-obj ${PROJECT_NAME}-generate-sh)
-
-target_include_directories(${PROJECT_NAME}-obj PRIVATE "${IDLE_INCLUDE_DIR}")
+add_library(${PROJECT_NAME}-obj STATIC)
 
 target_compile_definitions(${PROJECT_NAME}-obj PRIVATE
     $<$<BOOL:${DOUBLE_THE_FPS}>:IDLE_DOUBLE_THE_FPS>
@@ -117,11 +91,13 @@ target_compile_definitions(lodepng PUBLIC "$<$<NOT:$<CONFIG:Debug>>:LODEPNG_NO_C
 find_package(ZLIB REQUIRED)
 add_subdirectory(platform)
 add_subdirectory(freetype)
+add_subdirectory(shaders)
 # add_subdirectory(soloud) # TODO: turn this back on when we need sound again
 
 target_link_libraries(${PROJECT_NAME}-obj
             PUBLIC ${PROJECT_NAME}-top
             PRIVATE ${PROJECT_NAME}-ft
+            PRIVATE ${PROJECT_NAME}-shaders
             PRIVATE lodepng
             PRIVATE ZLIB::ZLIB)
 
