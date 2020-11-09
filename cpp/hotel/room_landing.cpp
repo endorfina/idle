@@ -22,7 +22,7 @@
 #include <idle/drawable.hpp>
 #include <idle/hsv.hpp>
 #include "room_landing.hpp"
-#include <idle/idle_guard.hpp>
+#include <guard.hpp>
 
 namespace idle::hotel::landing
 {

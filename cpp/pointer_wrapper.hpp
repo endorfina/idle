@@ -18,8 +18,8 @@
 */
 
 #pragma once
+#include <math_defines.hpp>
 #include "platform/pointer.hpp"
-#include "idle_defines.hpp"
 
 namespace idle
 {

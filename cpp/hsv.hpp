@@ -18,8 +18,7 @@
 */
 #pragma once
 #include <array>
-#include <math.hpp>
-#include "idle_defines.hpp"
+#include <math_defines.hpp>
 
 namespace idle
 {

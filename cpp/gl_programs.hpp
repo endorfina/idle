@@ -18,7 +18,7 @@
 */
 
 #pragma once
-#include "idle_defines.hpp"
+#include <math_defines.hpp>
 
 namespace graphics
 {

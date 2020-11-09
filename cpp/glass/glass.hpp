@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "../idle_guard.hpp"
+#include <guard.hpp>
 
 #include "blocks.hpp"
 #include "trees.hpp"

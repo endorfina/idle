@@ -21,7 +21,7 @@
 
 #include <array>
 #include <tuple>
-#include "../idle_defines.hpp"
+#include <math_defines.hpp>
 
 namespace idle::glass
 {

@@ -22,7 +22,6 @@
 #include <thread>
 #include <chrono>
 #include <string_view>
-#include "idle_defines.hpp"
 #include "gl.hpp"
 
 

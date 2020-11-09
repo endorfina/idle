@@ -18,8 +18,8 @@
 */
 #pragma once
 
-#include <math.hpp>
-#include "platform/opengl_core_adaptive.hpp"
+#include "math.hpp"
+#include "../platform/opengl_core_adaptive.hpp"
 
 namespace idle
 {
@@ -40,7 +40,7 @@ constexpr unsigned long application_frames_per_second = 60;
 
 constexpr float uni_time_factor = 60.f / static_cast<float>(application_frames_per_second);
 
-constexpr float square_coordinates[8]
+inline constexpr float square_coordinates[8]
 {
     0, 0, 1, 0,
     0, 1, 1, 1

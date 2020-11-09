@@ -24,7 +24,7 @@
 #include "room_model.hpp"
 
 #include <idle/glass/glass.hpp>
-#include <idle/idle_guard.hpp>
+#include <guard.hpp>
 
 namespace idle::hotel::model
 {
@@ -268,7 +268,7 @@ constexpr auto floating_muscle_digest = glass::muscle
         )
     }.animate(hueman);
 
-constexpr auto floating = skew_lines<0, 45, 90, 135, 180, 225, 270, 315>(floating_muscle_digest);
+constexpr auto floating = make_lines<0, 45, 90, 135, 180, 225, 270, 315>(floating_muscle_digest);
 
 template<typename Models, typename Paints>
 void draw_bones(const Models& models, const bool show_bones, const Paints& paints, const bool show_skin, const graphics::core& gl, const animation anim) noexcept
