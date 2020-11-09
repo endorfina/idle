@@ -82,47 +82,18 @@ constexpr auto skew_lines_index(const S& source, const mat4x4_noopt_t& mat, std:
     };
 }
 
-constexpr mat4x4_noopt_t skew_matrix = math::matrices::rotate<GLfloat>(math::tau_8) * math::matrices::rotate_y<GLfloat>(math::tau_4 / 3);
-
 template<unsigned...Deg, typename Rig, auto Size>
 constexpr auto skew_lines(const std::array<Rig, Size>& anim) noexcept
 {
-    const auto fun = [&anim] (const float deg)
+    const auto face = [&anim] (const float deg)
     {
         return skew_lines_index(
                 anim,
-                math::matrices::rotate<float>(math::degtorad<float>(deg)) * skew_matrix,
+                math::matrices::rotate<float>(math::degtorad<float>(deg)) * glass::meta::skew_matrix,
                 std::make_index_sequence<Size>{});
     };
 
-    return std::array { fun(static_cast<float>(Deg)) ... };
-}
-
-template<typename P, typename S, auto...Is>
-constexpr auto skew_index(const P& paint, const S& source, const mat4x4_noopt_t& mat, std::index_sequence<Is...>) noexcept
-{
-    return std::array{
-        paint(
-            glass::deep_tree(
-                source[Is],
-                mat
-            )) ...
-    };
-}
-
-template<unsigned...Deg, typename Painter, typename Rig, auto Size>
-constexpr auto skew(const Painter& paint, const std::array<Rig, Size>& anim) noexcept
-{
-    const auto fun = [&paint, &anim] (const float deg)
-    {
-        return skew_index(
-                paint,
-                anim,
-                math::matrices::rotate<float>(math::degtorad<float>(deg)) * skew_matrix,
-                std::make_index_sequence<Size>{});
-    };
-
-    return std::array { fun(static_cast<float>(Deg)) ... };
+    return std::array { face(static_cast<float>(Deg)) ... };
 }
 
 constexpr glass::closet::humanoid hueman{};
@@ -231,62 +202,8 @@ constexpr auto walking_muscle_digest = glass::muscle
         )
     }.animate(hueman);
 
-struct blob_mesh
-{
-    std::array<point_t, 20> pts;
-    std::array<point_t, 4> pts2;
-
-    void draw(const graphics::core& gl, const blob_mesh& another) const noexcept
-    {
-        gl.prog.double_fill.position_vertex(reinterpret_cast<const GLfloat*>(pts.data()));
-        gl.prog.double_fill.destination_vertex(reinterpret_cast<const GLfloat*>(another.pts.data()));
-        gl::DrawArrays(gl::TRIANGLE_FAN, 0, pts.size());
-
-        gl.prog.double_fill.position_vertex(reinterpret_cast<const GLfloat*>(pts2.data()));
-        gl.prog.double_fill.destination_vertex(reinterpret_cast<const GLfloat*>(another.pts2.data()));
-        gl::DrawArrays(gl::TRIANGLE_STRIP, 0, pts2.size());
-    }
-};
-
-
-constexpr auto human_paint = [] (const auto& tree)
-{
-    using joint_type = typename idle_remove_cvr(tree)::joint_type;
-    constexpr unsigned head_index = glass::label_index<glass::parts::head, joint_type>;
-    const std::array<point_t, 3> neck
-    {
-        glass::meta::flatten(tree.table[head_index]),
-        glass::meta::flatten(tree.table[head_index + 1]),
-        glass::meta::flatten(tree.table[head_index + 2])
-    };
-    const auto pt = (neck[1] + neck[2]) / 2.f;
-    blob_mesh mesh{};
-    mesh.pts[0] = pt;
-
-    constexpr unsigned steps = 18;
-    constexpr float radius = 8.f;
-
-    for (unsigned i = 1; i <= steps; ++i)
-    {
-        const float a = i * math::tau / steps;
-        mesh.pts[i] = {pt.x + math::const_math::cos(a) * radius, pt.y + math::const_math::sin(a) * radius};
-    }
-    mesh.pts.back() = mesh.pts[1];
-
-    const auto inv_vec = point_t{ neck[1].y - neck[0].y, neck[0].x - neck[1].x };
-    const auto shift_vec = (inv_vec / math::const_math::sqrt(inv_vec.x * inv_vec.x + inv_vec.y * inv_vec.y)) * 2.f;
-
-    mesh.pts2 = {
-        point_t{neck[0] + shift_vec},
-        point_t{neck[0] - shift_vec},
-        point_t{neck[1] + shift_vec},
-        point_t{neck[1] - shift_vec}
-    };
-    return mesh;
-};
-
 constexpr auto walking_lines = skew_lines<0, 45, 90, 135, 180, 225, 270, 315>(walking_muscle_digest);
-constexpr auto walking_paint = skew<0, 45, 90, 135, 180, 225, 270, 315>(human_paint, walking_muscle_digest);
+constexpr auto walking_paint = glass::skew<0, 45, 90, 135, 180, 225, 270, 315>(glass::paint::human, walking_muscle_digest);
 
 constexpr auto floating_muscle_digest = glass::muscle
     {
