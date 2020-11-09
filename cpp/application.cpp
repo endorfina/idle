@@ -417,7 +417,7 @@ namespace
 
 constexpr bool ext_ascii_plus_math(const unsigned long c) noexcept
 {
-    return (c >= 0x20 && c < 0x17f) || (c >= 0x20b && c < 0x370) || (c > 0x390 && c <= 0x3fc);
+    return (c >= 0x20 && c < 0x17f) || (c >= 0x20b && c < 0x370) || (c > 0x390 && c <= 0x3fc) || (c >= 0x2200 && c <= 0x22ff);
 }
 
 constexpr bool ext_ascii(const unsigned long c) noexcept
