@@ -23,7 +23,7 @@
 #include <future>
 #include "gl.hpp"
 #include "drawable.hpp"
-#include "png.hpp"
+#include "png/png.hpp"
 
 namespace idle
 {

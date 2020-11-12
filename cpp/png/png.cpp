@@ -19,7 +19,7 @@
 
 #include <zlib.hpp>
 #include "png.hpp"
-#include "platform/asset_access.hpp"
+#include "../platform/asset_access.hpp"
 #include <lodepng.h>
 
 namespace idle

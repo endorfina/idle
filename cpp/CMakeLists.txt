@@ -25,7 +25,6 @@ set(${PROJECT_NAME}-files
         room_controller.cpp
         lodge.cpp
         gl.cpp
-        png.cpp
         fonts.cpp
         pointer_wrapper.cpp
         application.cpp
@@ -60,12 +59,6 @@ function(jumbo library filelist)
     target_sources(${library} PRIVATE ${UNITY_FILE})
 endfunction()
 
-add_library(lodepng STATIC "lodepng/lodepng.cpp")
-target_include_directories(lodepng INTERFACE lodepng)
-target_compile_definitions(lodepng PUBLIC
-            LODEPNG_NO_COMPILE_ZLIB LODEPNG_NO_COMPILE_DISK
-            $<$<NOT:$<CONFIG:Debug>>:LODEPNG_NO_COMPILE_ERROR_TEXT>)
-
 add_library(${PROJECT_NAME}-top INTERFACE)
 add_library(${PROJECT_NAME}-obj STATIC)
 
@@ -93,13 +86,14 @@ find_package(ZLIB REQUIRED)
 add_subdirectory(platform)
 add_subdirectory(freetype)
 add_subdirectory(shaders)
+add_subdirectory(png)
 # add_subdirectory(soloud) # TODO: turn this back on when we need sound again
 
 target_link_libraries(${PROJECT_NAME}-obj
             PUBLIC ${PROJECT_NAME}-top
             PRIVATE ${PROJECT_NAME}-ft
             PRIVATE ${PROJECT_NAME}-shaders
-            PRIVATE lodepng
+            PRIVATE ${PROJECT_NAME}-png
             PRIVATE ZLIB::ZLIB)
 
 if(NOT ANDROID)
