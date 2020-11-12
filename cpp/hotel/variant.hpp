@@ -25,12 +25,23 @@
 
 namespace idle::hotel
 {
-using rooms = std::variant<
-    landing::room,
-#ifdef IDLE_COMPILE_GALLERY
-    model::room,
-#endif  // IDLE_COMPILE_GALLERY
-    stage::room
->;
+
+namespace meta
+{
+
+template<typename T>
+struct room_strip_error {};
+
+template<typename ErrorType, typename...Rooms>
+struct room_strip_error<
+        std::variant<ErrorType, keyring::somewhere_else<Rooms>...>
+    >
+{
+    using type = std::variant<Rooms...>;
+};
+
+}  // namespace meta
+
+using rooms = typename meta::room_strip_error<keyring::variant>::type;
 
 }

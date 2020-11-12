@@ -47,12 +47,12 @@ struct somewhere_else
 };
 
 using variant = std::variant<
+        std::string_view,
         somewhere_else<landing::room>,
 #ifdef IDLE_COMPILE_GALLERY
         somewhere_else<model::room>,
 #endif
-        somewhere_else<stage::room>,
-        std::string_view
+        somewhere_else<stage::room>
     >;
 
 }  // namespace keyring
