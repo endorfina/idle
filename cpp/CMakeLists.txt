@@ -25,6 +25,7 @@ set(${PROJECT_NAME}-files
         room_controller.cpp
         lodge.cpp
         gl.cpp
+        png.cpp
         fonts.cpp
         pointer_wrapper.cpp
         application.cpp
@@ -60,8 +61,10 @@ function(jumbo library filelist)
 endfunction()
 
 add_library(lodepng STATIC "lodepng/lodepng.cpp")
-target_compile_definitions(lodepng PUBLIC LODEPNG_NO_COMPILE_ZLIB LODEPNG_NO_COMPILE_DISK)
 target_include_directories(lodepng INTERFACE lodepng)
+target_compile_definitions(lodepng PUBLIC
+            LODEPNG_NO_COMPILE_ZLIB LODEPNG_NO_COMPILE_DISK
+            $<$<NOT:$<CONFIG:Debug>>:LODEPNG_NO_COMPILE_ERROR_TEXT>)
 
 add_library(${PROJECT_NAME}-top INTERFACE)
 add_library(${PROJECT_NAME}-obj STATIC)
@@ -85,8 +88,6 @@ target_compile_options(${PROJECT_NAME}-top INTERFACE
         -Wall -Wredundant-move -fno-char8_t
         $<$<CXX_COMPILER_ID:GNU>:-fconstexpr-ops-limit=268435456>
         $<$<CXX_COMPILER_ID:Clang>:-fconstexpr-steps=268435456>)
-
-target_compile_definitions(lodepng PUBLIC "$<$<NOT:$<CONFIG:Debug>>:LODEPNG_NO_COMPILE_ERROR_TEXT>")
 
 find_package(ZLIB REQUIRED)
 add_subdirectory(platform)

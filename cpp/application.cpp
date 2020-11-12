@@ -436,17 +436,14 @@ fonts::font_t make_font(fonts::ft_data_t font_data) noexcept
 #endif
                 gl::LINEAR, gl::CLAMP_TO_EDGE, std::move(font_data.pixels)).release());
 
-    const auto min_y = std::min_element(font_data.map.begin(), font_data.map.end(),
-            [](const auto& left, const auto& right) {
+    const auto comp = [](const auto& left, const auto& right) -> bool
+            {
                 return left.second.offset.y < right.second.offset.y;
+            };
 
-            })->second.offset.y;
+    const auto min_y = std::min_element(font_data.map.begin(), font_data.map.end(), comp)->second.offset.y;
 
-    const auto max_y = std::max_element(font_data.map.begin(), font_data.map.end(),
-            [](const auto& left, const auto& right) {
-                return left.second.offset.y < right.second.offset.y;
-
-            })->second.offset.y;
+    const auto max_y = std::max_element(font_data.map.begin(), font_data.map.end(), comp)->second.offset.y;
 
     LOGDD("Font bbox [%.3f <=> %.3f] : %.3f", min_y, max_y, min_y - max_y);
 

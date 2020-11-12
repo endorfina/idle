@@ -59,7 +59,7 @@ struct model_button : gui::shapes::button<gui::positions::edge_hugger<X, Y>, wid
                     return { "rot", { .5f, .5f, 1.f } };
 
                 case function::exit_landing:
-                    return { "land", { .5f, .5f, .5f } };
+                    return { "land", { .6f, .6f, .6f } };
 
                 default:
                     return { "???", { 1.f, 1.f, 1.f } };

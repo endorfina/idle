@@ -43,7 +43,7 @@ public:
 
     void stop() noexcept;
 
-    auto is_active() const noexcept -> bool;
+    bool is_active() const noexcept;
 
     ~room_service();
 };

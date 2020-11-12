@@ -38,7 +38,7 @@ void room_service::stop() noexcept
     }
 }
 
-auto room_service::is_active() const noexcept -> bool
+bool room_service::is_active() const noexcept
 {
     return worker_active_flag.load(std::memory_order_relaxed);
 }

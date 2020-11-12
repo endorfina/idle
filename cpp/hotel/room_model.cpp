@@ -314,7 +314,8 @@ void room::draw(const graphics::core& gl) const noexcept
     gl.prog.fill.use();
     gl.prog.fill.set_identity();
     gl.prog.fill.set_view_identity();
-    gl.prog.fill.set_color({0,0,0});
+    constexpr auto grey_bg = color_t::greyscale(.2f);
+    gl.prog.fill.set_color(grey_bg);
     fill_screen(gl, gl.prog.fill);
 
     constexpr auto greyscale = color_t::greyscale(.29f);

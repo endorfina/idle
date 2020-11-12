@@ -20,14 +20,10 @@
 #include <cmath>
 #include <optional>
 #include <utility>
-#include <memory>
 #include <future>
-#include <vector>
-#include <zlib.hpp>
 #include "gl.hpp"
-#include "platform/asset_access.hpp"
 #include "drawable.hpp"
-#include <lodepng.h>
+#include "png.hpp"
 
 namespace idle
 {
@@ -40,106 +36,6 @@ constexpr float proportional_to_nearest_sqr(const size_t w) noexcept
     while (u < w) u *= 2;
     return static_cast<float>(w) / static_cast<float>(u);
 }
-
-unsigned wasteful_zlib_decompress(unsigned char** out_ptr, size_t* out_size,
-                                 const unsigned char* const source,
-                                 const size_t source_size,
-                                 const LodePNGDecompressSettings* const) noexcept
-{
-    if (const auto working_buffer = zlib<std::vector<unsigned char>>(source, source_size, false, false))
-    {
-        std::unique_ptr<unsigned char[]> temporary_buffer = std::make_unique<unsigned char[]>(working_buffer->size());
-        ::memcpy(temporary_buffer.get(), working_buffer->data(), working_buffer->size());
-
-        // I hope I understand this correctly, lmao
-        *out_ptr = temporary_buffer.release();
-        *out_size = working_buffer->size();
-        return 0;
-    }
-    return 1;
-}
-
-struct image_data
-{
-    std::unique_ptr<unsigned char[]> image;
-    unsigned width, height, real_width, real_height, size;
-
-    std::vector<unsigned char> decode_png_buffer(const unsigned char * const src, const size_t datalen) noexcept
-    {
-        std::vector<unsigned char> out;
-        lodepng::State st;
-        st.info_raw.colortype = LodePNGColorType::LCT_RGBA;
-        st.decoder.zlibsettings.custom_zlib = wasteful_zlib_decompress;
-
-        if (const auto er = lodepng::decode(out, width, height, st, src, datalen); !!er)
-        {
-#ifdef LODEPNG_NO_COMPILE_ERROR_TEXT
-            LOGE("Lodepng error no. %u", er);
-#else
-            LOGE("Lodepng error no. %u: %s", er, lodepng_error_text(er));
-#endif
-            out.clear();
-        }
-        size = st.info_png.color.colortype == LodePNGColorType::LCT_RGBA ? 4 : 3;
-        return out;
-    }
-
-    image_data() noexcept = default;
-
-    image_data(const std::string_view source) noexcept : real_width(1), real_height(1)
-    {
-        constexpr unsigned source_size = 4;
-        if (const auto temp = decode_png_buffer(reinterpret_cast<const unsigned char*>(source.data()), source.size()); !!temp.size())
-        {
-            while (real_width < width) real_width *= 2;
-            while (real_height < height) real_height *= 2;
-
-            image = std::make_unique<unsigned char[]>(real_width * real_height * size);
-            ::memset(image.get(), 0, real_width * real_height * size);
-
-            if (source_size != size)
-            {
-                for (unsigned y = 0; y < height; ++y)
-                for (unsigned x = 0; x < width; ++x)
-                    ::memcpy(image.get() + size * (real_width * y + x),
-                        temp.data() + source_size * (width * y + x),
-                        size);
-            }
-            else
-            {
-                for (unsigned y = 0; y < height; ++y)
-                    ::memcpy(image.get() + size * real_width * y,
-                        temp.data() + source_size * width * y,
-                        source_size * width);
-            }
-        }
-        else
-        {
-            LOGE("PNG fail");
-        }
-    }
-};
-
-bool verify_file_extension(const char * const fn) noexcept
-{
-    auto chk = fn;
-    for (; *chk; ++chk);
-    for (; chk != fn && *chk != '.'; --chk);
-    return !(strcmp(chk, ".png") != 0);
-}
-
-image_data make_image_data(const char * fn) noexcept
-{
-    if (verify_file_extension(fn))
-    {
-        if (const auto b = platform::asset::hold(fn))
-        {
-            return { b.view() };
-        }
-    }
-    return {};
-}
-
 
 struct image_meta_data_t
 {
@@ -210,7 +106,7 @@ GLuint image_t::release() noexcept
 
 image_t image_t::load_from_assets_immediate(const char * fn, GLint quality) noexcept
 {
-    const auto picture = make_image_data(fn);
+    const png_image_data picture(fn);
     GLuint texID = 0;
 
     if (!picture.image)
@@ -239,7 +135,7 @@ image_t image_t::load_from_assets_immediate(const char * fn, GLint quality) noex
 
 image_t image_t::load_from_assets(const char * fn, GLint quality) noexcept
 {
-    auto picture = make_image_data(fn);
+    png_image_data picture(fn);
 
     if (!picture.image)
     {
