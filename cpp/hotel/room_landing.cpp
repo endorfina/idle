@@ -213,7 +213,7 @@ auto room::step(const pointer_wrapper& pointer) noexcept -> std::optional<keyrin
         constexpr float alpha_step = .0022f * uni_time_factor;
         thing.alpha = std::min<float>(thing.alpha + (impatient ? alpha_step * 4 : alpha_step /* * .2f */), 2.f);
 
-        if (thing.alpha > 1.98f)
+        if (thing.alpha > 1.99f)
         {
             return std::move(destination);
         }
@@ -290,7 +290,6 @@ void luminous_cloud::draw(const graphics::core& gl) const noexcept
             out[i] = point_t{ math::const_math::cos(angle), math::const_math::sin(angle) };
             angle += step;
         }
-
         return out;
     }();
 
@@ -324,20 +323,6 @@ void luminous_cloud::draw(const graphics::core& gl) const noexcept
             gl::DrawArrays(gl::TRIANGLE_FAN, 0, blob_array_len);
         }
     }
-
-    // for (const auto& it : small_table)
-    // {
-    //     if (it.fade > 0.f)
-    //     {
-    //         const float alpha = (std::cos(math::tau_2 * (1.f + it.fade * 2)) + 1.f) / 20;
-    //         gl.view_distortion();
-    //         gl.prog.gradient.set_color(it.distortion);
-    //         gl.prog.gradient.set_secondary_color(it.distortion, alpha);
-    //         gl.prog.gradient.set_view_transform(math::matrices::translate<float>(gl.draw_size / 2 +  it.position));
-    //         gl.prog.gradient.set_transform(math::matrices::uniform_scale<float>(it.scale));
-    //         gl::DrawArrays(gl::TRIANGLE_FAN, 0, blob_array_len);
-    //     }
-    // }
 }
 
 void room::draw(const graphics::core& gl) const noexcept
@@ -398,7 +383,7 @@ void room::draw(const graphics::core& gl) const noexcept
 
     const auto lower_draw_size = std::min(gl.draw_size.x, gl.draw_size.y);
     const auto higher_draw_size = std::max(gl.draw_size.x, gl.draw_size.y);
-    const float higher_ratio = std::max(4.f / 3.f, higher_draw_size / lower_draw_size);
+    const float higher_ratio = std::max<float>(4.f / 3.f, higher_draw_size / lower_draw_size);
     const float adaptive_mult = higher_ratio / (4.f / 3.f);
 
     gl.prog.gradient.set_transform(math::matrices::rotate(thing.rotation)

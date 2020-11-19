@@ -83,7 +83,11 @@ struct blob_mesh
     using tuple_type = std::tuple<Links...>;
     tuple_type chain;
 
-    constexpr blob_mesh(tuple_type var) noexcept
+    constexpr blob_mesh(const tuple_type& var) noexcept
+        : chain{var}
+    {}
+
+    constexpr blob_mesh(tuple_type&& var) noexcept
         : chain{std::move(var)}
     {}
 
@@ -177,6 +181,7 @@ struct sym
 {
     float width;
     unsigned input_index;
+    float shift = 0.f;
 
     static constexpr unsigned output_nodes = 2;
     static constexpr unsigned input_nodes = 1;
@@ -185,8 +190,9 @@ struct sym
     constexpr void chew(std::array<point_t, Size>& out, unsigned index, const meta::mesh_node& input) const noexcept
     {
         const auto shift_vec = input.pp * (width / 2);
-        out[index] = input.pt - shift_vec;
-        out[index + 1] = input.pt + shift_vec;
+        const auto shift_pos = input.pt - input.pl * shift;
+        out[index] = shift_pos - shift_vec;
+        out[index + 1] = shift_pos + shift_vec;
     }
 };
 

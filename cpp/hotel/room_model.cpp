@@ -274,7 +274,8 @@ template<typename Models, typename Paints>
 void draw_bones(const Models& models, const bool show_bones, const Paints& paints, const bool show_skin, const graphics::core& gl, const animation anim) noexcept
 {
     gl.prog.fill.use();
-    gl.prog.fill.set_color({1,0,0});
+    constexpr color_t frames_display{ 1, .2f, .2f };
+    gl.prog.fill.set_color(frames_display);
 
     const auto model_offset = gl.draw_size.x / (models.size() + 1);
     gl.prog.fill.set_view_transform(math::matrices::translate<float>({model_offset, gl.draw_size.y * .8f}));
