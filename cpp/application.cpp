@@ -25,6 +25,7 @@
 #include "freetype/glue.hpp"
 #include "assets_config.hpp"
 #include "platform/asset_access.hpp"
+#include "png/image_queue.hpp"
 #include "lodge.hpp"
 #include "statistician.hpp"
 #include "application.hpp"
@@ -401,7 +402,7 @@ int application::real_main() noexcept
                 app.draw();
             }
 
-            idle::image_t::load_topmost_queued_picture();
+            // idle::image_t::load_topmost_queued_picture();
         }
 
         app.clock = wait_one_frame_with_skipping(app.clock);
@@ -425,16 +426,16 @@ constexpr bool ext_ascii(const unsigned long c) noexcept
     return (c >= 0x20 && c < 0x17f);
 }
 
-fonts::font_t make_font(fonts::ft_data_t font_data) noexcept
+fonts::font_t make_font(idle::images::loader& db, fonts::ft_data_t font_data) noexcept
 {
-    auto image = graphics::unique_texture(idle::image_t::load_from_memory(
+    auto image = graphics::unique_texture(db.load_from_memory(
                 font_data.width, font_data.width,
 #ifdef __ANDROID__
                 gl::LUMINANCE, gl::LUMINANCE,
 #else
                 gl::R8, gl::RED,
 #endif
-                gl::LINEAR, gl::CLAMP_TO_EDGE, std::move(font_data.pixels)).release());
+                gl::LINEAR, gl::CLAMP_TO_EDGE, std::move(font_data.pixels)));
 
     const auto comp = [](const auto& left, const auto& right) -> bool
             {
@@ -476,11 +477,12 @@ bool application::load() noexcept
         idle::image_t::load_from_assets_immediate("space-1.png")
     };
 
+    idle::images::loader queue;
     auto lt = std::chrono::steady_clock::now();
     bool success = false;
 
     std::thread loader_thread {
-        [&promise = success, &flag = la.load_status]
+        [&queue, &promise = success, &flag = la.load_status]
         {
             const fonts::freetype_glue freetype {};
 
@@ -488,7 +490,7 @@ bool application::load() noexcept
             {
                 if (auto ft = freetype(ext_ascii_plus_math, unicode_font.view(), fonts::texture_quality::ok))
                 {
-                    opengl.fonts.regular.emplace(make_font(std::move(*ft)));
+                    opengl.fonts.regular.emplace(make_font(queue, std::move(*ft)));
                 }
             }
 
@@ -496,7 +498,7 @@ bool application::load() noexcept
             {
                 if (auto ft = freetype(ext_ascii, title_font.view(), fonts::texture_quality::poor))
                 {
-                    opengl.fonts.title.emplace(make_font(std::move(*ft)));
+                    opengl.fonts.title.emplace(make_font(queue, std::move(*ft)));
                 }
             }
 
@@ -527,7 +529,7 @@ bool application::load() noexcept
                 la.tick();
             }
 
-            idle::image_t::load_topmost_queued_picture();
+            queue.load_topmost_queued_picture();
         }
     }
 

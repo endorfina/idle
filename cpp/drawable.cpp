@@ -18,9 +18,6 @@
 */
 
 #include <cmath>
-#include <optional>
-#include <utility>
-#include <future>
 #include "gl.hpp"
 #include "drawable.hpp"
 #include "png/png.hpp"
@@ -36,35 +33,6 @@ constexpr float proportional_to_nearest_sqr(const size_t w) noexcept
     while (u < w) u *= 2;
     return static_cast<float>(w) / static_cast<float>(u);
 }
-
-struct image_meta_data_t
-{
-    GLsizei width, height;
-    GLint internalformat;
-    GLenum format;
-    GLint quality, repeat;
-    std::unique_ptr<unsigned char[]> pixels;
-    std::promise<GLuint> promise;
-    GLenum error;
-
-    template<typename Pixels, typename Promise>
-    image_meta_data_t(GLsizei w, GLsizei h,
-            GLint i, GLenum f,
-            GLint q, GLint r,
-            Pixels&& pix,
-            Promise&& prom
-        ) noexcept :
-        width(w), height(h),
-        internalformat(i), format(f),
-        quality(q), repeat(r),
-        pixels(std::forward<Pixels>(pix)),
-        promise(std::forward<Promise>(prom))
-    {}
-};
-
-std::vector<image_meta_data_t> load_queue;
-
-std::mutex queue_mutex;
 
 }  // namespace
 
@@ -132,86 +100,6 @@ image_t image_t::load_from_assets_immediate(const char * fn, GLint quality) noex
 
     return { texID, picture.width, picture.height, picture.real_width, picture.real_height };
 }
-
-image_t image_t::load_from_assets(const char * fn, GLint quality) noexcept
-{
-    png_image_data picture(fn);
-
-    if (!picture.image)
-    {
-        LOGE("Failed to load '%s'", fn);
-        return {};
-    }
-
-    std::promise<GLuint> promise;
-    auto texID = promise.get_future();
-
-    {
-        const auto format = picture.size > 3 ? gl::RGBA : gl::RGB;
-        std::lock_guard<std::mutex> lock(queue_mutex);
-        load_queue.emplace_back(
-            picture.real_width,
-            picture.real_height,
-            format,
-            static_cast<GLenum>(format),
-            quality,
-            gl::CLAMP_TO_EDGE,
-            std::move(picture.image),
-            std::move(promise));
-    }
-
-    return { texID.get(), picture.width, picture.height, picture.real_width, picture.real_height };
-}
-
-image_t image_t::load_from_memory(GLsizei w, GLsizei h,
-            GLint i, GLenum f,
-            GLint q, GLint r,
-            std::unique_ptr<unsigned char[]> pix) noexcept
-{
-    std::promise<GLuint> promise;
-    auto texID = promise.get_future();
-
-    {
-        std::lock_guard<std::mutex> lock(queue_mutex);
-        load_queue.emplace_back(
-                w, h, i, f, q, r,
-                std::move(pix), std::move(promise));
-    }
-
-    return { texID.get(), static_cast<size_t>(w), static_cast<size_t>(h), static_cast<size_t>(w), static_cast<size_t>(h) };
-}
-
-void image_t::load_topmost_queued_picture() noexcept
-{
-    if (auto td = []()->std::optional<image_meta_data_t>
-        {
-            std::lock_guard<std::mutex> lock(queue_mutex);
-            if (!!load_queue.size())
-            {
-                auto t = std::move(load_queue.back());
-                load_queue.pop_back();
-                LOGDD("Rendering topmost queued pixel data (%i x %i)", t.width, t.height);
-                return { std::move(t) };
-            }
-            return {};
-        }())
-    {
-        GLuint tex;
-        gl::GenTextures(1, &tex);
-        gl::BindTexture(gl::TEXTURE_2D, tex);
-
-        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, td->quality);
-        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, td->quality != gl::NEAREST ? gl::LINEAR : gl::NEAREST);
-        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, td->repeat);
-        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, td->repeat);
-        gl::TexImage2D(gl::TEXTURE_2D, 0, td->internalformat, td->width, td->height, 0, td->format, gl::UNSIGNED_BYTE, td->pixels.get());
-
-        gl::BindTexture(gl::TEXTURE_2D, 0);
-
-        td->promise.set_value(tex);
-    }
-}
-
 
 
 void fill_circle(const graphics::program_t& prog, point_t center, const float radius, const unsigned int steps) noexcept
