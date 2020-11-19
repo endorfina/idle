@@ -46,6 +46,8 @@ struct is_hotel_room<hotel::keyring::somewhere_else<T>> : std::true_type {};
 idle_check_method_boilerplate(draw);
 idle_check_method_boilerplate(step);
 idle_check_method_boilerplate(on_resize);
+idle_check_method_boilerplate(load_queued_images);
+idle_check_method_boilerplate(kill_workers);
 
 }  // namespace
 
@@ -65,6 +67,19 @@ void controller::resize(point_t size) noexcept
         if constexpr(idle_has_method(idle_remove_cvr(room), on_resize))
         {
             room.on_resize(size);
+        }
+    }, current_variant);
+}
+
+void controller::load_queued_images() noexcept
+{
+    const std::lock_guard block_room_changes{mutability};
+
+    std::visit([](auto& room)
+    {
+        if constexpr(idle_has_method(idle_remove_cvr(room), load_queued_images))
+        {
+            room.load_queued_images();
         }
     }, current_variant);
 }
@@ -173,6 +188,14 @@ std::optional<hotel::keyring::variant> controller::do_step(const pointer_wrapper
 {
     if (next_variant.rooms)
     {
+        std::visit([](auto& room)
+        {
+            if constexpr(idle_has_method(idle_remove_cvr(room), kill_workers))
+            {
+                room.kill_workers();
+            }
+        }, current_variant);
+
         const std::lock_guard block_drawing_and_resizing{mutability};
 
         std::visit([this] (const auto& gate)
@@ -181,11 +204,11 @@ std::optional<hotel::keyring::variant> controller::do_step(const pointer_wrapper
                 LOGI("Switching context to: %s", room_label<T>);
 
                 static_assert(std::is_constructible_v<T>);
-                gate.open(current_variant);
+                auto& variant = gate.open(current_variant);
 
                 if constexpr(idle_has_method(T, on_resize))
                 {
-                    std::get<T>(current_variant).on_resize(current_screen_size);
+                    variant.on_resize(current_screen_size);
                 }
             },
             *next_variant.rooms);

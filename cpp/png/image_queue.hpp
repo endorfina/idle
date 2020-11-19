@@ -77,7 +77,9 @@ private:
     std::unordered_map<std::string_view, GLuint> map;
 
 public:
-    GLuint load_from_assets(const char * fn, GLint quality) noexcept;
+    GLuint load_from_assets(const char * fn, GLint quality = gl::LINEAR) noexcept;
+
+    ~database() noexcept;
 
     void destroy_textures() noexcept;
 

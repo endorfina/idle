@@ -22,6 +22,7 @@ set(${PROJECT_NAME}-files
         hotel/room_landing.cpp
         hotel/room_stage.cpp
         hotel/room_model.cpp
+        hotel/image_loader.cpp
         room_controller.cpp
         lodge.cpp
         gl.cpp

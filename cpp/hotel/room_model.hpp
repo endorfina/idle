@@ -25,6 +25,7 @@
 #include <idle/draw_text.hpp>
 #include "gui.hpp"
 #include "keys.hpp"
+#include "image_loader.hpp"
 
 namespace idle::hotel::model
 {
@@ -78,7 +79,7 @@ struct model_button : gui::shapes::button<gui::positions::edge_hugger<X, Y>, wid
     }
 };
 
-struct room
+struct room : image_loader
 {
     template<function Id, int X, int Y = -16>
     using control_button = model_button<Id, X, Y, 39, 22>;
@@ -90,13 +91,20 @@ struct room
             control_button<function::rotate_model, -100>,
             control_button<function::exit_landing, -25>
         >;
+
+private:
     gui_t gui;
 
     float timer = 0.f;
     unsigned char facing = 0;
-    bool show_bones = false, show_skin = true;
+    bool show_bones = false,
+         show_skin = true;
 
     std::atomic<animation> model_anim;
+    GLuint debug_texture = 0;
+
+public:
+    room() noexcept;
 
     void on_resize(point_t) noexcept;
 

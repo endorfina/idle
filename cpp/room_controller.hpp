@@ -41,9 +41,9 @@ struct door
     using opened_type = Open;
 
     template<typename Variant, typename...Args>
-    void open(Variant& var, Args&&...args) const noexcept
+    opened_type& open(Variant& var, Args&&...args) const noexcept
     {
-        var.template emplace<opened_type>(std::forward<Args>(args)...);
+        return var.template emplace<opened_type>(std::forward<Args>(args)...);
     }
 };
 
@@ -81,6 +81,8 @@ public:
     void awaken(std::chrono::steady_clock::time_point step_time) noexcept;
 
     void resize(point_t size) noexcept;
+
+    void load_queued_images() noexcept;
 
     void draw_frame(const graphics::core& gl) noexcept;
 

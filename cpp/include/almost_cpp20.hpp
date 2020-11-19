@@ -26,6 +26,10 @@
 
 #define idle_check_method_boilerplate(methodname)
 #define idle_has_method(objectname, methodname) requires { &objectname::methodname; }
+
+#define idle_check_member_boilerplate(membername)
+#define idle_has_member(objectname, membername) requires { &objectname::membername; }
+
 #define idle_weak_requires(x) requires (x)
 
 #else
@@ -41,6 +45,18 @@
     > : public std::true_type {}
 
 #define idle_has_method(objectname, methodname) has_##methodname##_method<objectname>::value
+
+#define idle_check_member_boilerplate(membername) template<typename T, typename = void>\
+    struct has_##membername##_member : std::false_type {};\
+    template<typename T>\
+    struct has_##membername##_member<\
+        T,\
+        std::enable_if_t<\
+            std::is_member_function_pointer_v<decltype(&T::membername)>\
+        >\
+    > : public std::true_type {}
+
+#define idle_has_member(objectname, membername) has_##membername##_member<objectname>::value
 
 #define idle_weak_requires(x)
 

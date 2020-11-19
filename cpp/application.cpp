@@ -397,12 +397,14 @@ int application::real_main() noexcept
 
         if (app.window.has_opengl())
         {
+            room_ctrl.load_queued_images();
+
             if (app.update_display)
             {
                 app.draw();
             }
 
-            // idle::image_t::load_topmost_queued_picture();
+            idle::images::database::clean_trash();
         }
 
         app.clock = wait_one_frame_with_skipping(app.clock);

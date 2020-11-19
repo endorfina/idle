@@ -47,6 +47,8 @@ GLuint database::load_from_assets(const char * filename, GLint quality) noexcept
             return 0;
         }
 
+        LOGDD("Queuing %s texture creation", filename);
+
         const auto format = picture.size > 3 ? gl::RGBA : gl::RGB;
         const GLuint tex = load_from_memory(
                 picture.real_width,
@@ -106,10 +108,15 @@ void loader::load_topmost_queued_picture() noexcept
 
         gl::BindTexture(gl::TEXTURE_2D, 0);
 
+        LOGDD("Tex id = %u", tex);
         td->promise.set_value(tex);
     }
 }
 
+database::~database() noexcept
+{
+    destroy_textures();
+}
 
 namespace
 {
@@ -127,6 +134,7 @@ void database::destroy_textures() noexcept
     auto ptr = out.get();
     for (const auto& it : map)
     {
+        LOGDD("Marking tex %u for destruction", it.second);
         *ptr++ = it.second;
     }
     map.clear();
@@ -141,6 +149,7 @@ void database::clean_trash() noexcept
 {
     if (const auto size = trash_size.load(std::memory_order_acquire))
     {
+        LOGDD("Deleting %u textures", size);
         gl::DeleteTextures(size, trash_content.get());
         trash_content.reset(nullptr);
         trash_size.store(0, std::memory_order_release);

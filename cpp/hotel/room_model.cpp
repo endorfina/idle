@@ -337,6 +337,7 @@ void room::draw(const graphics::core& gl) const noexcept
     gl.prog.fill.set_identity();
     gl.prog.fill.set_view_identity();
     gl.prog.fill.set_color(greyscale, .5f);
+
     gui.draw(gl);
 }
 
@@ -400,6 +401,11 @@ std::optional<keyring::variant> room::step(const pointer_wrapper& pointer) noexc
 void room::on_resize(const point_t screen_size) noexcept
 {
     gui.resize(screen_size);
+}
+
+room::room() noexcept
+{
+    pool.load_image("debug_tex.png", debug_texture);
 }
 
 }  // namespace idle::hotel::model
