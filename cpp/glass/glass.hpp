@@ -54,8 +54,8 @@ struct strip_mesh
     template<typename Core>
     void draw(const Core& gl, const strip_mesh& another) const noexcept
     {
-        gl.prog.double_fill.position_vertex(reinterpret_cast<const GLfloat*>(mesh.data()));
-        gl.prog.double_fill.destination_vertex(reinterpret_cast<const GLfloat*>(another.mesh.data()));
+        gl.prog.double_normal.position_vertex(reinterpret_cast<const GLfloat*>(mesh.data()));
+        gl.prog.double_normal.destination_vertex(reinterpret_cast<const GLfloat*>(another.mesh.data()));
         gl::DrawArrays(gl::TRIANGLE_STRIP, 0, Size);
     }
 };

@@ -91,8 +91,6 @@ struct room : image_loader
             control_button<function::rotate_model, -100>,
             control_button<function::exit_landing, -25>
         >;
-
-private:
     gui_t gui;
 
     float timer = 0.f;
@@ -103,7 +101,6 @@ private:
     std::atomic<animation> model_anim;
     GLuint debug_texture = 0;
 
-public:
     room() noexcept;
 
     void on_resize(point_t) noexcept;

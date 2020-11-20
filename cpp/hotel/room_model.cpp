@@ -270,8 +270,8 @@ constexpr auto floating_muscle_digest = glass::muscle
 
 constexpr auto floating = make_lines<0, 45, 90, 135, 180, 225, 270, 315>(floating_muscle_digest);
 
-template<typename Models, typename Paints>
-void draw_bones(const Models& models, const bool show_bones, const Paints& paints, const bool show_skin, const graphics::core& gl, const animation anim) noexcept
+template<typename Room, typename Models, typename Paints>
+void draw_bones(const Room& r, const graphics::core& gl, const Models& models, const Paints& paints, const animation anim) noexcept
 {
     gl.prog.fill.use();
     constexpr color_t frames_display{ 1, .2f, .2f };
@@ -287,21 +287,27 @@ void draw_bones(const Models& models, const bool show_bones, const Paints& paint
         it.draw(gl);
     }
 
-    gl.prog.double_fill.use();
-    gl.prog.double_fill.set_interpolation(anim.interpolation);
-
     constexpr auto scale_mat = math::matrices::uniform_scale(2.f);
-    gl.prog.double_fill.set_transform(scale_mat);
-    gl.prog.double_fill.set_view_transform(math::matrices::translate(gl.draw_size / 2.f));
 
-    if (show_skin)
+    if (r.show_skin)
     {
-        gl.prog.double_fill.set_color({ .61f, .63f, 1.f });
+        gl.prog.double_normal.use();
+        gl::ActiveTexture(gl::TEXTURE0);
+        gl::BindTexture(gl::TEXTURE_2D, r.debug_texture);
+        gl.prog.double_normal.set_color({ 1, 1, 1 });
+        gl.prog.double_normal.set_interpolation(anim.interpolation);
+        gl.prog.double_normal.set_transform(scale_mat);
+        gl.prog.double_normal.set_view_transform(math::matrices::translate(gl.draw_size / 2.f));
         paints[anim.source % models.size()].draw(gl, paints[anim.dest % models.size()]);
     }
-    if (show_bones)
+
+    if (r.show_bones)
     {
+        gl.prog.double_fill.use();
         gl.prog.double_fill.set_color({ 1, 1, 1, .78f });
+        gl.prog.double_fill.set_interpolation(anim.interpolation);
+        gl.prog.double_fill.set_transform(scale_mat);
+        gl.prog.double_fill.set_view_transform(math::matrices::translate(gl.draw_size / 2.f));
         models[anim.source % models.size()].draw_interpolated(gl, models[anim.dest % models.size()]);
     }
 }
@@ -326,12 +332,10 @@ void room::draw(const graphics::core& gl) const noexcept
     draw_text<text_align::center, text_align::center>(*gl.fonts.title, gl.prog.text, "Model", gl.draw_size / 2.f, 48);
 
     gl::LineWidth(2.f);
-    draw_bones(
+    draw_bones(*this, gl,
         drawn_model[facing],
-        show_bones,
         walking_paint[facing],
-        show_skin,
-        gl, model_anim.load(std::memory_order_relaxed));
+        model_anim.load(std::memory_order_relaxed));
 
     gl.prog.fill.use();
     gl.prog.fill.set_identity();

@@ -47,7 +47,7 @@ GLuint database::load_from_assets(const char * filename, GLint quality) noexcept
             return 0;
         }
 
-        LOGDD("Queuing %s texture creation", filename);
+        LOGDD("Queuing '%s' texture creation", filename);
 
         const auto format = picture.size > 3 ? gl::RGBA : gl::RGB;
         const GLuint tex = load_from_memory(
@@ -129,6 +129,8 @@ std::unique_ptr<GLuint[]> trash_content;
 void database::destroy_textures() noexcept
 {
     std::lock_guard<std::mutex> lock(map_mutex);
+    if (!map.size()) return;
+
     const auto size = map.size();
     auto out = std::make_unique<GLuint[]>(size);
     auto ptr = out.get();
