@@ -204,6 +204,7 @@ constexpr auto walking_muscle_digest = glass::muscle
 
 constexpr auto walking_lines = make_lines<0, 45, 90, 135, 180, 225, 270, 315>(walking_muscle_digest);
 constexpr auto walking_paint = glass::make<0, 45, 90, 135, 180, 225, 270, 315>(glass::paint::human_mesh, walking_muscle_digest);
+constexpr auto human_skin = glass::paint::human_mesh.texture();
 
 constexpr auto floating_muscle_digest = glass::muscle
     {
@@ -298,7 +299,7 @@ void draw_bones(const Room& r, const graphics::core& gl, const Models& models, c
         gl.prog.double_normal.set_interpolation(anim.interpolation);
         gl.prog.double_normal.set_transform(scale_mat);
         gl.prog.double_normal.set_view_transform(math::matrices::translate(gl.draw_size / 2.f));
-        paints[anim.source % models.size()].draw(gl.prog.double_normal, {}, paints[anim.dest % models.size()]);
+        paints[anim.source % models.size()].draw(gl.prog.double_normal, human_skin, paints[anim.dest % models.size()]);
     }
 
     if (r.show_bones)

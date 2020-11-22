@@ -100,16 +100,20 @@ constexpr auto make(const Painter& painter, const std::array<Rig, Size>& animati
     return std::array { face(math::degtorad(static_cast<float>(Deg))) ... };
 }
 
-template<typename Transform, typename... Links>
+namespace poly
+{
+
+template<typename Transform, typename Skin, typename... Links>
 struct blob_mesh
 {
     using tuple_type = std::tuple<Links...>;
 
     Transform input_transform;
+    Skin texture_geometry;
     tuple_type chain;
 
-    constexpr blob_mesh(const Transform& lambda, const tuple_type& var) noexcept
-        : input_transform{lambda}, chain{var}
+    constexpr blob_mesh(const Transform& lambda, const Skin& skin, const tuple_type& var) noexcept
+        : input_transform{lambda}, texture_geometry{skin}, chain{var}
     {}
 
     static constexpr unsigned output_nodes = (0 + ... + Links::output_nodes);
@@ -119,7 +123,7 @@ struct blob_mesh
 
 protected:
     template<typename Val, auto Size, unsigned Index = 0>
-    constexpr void expand(output_array_t& out, const unsigned index, const std::array<Val, Size>& input) const noexcept
+    constexpr void vertex(output_array_t& out, const unsigned index, const std::array<Val, Size>& input) const noexcept
     {
         using frag_type = typename std::tuple_element<Index, tuple_type>::type;
         const frag_type& fragment = std::get<Index>(chain);
@@ -131,7 +135,21 @@ protected:
 
         if constexpr (Index + 1 < sizeof...(Links))
         {
-            expand<Val, Size, Index + 1>(out, index + frag_type::output_nodes, input);
+            vertex<Val, Size, Index + 1>(out, index + frag_type::output_nodes, input);
+        }
+    }
+
+    template<unsigned Index = 0>
+    constexpr void texture(output_array_t& out, point_t pos, const unsigned index) const noexcept
+    {
+        using frag_type = typename std::tuple_element<Index, tuple_type>::type;
+        const frag_type& fragment = std::get<Index>(chain);
+
+        pos = texture_geometry.chew(out, pos, index, fragment);
+
+        if constexpr (Index + 1 < sizeof...(Links))
+        {
+            texture<Index + 1>(out, pos, index + frag_type::output_nodes);
         }
     }
 
@@ -140,7 +158,14 @@ public:
     constexpr auto form_blob(const Tree& input) const noexcept
     {
         meta::drawable_strip<output_nodes> out{};
-        expand(out.mesh, 0, input_transform(input));
+        vertex(out.mesh, 0, input_transform(input));
+        return out;
+    }
+
+    constexpr auto tex_blob() const noexcept
+    {
+        output_array_t out{};
+        texture(out, texture_geometry.start, 0);
         return out;
     }
 };
@@ -160,6 +185,7 @@ struct composition_mesh
     {}
 
     using output_mesh = meta::drawable_strip_mesh<Links::output_nodes...>;
+    using texture_mesh = typename output_mesh::texture_tuple_type;
 
 protected:
     template<typename Tree, unsigned Index>
@@ -173,9 +199,20 @@ protected:
         }
     }
 
+    template<unsigned Index>
+    constexpr void expand(texture_mesh& out) const noexcept
+    {
+        std::get<Index>(out) = std::get<Index>(chain).tex_blob();
+
+        if constexpr (Index + 1 < sizeof...(Links))
+        {
+            expand<Index + 1>(out);
+        }
+    }
+
 public:
     template<typename Tree>
-    constexpr output_mesh compose(const Tree& input) const noexcept
+    constexpr auto compose(const Tree& input) const noexcept
     {
         output_mesh out{};
         expand<Tree, 0>(out, input);
@@ -183,13 +220,22 @@ public:
     }
 
     template<typename Tree>
-    constexpr output_mesh operator()(const Tree& input) const noexcept
+    constexpr auto operator()(const Tree& input) const noexcept
     {
         output_mesh out{};
         expand<Tree, 0>(out, input);
         return out;
     }
+
+    constexpr auto texture() const noexcept
+    {
+        texture_mesh out{};
+        expand<0>(out);
+        return out;
+    }
 };
+
+}  // namespace poly
 
 namespace meta
 {
@@ -254,7 +300,7 @@ struct sym
     static constexpr unsigned input_nodes = 1;
 
     template<auto Size>
-    constexpr void chew(std::array<point_t, Size>& out, unsigned index, const meta::mesh_node& input) const noexcept
+    constexpr void chew(std::array<point_t, Size>& out, const unsigned index, const meta::mesh_node& input) const noexcept
     {
         const auto shift_vec = input.pp * (width / 2);
         const auto shift_pos = input.pt - input.pl * shift;
@@ -263,15 +309,29 @@ struct sym
     }
 };
 
+struct equiv_rect
+{
+    point_t start, size;
+
+    template<auto Size>
+    constexpr point_t chew(std::array<point_t, Size>& out, point_t pos, const unsigned index, const sym&) const noexcept
+    {
+        pos.y += size.y;
+        out[index] = pos;
+        out[index + 1] = { pos.x + size.x, pos.y };
+        return pos;
+    }
+};
+
 }  // namespace skin
 
 namespace paint
 {
 
-inline constexpr composition_mesh human_mesh
+inline constexpr poly::composition_mesh human_mesh
 {
     std::make_tuple(
-        blob_mesh
+        poly::blob_mesh
         {
             [] (const auto& tree)
             {
@@ -284,6 +344,12 @@ inline constexpr composition_mesh human_mesh
                     glass::meta::flatten(tree.table[head_index + 2])
                 };
                 return meta::smoothen_perpendicular_vectors(meta::extrapolate_vectors(neck));
+            },
+
+            skin::equiv_rect
+            {
+                point_t{ .25f, .25f },
+                point_t{ .5f, .15f }
             },
 
             std::make_tuple(
