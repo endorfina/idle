@@ -203,7 +203,7 @@ constexpr auto walking_muscle_digest = glass::muscle
     }.animate(hueman);
 
 constexpr auto walking_lines = make_lines<0, 45, 90, 135, 180, 225, 270, 315>(walking_muscle_digest);
-constexpr auto walking_paint = glass::make<0, 45, 90, 135, 180, 225, 270, 315>(glass::paint::human, walking_muscle_digest);
+constexpr auto walking_paint = glass::make<0, 45, 90, 135, 180, 225, 270, 315>(glass::paint::human_mesh, walking_muscle_digest);
 
 constexpr auto floating_muscle_digest = glass::muscle
     {
@@ -298,13 +298,13 @@ void draw_bones(const Room& r, const graphics::core& gl, const Models& models, c
         gl.prog.double_normal.set_interpolation(anim.interpolation);
         gl.prog.double_normal.set_transform(scale_mat);
         gl.prog.double_normal.set_view_transform(math::matrices::translate(gl.draw_size / 2.f));
-        paints[anim.source % models.size()].draw(gl, paints[anim.dest % models.size()]);
+        paints[anim.source % models.size()].draw(gl.prog.double_normal, {}, paints[anim.dest % models.size()]);
     }
 
     if (r.show_bones)
     {
         gl.prog.double_fill.use();
-        gl.prog.double_fill.set_color({ 1, 1, 1, .78f });
+        gl.prog.double_fill.set_color({ 1, 1, 1, .7f });
         gl.prog.double_fill.set_interpolation(anim.interpolation);
         gl.prog.double_fill.set_transform(scale_mat);
         gl.prog.double_fill.set_view_transform(math::matrices::translate(gl.draw_size / 2.f));

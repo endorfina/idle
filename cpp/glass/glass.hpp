@@ -33,62 +33,83 @@ namespace meta
 
 inline constexpr mat4x4_noopt_t skew_matrix = math::matrices::rotate<GLfloat>(math::tau_8) * math::matrices::rotate_y<GLfloat>(math::tau_4 / 3);
 
-template<typename P, typename S, auto...Is>
-constexpr auto skew_index(const P& paint, const S& source, const mat4x4_noopt_t& mat, std::index_sequence<Is...>) noexcept
+template<typename Painter, typename Source, auto...Indices>
+constexpr auto skew_index(const Painter& paint_vertex, const Source& key_frame_vertex_table, const mat4x4_noopt_t& base_matrix, const std::index_sequence<Indices...>) noexcept
 {
     return std::array{
-        paint(
+        paint_vertex(
             glass::deep_tree(
-                source[Is],
-                mat
-            )) ...
+                key_frame_vertex_table[Indices],
+                base_matrix
+            )
+        ) ...
     };
 }
 
 template<auto Size>
-struct strip_mesh
+struct drawable_strip
 {
-    using array_t = std::array<point_t, Size>;
-    array_t mesh;
+    using vertex_table_type = std::array<point_t, Size>;
+    vertex_table_type mesh;
 
-    template<typename Core>
-    void draw(const Core& gl, const strip_mesh& another) const noexcept
+    template<typename Program>
+    void draw_elem(const Program& prog, const vertex_table_type& texture, const drawable_strip& another) const noexcept
     {
-        gl.prog.double_normal.position_vertex(reinterpret_cast<const GLfloat*>(mesh.data()));
-        gl.prog.double_normal.destination_vertex(reinterpret_cast<const GLfloat*>(another.mesh.data()));
+        prog.position_vertex(reinterpret_cast<const GLfloat*>(mesh.data()));
+        prog.destination_vertex(reinterpret_cast<const GLfloat*>(another.mesh.data()));
+        prog.texture_vertex(reinterpret_cast<const GLfloat*>(texture.data()));
         gl::DrawArrays(gl::TRIANGLE_STRIP, 0, Size);
+    }
+};
+
+template<auto...Sizes>
+struct drawable_strip_mesh
+{
+    using vertex_tuple_type = std::tuple<drawable_strip<Sizes>...>;
+    using texture_tuple_type = std::tuple<typename drawable_strip<Sizes>::vertex_table_type...>;
+    vertex_tuple_type strip_tuple;
+
+    template<typename Program, unsigned Index = 0>
+    void draw(const Program& program, const texture_tuple_type& texture_vertices, const drawable_strip_mesh& another) const noexcept
+    {
+        std::get<Index>(strip_tuple).draw_elem(program,
+                                std::get<Index>(texture_vertices),
+                                std::get<Index>(another.strip_tuple));
+
+        if constexpr (Index + 1 < sizeof...(Sizes))
+        {
+            draw<Program, Index + 1>(program, texture_vertices, another);
+        }
     }
 };
 
 }  // namespace meta
 
 template<unsigned...Deg, typename Painter, typename Rig, auto Size>
-constexpr auto make(const Painter& paint, const std::array<Rig, Size>& anim) noexcept
+constexpr auto make(const Painter& painter, const std::array<Rig, Size>& animation_frames) noexcept
 {
-    const auto face = [&paint, &anim] (const float deg)
+    const auto face = [&] (const float radians)
     {
         return meta::skew_index(
-                paint,
-                anim,
-                math::matrices::rotate<float>(math::degtorad<float>(deg)) * meta::skew_matrix,
+                painter,
+                animation_frames,
+                math::matrices::rotate(radians) * meta::skew_matrix,
                 std::make_index_sequence<Size>{});
     };
 
-    return std::array { face(static_cast<float>(Deg)) ... };
+    return std::array { face(math::degtorad(static_cast<float>(Deg))) ... };
 }
 
-template<typename... Links>
+template<typename Transform, typename... Links>
 struct blob_mesh
 {
     using tuple_type = std::tuple<Links...>;
+
+    Transform input_transform;
     tuple_type chain;
 
-    constexpr blob_mesh(const tuple_type& var) noexcept
-        : chain{var}
-    {}
-
-    constexpr blob_mesh(tuple_type&& var) noexcept
-        : chain{std::move(var)}
+    constexpr blob_mesh(const Transform& lambda, const tuple_type& var) noexcept
+        : input_transform{lambda}, chain{var}
     {}
 
     static constexpr unsigned output_nodes = (0 + ... + Links::output_nodes);
@@ -115,11 +136,57 @@ protected:
     }
 
 public:
-    template<typename Val, auto Size>
-    constexpr auto compose(const std::array<Val, Size>& input) const noexcept
+    template<typename Tree>
+    constexpr auto form_blob(const Tree& input) const noexcept
     {
-        meta::strip_mesh<output_nodes> out{};
-        expand<Val, Size>(out.mesh, 0, input);
+        meta::drawable_strip<output_nodes> out{};
+        expand(out.mesh, 0, input_transform(input));
+        return out;
+    }
+};
+
+template<typename... Links>
+struct composition_mesh
+{
+    using tuple_type = std::tuple<Links...>;
+    tuple_type chain;
+
+    constexpr composition_mesh(const tuple_type& var) noexcept
+        : chain{var}
+    {}
+
+    constexpr composition_mesh(tuple_type&& var) noexcept
+        : chain{std::move(var)}
+    {}
+
+    using output_mesh = meta::drawable_strip_mesh<Links::output_nodes...>;
+
+protected:
+    template<typename Tree, unsigned Index>
+    constexpr void expand(output_mesh& out, const Tree& input) const noexcept
+    {
+        std::get<Index>(out.strip_tuple) = std::get<Index>(chain).form_blob(input);
+
+        if constexpr (Index + 1 < sizeof...(Links))
+        {
+            expand<Tree, Index + 1>(out, input);
+        }
+    }
+
+public:
+    template<typename Tree>
+    constexpr output_mesh compose(const Tree& input) const noexcept
+    {
+        output_mesh out{};
+        expand<Tree, 0>(out, input);
+        return out;
+    }
+
+    template<typename Tree>
+    constexpr output_mesh operator()(const Tree& input) const noexcept
+    {
+        output_mesh out{};
+        expand<Tree, 0>(out, input);
         return out;
     }
 };
@@ -201,27 +268,31 @@ struct sym
 namespace paint
 {
 
-inline constexpr auto human = [] (const auto& tree)
+inline constexpr composition_mesh human_mesh
 {
-    using joint_type = typename idle_remove_cvr(tree)::joint_type;
-    constexpr unsigned head_index = glass::label_index<glass::parts::head, joint_type>;
-    const std::array<point_t, 3> neck
-    {
-        glass::meta::flatten(tree.table[head_index]),
-        glass::meta::flatten(tree.table[head_index + 1]),
-        glass::meta::flatten(tree.table[head_index + 2])
-    };
+    std::make_tuple(
+        blob_mesh
+        {
+            [] (const auto& tree)
+            {
+                using joint_type = typename idle_remove_cvr(tree)::joint_type;
+                constexpr unsigned head_index = glass::label_index<glass::parts::head, joint_type>;
+                const std::array<point_t, 3> neck
+                {
+                    glass::meta::flatten(tree.table[head_index]),
+                    glass::meta::flatten(tree.table[head_index + 1]),
+                    glass::meta::flatten(tree.table[head_index + 2])
+                };
+                return meta::smoothen_perpendicular_vectors(meta::extrapolate_vectors(neck));
+            },
 
-    constexpr blob_mesh mesh(
             std::make_tuple(
                 skin::sym{3.f, 0},
                 skin::sym{9.f, 1},
                 skin::sym{5.f, 2}
-            ));
-
-    const auto input_vecs = meta::smoothen_perpendicular_vectors(meta::extrapolate_vectors(neck));
-
-    return mesh.compose(input_vecs);
+            )
+        }
+    )
 };
 
 }  // namespace paint
