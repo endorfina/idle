@@ -245,65 +245,77 @@ constexpr void sync_right(blocks::symmetry<Val>& sym) noexcept
 }
 
 
+template<auto Key, typename Elem>
+struct label_index_helper
+{
+    // static constexpr unsigned inc = Elem::size;
+};
+
 template<auto Key>
-constexpr unsigned get_label_index(const unsigned index, const blocks::bone& b) noexcept
+struct label_index_helper<Key, blocks::bone>
 {
-    return index + 1;
-}
+    static constexpr unsigned inc = 1;
+};
 
-template<auto Key, unsigned Size>
-constexpr unsigned get_label_index(const unsigned index, const blocks::segment<Size>& s) noexcept
+template<auto Key, auto Size>
+struct label_index_helper<Key, blocks::segment<Size>>
 {
-    return index + Size;
-}
+    static constexpr unsigned inc = Size;
+};
 
-template<auto Key, typename Val>
-constexpr unsigned get_label_index(unsigned index, const blocks::symmetry<Val>& s) noexcept;
+template<auto Key, typename Elem>
+struct label_index_helper<Key, blocks::symmetry<Elem>>
+{
+    static constexpr unsigned inc = label_index_helper<Key, Elem>::inc * 2 + 1;
+};
 
-template<auto Key, auto Label, typename Elem>
-constexpr unsigned get_label_index(const unsigned index, const blocks::label<Label, Elem>& l) noexcept;
-
-template<auto Label, unsigned Index = 0, typename...Nodes>
-constexpr unsigned get_label_index(const unsigned index, const blocks::joint<Nodes...>& node) noexcept
+template<auto Key, typename...Nodes>
+struct label_index_helper<Key, blocks::joint<Nodes...>>
 {
     static_assert(sizeof...(Nodes) > 0);
 
-    if constexpr (Index + 1 < sizeof...(Nodes)
-            && !has_label<Label, typename std::tuple_element<Index, typename blocks::joint<Nodes...>::tuple_type>::type>)
+private:
+    template<unsigned Index = 0>
+    static constexpr unsigned get_index(const unsigned index) noexcept
     {
-        const auto new_index = get_label_index<Label>(index + 1, node.template branch<Index>());
-        return get_label_index<Label, Index + 1>(new_index, node);
-    }
-    else
-    {
-        return get_label_index<Label>(index + 1, node.template branch<Index>());
-    }
-}
+        using elem_type = typename std::tuple_element<Index, typename blocks::joint<Nodes...>::tuple_type>::type;
 
-template<auto Key, typename Val>
-constexpr unsigned get_label_index(unsigned index, const blocks::symmetry<Val>& s) noexcept
-{
-    index = get_label_index<Key>(index, s.left);
-    return get_label_index<Key>(index + 1, s.right);
-}
+        if constexpr (Index + 1 < sizeof...(Nodes) && !has_label<Key, elem_type>)
+        {
+            const auto new_index = index + 1 + label_index_helper<Key, elem_type>::inc;
+            return get_index<Index + 1>(new_index);
+        }
+        else
+        {
+            return index + 1 + label_index_helper<Key, elem_type>::inc;
+        }
+    }
+
+public:
+    static constexpr unsigned inc = get_index<0>(0);
+};
 
 template<auto Key, auto Label, typename Elem>
-constexpr unsigned get_label_index(const unsigned index, const blocks::label<Label, Elem>& l) noexcept
+struct label_index_helper<Key, blocks::label<Label, Elem>>
 {
-    if constexpr (Key == Label)
+    static constexpr unsigned inc = []
     {
-        return index > 0 ? index - 1 : 0;
-    }
-    else
-    {
-        return get_label_index<Key>(index, l.elem);
-    }
-}
+        if constexpr (Key == Label)
+        {
+            return 0;
+        }
+        else
+        {
+            return label_index_helper<Key, Elem>::inc;
+        }
+    }();
+};
+
 
 }  // namespace meta
 
 template<auto Label, class Struct, typename = std::enable_if_t<meta::has_label<Label, Struct>>>
-inline constexpr unsigned label_index = meta::get_label_index<Label>(0u, Struct{});
+inline constexpr unsigned label_index = std::max<unsigned>(meta::label_index_helper<Label, Struct>::inc, 1) - 1;
 
 }  // namespace idle::glass
 

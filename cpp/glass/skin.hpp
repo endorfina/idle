@@ -110,7 +110,7 @@ struct drawable_strip_mesh
 
         if constexpr (Index + 1 < sizeof...(Sizes))
         {
-            draw_all<Program, Index + 1>(program, texture_vertices, another);
+            draw_all<Index + 1, Program>(program, texture_vertices, another);
         }
     }
 };
@@ -163,9 +163,16 @@ constexpr std::array<mesh_node, Size> smoothen_perpendicular_vectors(const std::
 template<auto Size>
 constexpr auto smooth_vectors(const std::array<point_3d_t, Size>& input) noexcept
 {
-    return smoothen_perpendicular_vectors(
-            extrapolate_vectors(
-                flatten(input)));
+    if constexpr(Size > 2)
+    {
+        return smoothen_perpendicular_vectors(
+                extrapolate_vectors(
+                    flatten(input)));
+    }
+    else
+    {
+        return extrapolate_vectors(flatten(input));
+    }
 }
 
 }  // namespace meta
@@ -374,12 +381,14 @@ struct segment
 {
     unsigned offset = 0;
 
+    static constexpr unsigned size = Size;
+
     using output_type = std::array<point_3d_t, Size>;
 
     constexpr output_type operator()(const auto& tree) const noexcept
     {
         using joint_type = typename idle_remove_cvr(tree)::joint_type;
-        constexpr unsigned key_offset = glass::label_index<Key, joint_type>;
+        constexpr unsigned key_offset = label_index<Key, joint_type>;
         unsigned i = key_offset + offset;
         output_type out{};
 
@@ -387,6 +396,50 @@ struct segment
         {
             it = tree.table[i++];
         }
+        return out;
+    }
+};
+
+template<typename...Links>
+struct join
+{
+    static constexpr unsigned size = (0 + ... + Links::size);
+
+    using tuple_type = std::tuple<Links...>;
+    using output_type = std::array<point_3d_t, size>;
+
+    tuple_type chain;
+
+    constexpr join(const tuple_type& tuple) noexcept
+        : chain{tuple}
+    {}
+
+private:
+    template<unsigned Index = 0, typename Tree>
+    constexpr void use_link(output_type& out, unsigned index, const Tree& tree) const noexcept
+    {
+        using frag_type = typename std::tuple_element<Index, tuple_type>::type;
+        const frag_type& fragment = std::get<Index>(chain);
+
+        const auto array = fragment(tree);
+
+        for (const auto& it : array)
+        {
+            out[index++] = it;
+        }
+
+        if constexpr(Index + 1 < sizeof...(Links))
+        {
+            use_link<Index + 1, Tree>(out, index, tree);
+        }
+    }
+
+public:
+    template<typename Tree>
+    constexpr output_type operator()(const Tree& tree) const noexcept
+    {
+        output_type out{};
+        use_link<0, Tree>(out, 0, tree);
         return out;
     }
 };
