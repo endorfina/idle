@@ -49,22 +49,22 @@ inline constexpr poly::composition_mesh human_mesh
             },
 
             std::make_tuple(
-                skin::sym{15.f, 0, -3.f},
-                skin::sym{15.f, 1},
-                skin::sym{15.f, 2, 3.f}
+                skin::sym{18.f, 0, -3.f},
+                skin::sym{18.f, 1},
+                skin::sym{18.f, 2, 3.f}
             )
         },
 
         poly::blob_mesh
         {
-            selector::segment<parts::shoulders, 4>{1},
+            selector::split<parts::shoulders, 4>{1},
 
             extra::smooth,
 
             skin::equiv_rect
             {
                 point_t{ 0.f, 0.f },
-                point_t{ 1.f, 1.f / 3 }
+                point_t{ 1.f, 1.f / 4 }
             },
 
             std::make_tuple(
@@ -72,6 +72,66 @@ inline constexpr poly::composition_mesh human_mesh
                 skin::sym{8.f, 1},
                 skin::sym{8.f, 2},
                 skin::sym{8.f, 3, 2.f}
+            )
+        },
+
+        poly::blob_mesh
+        {
+            selector::split<parts::shoulders, 4, true>{1},
+
+            extra::smooth,
+
+            skin::equiv_rect
+            {
+                point_t{ 0.f, 0.f },
+                point_t{ 1.f, 1.f / 4 }
+            },
+
+            std::make_tuple(
+                skin::sym{8.f, 0, -4.f},
+                skin::sym{8.f, 1},
+                skin::sym{8.f, 2},
+                skin::sym{8.f, 3, 2.f}
+            )
+        },
+
+        poly::blob_mesh
+        {
+            selector::split<parts::hips, 3>{1},
+
+            extra::smooth,
+
+            skin::equiv_rect
+            {
+                point_t{ 0.f, 0.f },
+                point_t{ 1.f, 1.f / 4 }
+            },
+
+            std::make_tuple(
+                skin::sym{10.f, 0, -4.f},
+                skin::sym{10.f, 1},
+                // skin::sym{8.f, 2},
+                skin::sym{10.f, 2, 2.f}
+            )
+        },
+
+        poly::blob_mesh
+        {
+            selector::split<parts::hips, 3, true>{1},
+
+            extra::smooth,
+
+            skin::equiv_rect
+            {
+                point_t{ 0.f, 0.f },
+                point_t{ 1.f, 1.f / 4 }
+            },
+
+            std::make_tuple(
+                skin::sym{10.f, 0, -4.f},
+                skin::sym{10.f, 1},
+                // skin::sym{8.f, 2},
+                skin::sym{10.f, 2, 2.f}
             )
         },
 
@@ -112,10 +172,7 @@ inline constexpr poly::composition_mesh human_mesh
         }
     ),
 
-    [] (const auto& drawable, const auto& average_zs)
-    {
-        return extra::default_drawable{ drawable };
-    }
+    drawing::humanoid
 };
 
 }  // namespace idle::glass::paint

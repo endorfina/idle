@@ -245,6 +245,18 @@ constexpr void sync_right(blocks::symmetry<Val>& sym) noexcept
 }
 
 
+struct symmetry_index
+{
+    int left, right;
+};
+
+constexpr symmetry_index operator+(const unsigned offset, symmetry_index index) noexcept
+{
+    index.left += offset;
+    index.right += offset;
+    return index;
+}
+
 template<auto Key, typename Elem>
 struct label_index_helper
 {
@@ -276,7 +288,7 @@ struct label_index_helper<Key, blocks::joint<Nodes...>>
 
 private:
     template<unsigned Index = 0>
-    static constexpr unsigned get_index(const unsigned index) noexcept
+    static constexpr auto get_index(const unsigned index) noexcept
     {
         using elem_type = typename std::tuple_element<Index, typename blocks::joint<Nodes...>::tuple_type>::type;
 
@@ -292,17 +304,33 @@ private:
     }
 
 public:
-    static constexpr unsigned inc = get_index<0>(0);
+    static constexpr auto inc = get_index<0>(0);
+};
+
+template<auto Key, auto Label, typename Elem>
+struct label_index_helper<Key, blocks::label<Label, blocks::symmetry<Elem>>>
+{
+    static constexpr auto inc = []
+    {
+        if constexpr (Key == Label)
+        {
+            return symmetry_index{ -1, label_index_helper<Key, Elem>::inc };
+        }
+        else
+        {
+            return label_index_helper<Key, blocks::symmetry<Elem>>::inc;
+        }
+    }();
 };
 
 template<auto Key, auto Label, typename Elem>
 struct label_index_helper<Key, blocks::label<Label, Elem>>
 {
-    static constexpr unsigned inc = []
+    static constexpr auto inc = []
     {
         if constexpr (Key == Label)
         {
-            return 0;
+            return int(-1);
         }
         else
         {
@@ -315,7 +343,7 @@ struct label_index_helper<Key, blocks::label<Label, Elem>>
 }  // namespace meta
 
 template<auto Label, class Struct, typename = std::enable_if_t<meta::has_label<Label, Struct>>>
-inline constexpr unsigned label_index = std::max<unsigned>(meta::label_index_helper<Label, Struct>::inc, 1) - 1;
+inline constexpr auto label_index = meta::label_index_helper<Label, Struct>::inc;
 
 }  // namespace idle::glass
 

@@ -52,7 +52,7 @@ constexpr float average_z(const std::array<point_3d_t, Size>& input) noexcept
     float z = 0;
     for (const auto& it : input)
     {
-        z += it.z;
+        z += it.x;
     }
     return z / static_cast<float>(Size);
 }
@@ -96,6 +96,7 @@ struct drawable_strip_mesh
             const texture_tuple_type& texture_vertices,
             const drawable_strip_mesh& another) const noexcept
     {
+        static_assert(Index < sizeof...(Sizes));
         std::get<Index>(strip_tuple).draw_elem(program,
                             std::get<Index>(texture_vertices),
                             std::get<Index>(another.strip_tuple));
@@ -400,6 +401,31 @@ struct segment
     }
 };
 
+template<auto Key, unsigned Size, bool Right = false>
+struct split
+{
+    unsigned offset = 0;
+
+    static constexpr unsigned size = Size;
+
+    using output_type = std::array<point_3d_t, Size>;
+
+    constexpr output_type operator()(const auto& tree) const noexcept
+    {
+        using joint_type = typename idle_remove_cvr(tree)::joint_type;
+        constexpr auto split_index = label_index<Key, joint_type>;
+        constexpr unsigned key_offset = Right ? split_index.right : split_index.left;
+        unsigned i = key_offset + offset;
+        output_type out{};
+
+        for (auto& it : out)
+        {
+            it = tree.table[i++];
+        }
+        return out;
+    }
+};
+
 template<typename...Links>
 struct join
 {
@@ -449,10 +475,20 @@ public:
 namespace extra
 {
 
+inline constexpr auto flat = [] (const auto& input)
+{
+    return meta::extrapolate_vectors(meta::flatten(input));
+};
+
 inline constexpr auto smooth = [] (const auto& input)
 {
     return meta::smooth_vectors(input);
 };
+
+}  // namespace extra
+
+namespace meta
+{
 
 template<auto...Sizes>
 struct default_drawable
@@ -473,7 +509,116 @@ struct default_drawable
     }
 };
 
-}  // namespace extra
+template<std::size_t Size>
+struct drawing_precedence
+{
+    static_assert(Size > 1 && Size <= 10);
+
+private:
+    std::array<unsigned char, Size> table{};
+
+public:
+    constexpr drawing_precedence(const std::array<float, Size>& input) noexcept
+    {
+        std::array<std::pair<unsigned char, float>, Size> work;
+        for (unsigned char i = 0; i < Size; ++i)
+        {
+            work[i] = { i, input[i] };
+        }
+
+        // for (unsigned n = 0; n < Size - 1; ++n)
+        // {
+        //     for (unsigned char i = 0; i < Size - 1; ++i)
+        //     {
+        //         const auto temp = work[i];
+        //         if (temp.second < work[i + 1].second)
+        //         {
+        //             work[i] = work[i + 1];
+        //             work[i + 1] = temp;
+        //         }
+        //     }
+        // }
+
+        std::sort(work.begin(), work.end(), [](const auto lhs, const auto rhs)
+                {
+                    return lhs.second < rhs.second;
+                });
+
+        for (unsigned char i = 0; i < Size; ++i)
+        {
+            table[i] = work[i].first;
+        }
+    }
+
+    template<typename Program, typename Drawable>
+    void draw(const Program& program,
+            const Drawable& drawable,
+            const typename Drawable::texture_tuple_type& texture_vertices,
+            const Drawable& another) const noexcept
+    {
+        for (const auto index : table)
+            switch(index)
+            {
+#define IDLE_DRAWABLE(num) \
+            case num: \
+                if constexpr ((num) < Size) { \
+                    drawable.template draw<num>(program, texture_vertices, another); \
+                } \
+                break;
+
+            IDLE_DRAWABLE(0)
+            IDLE_DRAWABLE(1)
+            IDLE_DRAWABLE(2)
+            IDLE_DRAWABLE(3)
+            IDLE_DRAWABLE(4)
+            IDLE_DRAWABLE(5)
+            IDLE_DRAWABLE(6)
+            IDLE_DRAWABLE(7)
+            IDLE_DRAWABLE(8)
+            IDLE_DRAWABLE(9)
+            IDLE_DRAWABLE(10)
+
+#undef IDLE_DRAWABLE
+            }
+    }
+};
+
+template<auto...Sizes>
+struct default_humanoid
+{
+    using drawable_t = meta::drawable_strip_mesh<Sizes...>;
+    drawable_t drawable;
+    drawing_precedence<sizeof...(Sizes)> precedence;
+
+    constexpr default_humanoid(const drawable_t& m, const std::array<float, sizeof...(Sizes)>& zs) noexcept
+        : drawable{m}, precedence{zs}
+    {}
+
+    template<typename Program>
+    void draw(const Program& program,
+            const typename drawable_t::texture_tuple_type& texture_vertices,
+            const default_humanoid& another) const noexcept
+    {
+        precedence.template draw<Program, drawable_t>(program, drawable, texture_vertices, another.drawable);
+    }
+};
+
+}  // namespace meta
+
+namespace drawing
+{
+
+inline constexpr auto default_procedure = [] (const auto& drawable, const auto& average_zs)
+{
+    return meta::default_drawable{ drawable };
+};
+
+inline constexpr auto humanoid = [] (const auto& drawable, const auto& average_zs)
+{
+    return meta::default_humanoid{ drawable, average_zs };
+};
+
+}  // namespace drawing
 
 }  // namespace idle::glass
 
