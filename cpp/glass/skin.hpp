@@ -92,7 +92,7 @@ struct drawable_strip_mesh
     vertex_tuple_type strip_tuple;
 
 #if !__cpp_lib_constexpr_tuple
-    constexpr drawable_strip_mesh(const drawable_strip_mesh& other) noexcept
+    constexpr drawable_strip_mesh& operator=(const drawable_strip_mesh& other) noexcept
     {
         meta::tuple_copy(strip_tuple, other.strip_tuple);
         return *this;
@@ -223,14 +223,10 @@ struct blob_mesh
         input_select{select},
         input_transform{transform},
         texture_geometry{skin},
-#if __cpp_lib_constexpr_tuple
         chain{var}
     {}
-#else
-    {
-        meta::tuple_copy(chain, var);
-    }
 
+#if !__cpp_lib_constexpr_tuple
     constexpr blob_mesh& operator=(const blob_mesh& other) noexcept
     {
         input_select = other.input_select;
@@ -305,19 +301,14 @@ template<typename PainterFactory, typename... Links>
 struct composition_mesh
 {
     using tuple_type = std::tuple<Links...>;
-    PainterFactory factory;
     tuple_type chain;
+    PainterFactory factory;
 
     constexpr composition_mesh(const tuple_type& blobs, const PainterFactory& pain) noexcept
-        : factory{pain},
-#if __cpp_lib_constexpr_tuple
-        chain{blobs}
+        : chain{blobs}, factory{pain}
     {}
-#else
-    {
-        meta::tuple_copy(chain, blobs);
-    }
 
+#if !__cpp_lib_constexpr_tuple
     constexpr composition_mesh& operator=(const composition_mesh& other) noexcept
     {
         factory = other.factory;
@@ -334,8 +325,14 @@ protected:
     template<typename Tree, unsigned Index>
     constexpr void expand(output_mesh& mesh_out, z_array_t& z_out, const Tree& input) const noexcept
     {
+#if __cpp_lib_constexpr_utility
         std::tie(std::get<Index>(mesh_out.strip_tuple), z_out[Index])
             = std::get<Index>(chain).form_blob(input);
+#else
+        const auto [tuple, z] = std::get<Index>(chain).form_blob(input);
+        std::get<Index>(mesh_out.strip_tuple) = tuple;
+        z_out[Index] = z;
+#endif
 
         if constexpr (Index + 1 < sizeof...(Links))
         {
@@ -477,14 +474,10 @@ struct join
     tuple_type chain;
 
     constexpr join(const tuple_type& tuple) noexcept
-#if __cpp_lib_constexpr_tuple
         : chain{tuple}
     {}
-#else
-    {
-        meta::tuple_copy(chain, tuple);
-    }
 
+#if !__cpp_lib_constexpr_tuple
     constexpr join& operator=(const join& other) noexcept
     {
         meta::tuple_copy(chain, other.chain);
@@ -575,7 +568,12 @@ public:
         std::array<std::pair<unsigned char, float>, Size> work;
         for (unsigned char i = 0; i < Size; ++i)
         {
+#if __cpp_lib_constexpr_utility
             work[i] = { i, input[i] };
+#else
+            work[i].first = i;
+            work[i].second = input[i];
+#endif
         }
 
 #if !__cpp_lib_constexpr_algorithms
@@ -586,8 +584,15 @@ public:
                 const auto temp = work[i];
                 if (temp.second < work[i + 1].second)
                 {
+#if __cpp_lib_constexpr_utility
                     work[i] = work[i + 1];
                     work[i + 1] = temp;
+#else
+                    work[i].first = work[i + 1].first;
+                    work[i].second = work[i + 1].second;
+                    work[i + 1].first = temp.first;
+                    work[i + 1].second = temp.second;
+#endif
                 }
             }
         }
