@@ -68,10 +68,10 @@ inline constexpr poly::composition_mesh human_mesh
             },
 
             std::make_tuple(
-                skin::sym{8.f, 0, -4.f},
-                skin::sym{8.f, 1},
-                skin::sym{8.f, 2},
-                skin::sym{8.f, 3, 2.f}
+                skin::sym{9.f, 0, -4.f},
+                skin::sym{9.f, 1},
+                skin::sym{9.f, 2},
+                skin::sym{9.f, 3, 2.f}
             )
         },
 
@@ -88,10 +88,46 @@ inline constexpr poly::composition_mesh human_mesh
             },
 
             std::make_tuple(
-                skin::sym{8.f, 0, -4.f},
-                skin::sym{8.f, 1},
-                skin::sym{8.f, 2},
-                skin::sym{8.f, 3, 2.f}
+                skin::sym{9.f, 0, -4.f},
+                skin::sym{9.f, 1},
+                skin::sym{9.f, 2},
+                skin::sym{9.f, 3, 2.f}
+            )
+        },
+
+        poly::blob_mesh
+        {
+            selector::split<parts::hips, 2>{3},
+
+            extra::smooth,
+
+            skin::equiv_rect
+            {
+                point_t{ 0.f, 0.f },
+                point_t{ 1.f, 1.f / 2 }
+            },
+
+            std::make_tuple(
+                skin::sym{10.f, 0, -4.f},
+                skin::sym{10.f, 1, 2.f}
+            )
+        },
+
+        poly::blob_mesh
+        {
+            selector::split<parts::hips, 2, true>{3},
+
+            extra::smooth,
+
+            skin::equiv_rect
+            {
+                point_t{ 0.f, 0.f },
+                point_t{ 1.f, 1.f / 2 }
+            },
+
+            std::make_tuple(
+                skin::sym{10.f, 0, -4.f},
+                skin::sym{10.f, 1, 2.f}
             )
         },
 
@@ -104,7 +140,7 @@ inline constexpr poly::composition_mesh human_mesh
             skin::equiv_rect
             {
                 point_t{ 0.f, 0.f },
-                point_t{ 1.f, 1.f / 4 }
+                point_t{ 1.f, 1.f / 3 }
             },
 
             std::make_tuple(
@@ -124,7 +160,7 @@ inline constexpr poly::composition_mesh human_mesh
             skin::equiv_rect
             {
                 point_t{ 0.f, 0.f },
-                point_t{ 1.f, 1.f / 4 }
+                point_t{ 1.f, 1.f / 3 }
             },
 
             std::make_tuple(
