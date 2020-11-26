@@ -26,6 +26,9 @@
 namespace idle::glass
 {
 
+namespace meta
+{
+
 template<std::size_t I = 0, typename Callable, typename...Vars>
 constexpr void tuple_visit(const Callable& call, const std::tuple<Vars...>& tuple) noexcept
 {
@@ -37,6 +40,7 @@ constexpr void tuple_visit(const Callable& call, const std::tuple<Vars...>& tupl
     }
 }
 
+#if !__cpp_lib_constexpr_tuple
 template<std::size_t I = 0, typename...Vars>
 constexpr void tuple_copy(std::tuple<Vars...>& dest, const std::tuple<Vars...>& src) noexcept
 {
@@ -47,6 +51,9 @@ constexpr void tuple_copy(std::tuple<Vars...>& dest, const std::tuple<Vars...>& 
         tuple_copy<I + 1, Vars...>(dest, src);
     }
 }
+#endif
+
+}  // namespace meta
 
 namespace blocks
 {
@@ -97,12 +104,14 @@ struct joint
         return std::get<Index>(branches);
     }
 
+#if !__cpp_lib_constexpr_tuple
     constexpr joint& operator=(const joint& other) noexcept
     {
         root = other.root;
-        tuple_copy(branches, other.branches);
+        meta::tuple_copy(branches, other.branches);
         return *this;
     }
+#endif
 
     static constexpr unsigned size = (1 + ... + Appendages::size);
     static constexpr unsigned oddness = ((sizeof...(Appendages) - 1) + ... + Appendages::oddness);

@@ -30,9 +30,16 @@ struct muscle
 {
     std::tuple<Links...> chain;
 
-    constexpr muscle(std::tuple<Links...> var) noexcept
-        : chain{std::move(var)}
+    constexpr muscle(const std::tuple<Links...>& var) noexcept
+#if __cpp_lib_constexpr_tuple
+        : chain{var}
     {}
+#else
+    {
+        meta::tuple_copy(chain, other.chain);
+        return *this;
+    }
+#endif
 
 protected:
     template<unsigned Index = 0, typename Load>

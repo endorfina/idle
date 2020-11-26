@@ -91,6 +91,14 @@ struct drawable_strip_mesh
     using texture_tuple_type = std::tuple<typename drawable_strip<Sizes>::vertex_table_type...>;
     vertex_tuple_type strip_tuple;
 
+#if !__cpp_lib_constexpr_tuple
+    constexpr drawable_strip_mesh(const drawable_strip_mesh& other) noexcept
+    {
+        meta::tuple_copy(strip_tuple, other.strip_tuple);
+        return *this;
+    }
+#endif
+
     template<unsigned Index, typename Program>
     void draw(const Program& program,
             const texture_tuple_type& texture_vertices,
@@ -215,8 +223,24 @@ struct blob_mesh
         input_select{select},
         input_transform{transform},
         texture_geometry{skin},
+#if __cpp_lib_constexpr_tuple
         chain{var}
     {}
+#else
+    {
+        meta::tuple_copy(chain, var);
+    }
+
+    constexpr blob_mesh& operator=(const blob_mesh& other) noexcept
+    {
+        input_select = other.input_select;
+        input_transform = other.input_transform;
+        texture_geometry = other.texture_geometry;
+        meta::tuple_copy(chain, other.chain);
+        return *this;
+    }
+#endif
+
 
     static constexpr unsigned output_nodes = (0 + ... + Links::output_nodes);
     static_assert(output_nodes > 0);
@@ -281,12 +305,26 @@ template<typename PainterFactory, typename... Links>
 struct composition_mesh
 {
     using tuple_type = std::tuple<Links...>;
-    tuple_type chain;
     PainterFactory factory;
+    tuple_type chain;
 
     constexpr composition_mesh(const tuple_type& blobs, const PainterFactory& pain) noexcept
-        : chain{blobs}, factory{pain}
+        : factory{pain},
+#if __cpp_lib_constexpr_tuple
+        chain{blobs}
     {}
+#else
+    {
+        meta::tuple_copy(chain, blobs);
+    }
+
+    constexpr composition_mesh& operator=(const composition_mesh& other) noexcept
+    {
+        factory = other.factory;
+        meta::tuple_copy(chain, other.chain);
+        return *this;
+    }
+#endif
 
     using z_array_t = std::array<float, sizeof...(Links)>;
     using output_mesh = meta::drawable_strip_mesh<Links::output_nodes...>;
@@ -437,8 +475,20 @@ struct join
     tuple_type chain;
 
     constexpr join(const tuple_type& tuple) noexcept
+#if __cpp_lib_constexpr_tuple
         : chain{tuple}
     {}
+#else
+    {
+        meta::tuple_copy(chain, tuple);
+    }
+
+    constexpr join& operator=(const join& other) noexcept
+    {
+        meta::tuple_copy(chain, other.chain);
+        return *this;
+    }
+#endif
 
 private:
     template<unsigned Index = 0, typename Tree>
@@ -526,23 +576,25 @@ public:
             work[i] = { i, input[i] };
         }
 
-        // for (unsigned n = 0; n < Size - 1; ++n)
-        // {
-        //     for (unsigned char i = 0; i < Size - 1; ++i)
-        //     {
-        //         const auto temp = work[i];
-        //         if (temp.second < work[i + 1].second)
-        //         {
-        //             work[i] = work[i + 1];
-        //             work[i + 1] = temp;
-        //         }
-        //     }
-        // }
-
-        std::sort(work.begin(), work.end(), [](const auto lhs, const auto rhs)
+#if !__cpp_lib_constexpr_algorithms
+        for (unsigned n = 0; n < Size - 1; ++n)
+        {
+            for (unsigned char i = 0; i < Size - 1; ++i)
+            {
+                const auto temp = work[i];
+                if (temp.second < work[i + 1].second)
                 {
-                    return lhs.second < rhs.second;
-                });
+                    work[i] = work[i + 1];
+                    work[i + 1] = temp;
+                }
+            }
+        }
+#else
+        std::sort(work.begin(), work.end(), [](const auto lhs, const auto rhs)
+            {
+                return lhs.second < rhs.second;
+            });
+#endif
 
         for (unsigned char i = 0; i < Size; ++i)
         {
