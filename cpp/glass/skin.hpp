@@ -424,9 +424,10 @@ struct segment
 
     using output_type = std::array<point_3d_t, Size>;
 
-    constexpr output_type operator()(const auto& tree) const noexcept
+    template<typename Tree>
+    constexpr output_type operator()(const Tree& tree) const noexcept
     {
-        using joint_type = typename idle_remove_cvr(tree)::joint_type;
+        using joint_type = typename Tree::joint_type;
         constexpr unsigned key_offset = label_index<Key, joint_type>;
         unsigned i = key_offset + offset;
         output_type out{};
@@ -448,9 +449,10 @@ struct split
 
     using output_type = std::array<point_3d_t, Size>;
 
-    constexpr output_type operator()(const auto& tree) const noexcept
+    template<typename Tree>
+    constexpr output_type operator()(const Tree& tree) const noexcept
     {
-        using joint_type = typename idle_remove_cvr(tree)::joint_type;
+        using joint_type = typename Tree::joint_type;
         constexpr auto split_index = label_index<Key, joint_type>;
         constexpr unsigned key_offset = Right ? split_index.right : split_index.left;
         unsigned i = key_offset + offset;
