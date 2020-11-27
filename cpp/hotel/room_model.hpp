@@ -38,7 +38,7 @@ struct animation
 
 enum class function : unsigned char
 {
-    none, show_bones, show_skin, rotate_model, exit_landing
+    none, show_bones, show_skin, show_blobs, rotate_model, exit_landing
 };
 
 template<function Id, int X, int Y, unsigned width, unsigned height>
@@ -55,6 +55,9 @@ struct model_button : gui::shapes::button<gui::positions::edge_hugger<X, Y>, wid
 
                 case function::show_skin:
                     return { "skin", { .5f, 1.f, .5f } };
+
+                case function::show_blobs:
+                    return { "blob", { .85f, .8f, 5.f } };
 
                 case function::rotate_model:
                     return { "rot", { .5f, .5f, 1.f } };
@@ -86,8 +89,9 @@ struct room : image_loader
 
     using gui_t = gui::interface
         <
-            control_button<function::show_bones, -180>,
-            control_button<function::show_skin, -140>,
+            control_button<function::show_bones, -220>,
+            control_button<function::show_skin, -180>,
+            control_button<function::show_blobs, -140>,
             control_button<function::rotate_model, -100>,
             control_button<function::exit_landing, -25>
         >;
@@ -96,10 +100,12 @@ struct room : image_loader
     float timer = 0.f;
     unsigned char facing = 0;
     bool show_bones = false,
-         show_skin = true;
+         show_skin = true,
+         show_blobs = true;
 
     std::atomic<animation> model_anim;
     GLuint debug_texture = 0;
+    GLuint char_texture = 0;
 
     room() noexcept;
 

@@ -31,20 +31,20 @@ image_pool::image_pool() noexcept
             std::unique_lock<std::mutex> lock(mutex);
             cond_variable.wait(lock, [this]() { return queue.size() || !worker.is_active(); });
 
-            for (const auto [fn, out] : queue)
+            for (const auto [fn, out, q] : queue)
             {
-                *out = db.load_from_assets(fn);
+                *out = db.load_from_assets(fn, q);
             }
             queue.clear();
         }
     });
 }
 
-void image_pool::load_image(const char * filename, GLuint& out) noexcept
+void image_pool::load_image(const char * filename, GLuint& out, GLint quality) noexcept
 {
     {
         std::lock_guard lock{mutex};
-        queue.emplace_back(filename, &out);
+        queue.push_back(item{filename, &out, quality});
     }
     cond_variable.notify_one();
 }

@@ -31,10 +31,17 @@ namespace idle::hotel
 
 class image_pool
 {
+    struct item
+    {
+        const char* filename;
+        GLuint* out;
+        GLint quality;
+    };
+
     std::mutex mutex;
     std::condition_variable cond_variable;
     room_service worker;
-    std::vector<std::pair<const char*, GLuint*>> queue;
+    std::vector<item> queue;
 
 public:
     images::database db;
@@ -43,7 +50,7 @@ public:
 
     ~image_pool() noexcept;
 
-    void load_image(const char * filename, GLuint& out) noexcept;
+    void load_image(const char * filename, GLuint& out, GLint quality = gl::LINEAR) noexcept;
 
     void kill_worker() noexcept;
 };

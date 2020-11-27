@@ -290,16 +290,28 @@ void draw_bones(const Room& r, const graphics::core& gl, const Models& models, c
 
     constexpr auto scale_mat = math::matrices::uniform_scale(2.f);
 
-    if (r.show_skin)
+    if (r.show_skin || r.show_skin)
     {
         gl.prog.double_normal.use();
         gl::ActiveTexture(gl::TEXTURE0);
-        gl::BindTexture(gl::TEXTURE_2D, r.debug_texture);
-        gl.prog.double_normal.set_color({ 1, 1, 1 });
+
         gl.prog.double_normal.set_interpolation(anim.interpolation);
         gl.prog.double_normal.set_transform(scale_mat);
         gl.prog.double_normal.set_view_transform(math::matrices::translate(gl.draw_size / 2.f));
-        paints[anim.source % models.size()].draw(gl.prog.double_normal, human_skin, paints[anim.dest % models.size()]);
+
+        if (r.show_skin)
+        {
+            gl::BindTexture(gl::TEXTURE_2D, r.char_texture);
+            gl.prog.double_normal.set_color({ 1, 1, 1 });
+            paints[anim.source % models.size()].draw(gl.prog.double_normal, human_skin, paints[anim.dest % models.size()]);
+        }
+
+        if (r.show_blobs)
+        {
+            gl::BindTexture(gl::TEXTURE_2D, r.debug_texture);
+            gl.prog.double_normal.set_color({ 1, 1, 1, .2f });
+            paints[anim.source % models.size()].draw(gl.prog.double_normal, human_skin, paints[anim.dest % models.size()]);
+        }
     }
 
     if (r.show_bones)
@@ -390,6 +402,10 @@ std::optional<keyring::variant> room::step(const pointer_wrapper& pointer) noexc
                     show_skin = !show_skin;
                     break;
 
+                case function::show_blobs:
+                    show_blobs = !show_blobs;
+                    break;
+
                 case function::show_bones:
                     show_bones = !show_bones;
                     break;
@@ -411,6 +427,7 @@ void room::on_resize(const point_t screen_size) noexcept
 room::room() noexcept
 {
     pool.load_image("debug_tex.png", debug_texture);
+    pool.load_image("char_tex.png", char_texture, gl::NEAREST);
 }
 
 }  // namespace idle::hotel::model

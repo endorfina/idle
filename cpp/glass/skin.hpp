@@ -400,9 +400,9 @@ struct equiv_rect
     template<auto Size>
     constexpr point_t chew(std::array<point_t, Size>& out, point_t pos, const unsigned index, const sym&) const noexcept
     {
-        pos.y += size.y;
         out[index] = pos;
         out[index + 1] = { pos.x + size.x, pos.y };
+        pos.y += size.y;
         return pos;
     }
 };

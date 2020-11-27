@@ -27,6 +27,8 @@
 namespace idle::glass::paint
 {
 
+inline constexpr float cell = 1.f / 16;
+
 inline constexpr poly::composition_mesh human_mesh
 {
     std::make_tuple(
@@ -44,14 +46,14 @@ inline constexpr poly::composition_mesh human_mesh
 
             skin::equiv_rect
             {
-                point_t{ 0.f, 0.f },
-                point_t{ 1.f, 1.f / 3 }
+                point_t{ cell, cell * 1.5f },
+                point_t{ cell, cell * 1.5f / 2 }
             },
 
             std::make_tuple(
-                skin::sym{18.f, 0, -3.f},
-                skin::sym{18.f, 1},
-                skin::sym{18.f, 2, 3.f}
+                skin::sym{20.f, 0, -5.f},
+                skin::sym{20.f, 1},
+                skin::sym{20.f, 2, 5.f}
             )
         },
 
@@ -63,8 +65,8 @@ inline constexpr poly::composition_mesh human_mesh
 
             skin::equiv_rect
             {
-                point_t{ 0.f, 0.f },
-                point_t{ 1.f, 1.f / 4 }
+                point_t{ cell / 2, cell * 1.5f },
+                point_t{ cell / 2, cell / 3 }
             },
 
             std::make_tuple(
@@ -83,8 +85,8 @@ inline constexpr poly::composition_mesh human_mesh
 
             skin::equiv_rect
             {
-                point_t{ 0.f, 0.f },
-                point_t{ 1.f, 1.f / 4 }
+                point_t{ 0.f, cell * 1.5f },
+                point_t{ cell / 2, cell / 3 }
             },
 
             std::make_tuple(
@@ -103,8 +105,8 @@ inline constexpr poly::composition_mesh human_mesh
 
             skin::equiv_rect
             {
-                point_t{ 0.f, 0.f },
-                point_t{ 1.f, 1.f / 2 }
+                point_t{ cell / 2, cell * 3.5f },
+                point_t{ cell / 2, cell / 2 }
             },
 
             std::make_tuple(
@@ -121,8 +123,8 @@ inline constexpr poly::composition_mesh human_mesh
 
             skin::equiv_rect
             {
-                point_t{ 0.f, 0.f },
-                point_t{ 1.f, 1.f / 2 }
+                point_t{ 0.f, cell * 3.5f },
+                point_t{ cell / 2, cell / 2 }
             },
 
             std::make_tuple(
@@ -139,14 +141,13 @@ inline constexpr poly::composition_mesh human_mesh
 
             skin::equiv_rect
             {
-                point_t{ 0.f, 0.f },
-                point_t{ 1.f, 1.f / 3 }
+                point_t{ cell / 2, cell * 2.5f },
+                point_t{ cell / 2, cell / 2 }
             },
 
             std::make_tuple(
                 skin::sym{10.f, 0, -4.f},
                 skin::sym{10.f, 1},
-                // skin::sym{8.f, 2},
                 skin::sym{10.f, 2, 2.f}
             )
         },
@@ -159,14 +160,13 @@ inline constexpr poly::composition_mesh human_mesh
 
             skin::equiv_rect
             {
-                point_t{ 0.f, 0.f },
-                point_t{ 1.f, 1.f / 3 }
+                point_t{ 0.f, cell * 2.5f },
+                point_t{ cell / 2, cell / 2 }
             },
 
             std::make_tuple(
                 skin::sym{10.f, 0, -4.f},
                 skin::sym{10.f, 1},
-                // skin::sym{8.f, 2},
                 skin::sym{10.f, 2, 2.f}
             )
         },
@@ -179,8 +179,8 @@ inline constexpr poly::composition_mesh human_mesh
 
             skin::equiv_rect
             {
-                point_t{ 0.f, 0.f },
-                point_t{ 1.f, .5f }
+                point_t{ 0.f, cell },
+                point_t{ cell / 2, cell / 2 }
             },
 
             std::make_tuple(
@@ -198,12 +198,12 @@ inline constexpr poly::composition_mesh human_mesh
             skin::equiv_rect
             {
                 point_t{ 0.f, 0.f },
-                point_t{ 1.f, .5f }
+                point_t{ cell, cell }
             },
 
             std::make_tuple(
-                skin::sym{-14.f, 1, 4.f},
-                skin::sym{-14.f, 0, -4.f}
+                skin::sym{-16.f, 1, 6.f},
+                skin::sym{-16.f, 0, -6.f}
             )
         }
     ),
