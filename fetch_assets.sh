@@ -9,6 +9,7 @@ ASSETS=(
     space-1.png
     path4368.png
     icon.png
+    debug_tex.png
 )
 
 readonly ASSETS
