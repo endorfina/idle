@@ -13,10 +13,12 @@ readonly PROGNAME=${BASH_SOURCE[0]##*/}
 if [[ -t 1 && -t 2 ]]
 then
   readonly ESC=$(printf '\033')'['
+  readonly color_green=$ESC'0;32m'
   readonly color_blue=$ESC'0;34m'
   readonly color_red=$ESC'1;31m'
   readonly color_norm=$ESC'0m'
 else
+  readonly color_green=
   readonly color_blue=
   readonly color_red=
   readonly color_norm=
@@ -27,6 +29,8 @@ die()
   printf >&2 '💀 %s\n' "${color_red}${PROGNAME} !!${color_norm} $*"
   exit 1
 }
+
+set -o pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")" || die "Couldn't move to the root directory"
 
@@ -140,7 +144,7 @@ readonly ARGS
 # READY TO BOOT
 # There should be no side effects before this line
 
-[[ -r $SOURCE_DIR/cherry/cherry.sh ]] || git submodule update --init -j 2
+[[ -r $SOURCE_DIR/png/lodepng/lodepng.h ]] || git submodule update --init -j 2
 
 if [[ -d $BUILD_DIR ]]
 then
@@ -180,35 +184,15 @@ do
 done
 
 echo '--'
-cmake "${ARGS[@]}" || die "CMake configuration failed. Verbatim CLI arguments: \"${ARGS[*]}\""
+cmake "${ARGS[@]}" \
+    | sed -E 's~(-[[:space:]]+(done|found|yes|success))$~'"$color_green"'\1'"$color_norm~" \
+    || die "CMake configuration failed. Verbatim CLI arguments: \"${ARGS[*]}\""
 
 [[ ! -f "$SOURCE_DIR/$COMPC_FILE" \
   && -f "$BUILD_DIR/$COMPC_FILE" ]] \
   && ln -s "../$BUILD_DIR/$COMPC_FILE" "$SOURCE_DIR/$COMPC_FILE"
 
-try_download_assets()
-{
-  (cd assets/ || die "Cannot access the 'assets' directory"
-
-  local filehost=https://idle.endorfina.dev/assets
-
-  for filename in "$@"
-  do
-    [[ -f $filename ]] && continue
-
-    echo "-- 🌠 Fetching asset '$color_blue$filename$color_norm'"
-
-    curl --proto '=https' --tlsv1.2 -LOf\# --max-redirs 1 "$filehost/$filename" \
-        || die "Failed to download an asset"
-  done)
-}
-
-ASSETS=(
-    space-1.png
-    path4368.png
-    icon.png
-)
-try_download_assets "${ASSETS[@]}"
+./fetch_assets.sh || die "Failed to download assets"
 
 # required by GNU make
 readonly INDENT=$'\t'
