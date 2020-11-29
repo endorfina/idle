@@ -34,7 +34,7 @@ class image_pool
     struct item
     {
         const char* filename;
-        GLuint* out;
+        images::texture* out;
         GLint quality;
     };
 
@@ -50,7 +50,7 @@ public:
 
     ~image_pool() noexcept;
 
-    void load_image(const char * filename, GLuint& out, GLint quality = gl::LINEAR) noexcept;
+    void load_image(const char * filename, images::texture& out, GLint quality = gl::NEAREST) noexcept;
 
     void kill_worker() noexcept;
 };

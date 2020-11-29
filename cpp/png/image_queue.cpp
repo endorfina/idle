@@ -26,7 +26,7 @@
 namespace idle::images
 {
 
-GLuint database::load_from_assets(const char * filename, GLint quality) noexcept
+texture database::load_from_assets(const char * filename, GLint quality) noexcept
 {
     const std::string_view fn_view(filename);
     {
@@ -44,7 +44,7 @@ GLuint database::load_from_assets(const char * filename, GLint quality) noexcept
         if (!picture.image)
         {
             LOGE("Failed to load '%s'", filename);
-            return 0;
+            return {};
         }
 
         LOGDD("Queuing '%s' texture creation", filename);
@@ -61,7 +61,14 @@ GLuint database::load_from_assets(const char * filename, GLint quality) noexcept
 
         std::lock_guard<std::mutex> lock(map_mutex);
         map.try_emplace(fn_view, tex);
-        return tex;
+        return
+        {
+            tex,
+            {
+                static_cast<float>(picture.width) / static_cast<float>(picture.real_width),
+                static_cast<float>(picture.height) / static_cast<float>(picture.real_height)
+            }
+        };
     }
 }
 
@@ -137,7 +144,7 @@ void database::destroy_textures() noexcept
     for (const auto& it : map)
     {
         LOGDD("Marking tex %u for destruction", it.second);
-        *ptr++ = it.second;
+        *ptr++ = it.second.id;
     }
     map.clear();
 

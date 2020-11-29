@@ -104,8 +104,7 @@ struct room : image_loader
          show_blobs = false;
 
     std::atomic<animation> model_anim;
-    GLuint debug_texture = 0;
-    GLuint char_texture = 0;
+    images::texture debug_texture, char_texture;
 
     room() noexcept;
 

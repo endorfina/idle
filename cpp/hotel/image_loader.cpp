@@ -40,7 +40,7 @@ image_pool::image_pool() noexcept
     });
 }
 
-void image_pool::load_image(const char * filename, GLuint& out, GLint quality) noexcept
+void image_pool::load_image(const char * filename, images::texture& out, GLint quality) noexcept
 {
     {
         std::lock_guard lock{mutex};

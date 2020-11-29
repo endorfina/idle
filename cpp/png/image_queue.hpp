@@ -70,14 +70,20 @@ public:
     void load_topmost_queued_picture() noexcept;
 };
 
+struct texture
+{
+    GLuint id = 0;
+    point_t area{ 1, 1 };
+};
+
 struct database : loader
 {
 private:
     std::mutex map_mutex;
-    std::unordered_map<std::string_view, GLuint> map;
+    std::unordered_map<std::string_view, texture> map;
 
 public:
-    GLuint load_from_assets(const char * fn, GLint quality = gl::LINEAR) noexcept;
+    texture load_from_assets(const char * fn, GLint quality = gl::LINEAR) noexcept;
 
     ~database() noexcept;
 
