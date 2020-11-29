@@ -27,7 +27,7 @@
 namespace idle::glass::paint
 {
 
-inline constexpr float cell = 1.f / 16;
+inline constexpr float cell = .5f;
 
 inline constexpr poly::composition_mesh human_mesh
 {

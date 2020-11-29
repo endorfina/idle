@@ -271,6 +271,8 @@ constexpr auto floating_muscle_digest = glass::muscle
 
 constexpr auto floating = make_lines<0, 45, 90, 135, 180, 225, 270, 315>(floating_muscle_digest);
 
+constexpr auto& drawn_model = walking_lines;
+
 template<typename Room, typename Models, typename Paints>
 void draw_bones(const Room& r, const graphics::core& gl, const Models& models, const Paints& paints, const animation anim) noexcept
 {
@@ -302,6 +304,9 @@ void draw_bones(const Room& r, const graphics::core& gl, const Models& models, c
         if (r.show_skin)
         {
             gl::BindTexture(gl::TEXTURE_2D, r.char_texture);
+            constexpr auto tex_mult = point_t{1, 1} / 8.f;
+            gl.prog.double_normal.set_texture_mult(tex_mult);
+            gl.prog.double_normal.set_texture_shift({r.facing / static_cast<float>(drawn_model.size()), 0});
             gl.prog.double_normal.set_color({ 1, 1, 1 });
             paints[anim.source % models.size()].draw(gl.prog.double_normal, human_skin, paints[anim.dest % models.size()]);
         }
@@ -309,7 +314,9 @@ void draw_bones(const Room& r, const graphics::core& gl, const Models& models, c
         if (r.show_blobs)
         {
             gl::BindTexture(gl::TEXTURE_2D, r.debug_texture);
-            gl.prog.double_normal.set_color({ 1, 1, 1, .2f });
+            gl.prog.double_normal.set_texture_mult({1, 1});
+            gl.prog.double_normal.set_texture_shift({0, 0});
+            gl.prog.double_normal.set_color({ 1, 1, 1, .333f });
             paints[anim.source % models.size()].draw(gl.prog.double_normal, human_skin, paints[anim.dest % models.size()]);
         }
     }
@@ -324,8 +331,6 @@ void draw_bones(const Room& r, const graphics::core& gl, const Models& models, c
         models[anim.source % models.size()].draw_interpolated(gl, models[anim.dest % models.size()]);
     }
 }
-
-constexpr auto& drawn_model = walking_lines;
 
 }  // namespace
 
