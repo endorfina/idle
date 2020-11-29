@@ -47,54 +47,40 @@ inline constexpr poly::composition_mesh human_mesh
             skin::equiv_rect
             {
                 point_t{ cell, cell * 1.5f },
-                point_t{ cell, cell * 1.5f / 2 }
+                point_t{ cell, cell * 1.5f }
             },
 
-            std::make_tuple(
-                skin::sym{20.f, 0, -5.f},
-                skin::sym{20.f, 1},
-                skin::sym{20.f, 2, 5.f}
-            )
+            extra::uniform_sym_strip<0, 3>(20.f, -5.f, 5.f)
         },
 
         poly::blob_mesh
         {
             selector::split<parts::shoulders, 4>{1},
 
-            extra::smooth,
+            extra::curved,
 
             skin::equiv_rect
             {
                 point_t{ cell / 2, cell * 1.5f },
-                point_t{ cell / 2, cell / 3 }
+                point_t{ cell / 2, cell }
             },
 
-            std::make_tuple(
-                skin::sym{9.f, 0, -4.f},
-                skin::sym{9.f, 1},
-                skin::sym{9.f, 2},
-                skin::sym{9.f, 3, 2.f}
-            )
+            extra::uniform_sym_strip<0, 7>(9.f, -4.f, 2.f)
         },
 
         poly::blob_mesh
         {
             selector::split<parts::shoulders, 4, true>{1},
 
-            extra::smooth,
+            extra::curved,
 
             skin::equiv_rect
             {
                 point_t{ 0.f, cell * 1.5f },
-                point_t{ cell / 2, cell / 3 }
+                point_t{ cell / 2, cell }
             },
 
-            std::make_tuple(
-                skin::sym{9.f, 0, -4.f},
-                skin::sym{9.f, 1},
-                skin::sym{9.f, 2},
-                skin::sym{9.f, 3, 2.f}
-            )
+            extra::uniform_sym_strip<0, 7>(9.f, -4.f, 2.f)
         },
 
         poly::blob_mesh
@@ -109,10 +95,7 @@ inline constexpr poly::composition_mesh human_mesh
                 point_t{ cell / 2, cell / 2 }
             },
 
-            std::make_tuple(
-                skin::sym{10.f, 0, -4.f},
-                skin::sym{10.f, 1, 2.f}
-            )
+            extra::uniform_sym_strip<>(10.f, -4.f, 2.f)
         },
 
         poly::blob_mesh
@@ -127,48 +110,37 @@ inline constexpr poly::composition_mesh human_mesh
                 point_t{ cell / 2, cell / 2 }
             },
 
-            std::make_tuple(
-                skin::sym{10.f, 0, -4.f},
-                skin::sym{10.f, 1, 2.f}
-            )
+            extra::uniform_sym_strip<>(10.f, -4.f, 2.f)
         },
 
         poly::blob_mesh
         {
             selector::split<parts::hips, 3>{1},
 
-            extra::smooth,
+            extra::curved,
 
             skin::equiv_rect
             {
                 point_t{ cell / 2, cell * 2.5f },
-                point_t{ cell / 2, cell / 2 }
+                point_t{ cell / 2, cell }
             },
 
-            std::make_tuple(
-                skin::sym{10.f, 0, -4.f},
-                skin::sym{10.f, 1},
-                skin::sym{10.f, 2, 2.f}
-            )
+            extra::uniform_sym_strip<0, 5>(10.f, -4.f, 2.f)
         },
 
         poly::blob_mesh
         {
             selector::split<parts::hips, 3, true>{1},
 
-            extra::smooth,
+            extra::curved,
 
             skin::equiv_rect
             {
                 point_t{ 0.f, cell * 2.5f },
-                point_t{ cell / 2, cell / 2 }
+                point_t{ cell / 2, cell }
             },
 
-            std::make_tuple(
-                skin::sym{10.f, 0, -4.f},
-                skin::sym{10.f, 1},
-                skin::sym{10.f, 2, 2.f}
-            )
+            extra::uniform_sym_strip<0, 5>(10.f, -4.f, 2.f)
         },
 
         poly::blob_mesh

@@ -164,7 +164,7 @@ constexpr std::array<mesh_node, Size> smoothen_perpendicular_vectors(const std::
     std::array<mesh_node, Size> out = input;
     for (unsigned i = 1; i < Size - 1; ++i)
     {
-        out[i].pp = (input[i - 1].pp + input[i].pp + input[i + 1].pp) / 3.f;
+        out[i].pp = (input[i - 1].pp + input[i].pp /*+ input[i + 1].pp*/) / 2.f;
     }
     return out;
 }
@@ -182,6 +182,34 @@ constexpr auto smooth_vectors(const std::array<point_3d_t, Size>& input) noexcep
     {
         return extrapolate_vectors(flatten(input));
     }
+}
+
+template<auto Size>
+constexpr auto curved_vectors(const std::array<point_3d_t, Size>& input) noexcept
+{
+    static_assert(Size > 2);
+    const auto vec1 = extrapolate_vectors(flatten(input));
+    std::array<point_t, Size * 2 - 1> vec2;
+    for (unsigned i = 0; i < Size; ++i)
+    {
+        vec2[i * 2] = vec1[i].pt;
+    }
+    for (unsigned i = 0; i < Size - 1; ++i)
+    {
+        vec2[i * 2 + 1] = (vec1[i].pt + vec1[i + 1].pt) / 2.f;
+    }
+    for (unsigned i = 1; i < Size - 1; ++i)
+    {
+        const auto a = vec1[i - 1];
+        const auto b = vec1[i];
+        const auto prod = a.pl.product(b.pl);
+        const auto det = a.pl.determinant(b.pl);
+        const auto angle = math::const_math::atan2(det, prod);
+        const auto val = angle / math::tau / 2;
+        vec2[i * 2 - 1] += a.pp * (a.pt.distance(b.pt)) * val;
+        vec2[i * 2 + 1] += b.pp * (b.pt.distance(vec1[i + 1].pt)) * val;
+    }
+    return smoothen_perpendicular_vectors(extrapolate_vectors(vec2));
 }
 
 }  // namespace meta
@@ -267,7 +295,7 @@ protected:
         using frag_type = typename std::tuple_element<Index, tuple_type>::type;
         const frag_type& fragment = std::get<Index>(chain);
 
-        pos = texture_geometry.chew(out, pos, index, fragment);
+        pos = texture_geometry.template chew<sizeof...(Links)>(out, pos, index, fragment);
 
         if constexpr (Index + 1 < sizeof...(Links))
         {
@@ -397,12 +425,12 @@ struct equiv_rect
 {
     point_t start, size;
 
-    template<auto Size>
+    template<unsigned Parts, auto Size>
     constexpr point_t chew(std::array<point_t, Size>& out, point_t pos, const unsigned index, const sym&) const noexcept
     {
         out[index] = pos;
         out[index + 1] = { pos.x + size.x, pos.y };
-        pos.y += size.y;
+        pos.y += size.y / (Parts - 1);
         return pos;
     }
 };
@@ -517,6 +545,21 @@ public:
 
 }  // namespace selector
 
+namespace meta
+{
+
+template<unsigned Start, unsigned...Seq>
+constexpr auto uniform_sym_strip(const float width, const float begin, const float end, const std::integer_sequence<unsigned, Seq...>) noexcept
+{
+    return std::make_tuple(
+            skin::sym{ width, Start, begin },
+            skin::sym{ width, Start + 1 + Seq }...,
+            skin::sym{ width, Start + 1 + sizeof...(Seq), end }
+        );
+}
+
+}  // namespace meta
+
 namespace extra
 {
 
@@ -529,6 +572,29 @@ inline constexpr auto smooth = [] (const auto& input)
 {
     return meta::smooth_vectors(input);
 };
+
+inline constexpr auto curved = [] (const auto& input)
+{
+    return meta::curved_vectors(input);
+};
+
+template<unsigned Start = 0, unsigned Len = 2>
+constexpr auto uniform_sym_strip(const float width, const float begin, const float end) noexcept
+{
+    if constexpr(Len > 2)
+    {
+        return meta::uniform_sym_strip<Start>(
+                width, begin, end, std::make_integer_sequence<unsigned, Len - 2>{});
+    }
+    else
+    {
+        static_assert(Len == 2);
+        return std::make_tuple(
+                skin::sym{ width, Start, begin },
+                skin::sym{ width, Start + 1, end }
+            );
+    }
+}
 
 }  // namespace extra
 
@@ -557,7 +623,7 @@ struct default_drawable
 template<std::size_t Size>
 struct drawing_precedence
 {
-    static_assert(Size > 1 && Size <= 10);
+    static_assert(Size > 1 && Size <= 16);
 
 private:
     std::array<unsigned char, Size> table{};
@@ -636,6 +702,11 @@ public:
             IDLE_DRAWABLE(8)
             IDLE_DRAWABLE(9)
             IDLE_DRAWABLE(10)
+            IDLE_DRAWABLE(11)
+            IDLE_DRAWABLE(12)
+            IDLE_DRAWABLE(13)
+            IDLE_DRAWABLE(14)
+            IDLE_DRAWABLE(15)
 
 #undef IDLE_DRAWABLE
             }

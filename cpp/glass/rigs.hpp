@@ -136,7 +136,7 @@ struct humanoid : blocks::joint
         auto& leg = hp.left.table;
 
         arm = {
-            blocks::bone{ 7.f, { -math::tau_4, 0, 0 } },
+            blocks::bone{ 6.f, { -math::tau_4, 0, 0 } },
             blocks::bone{ 11.f, { -math::tau_8, 0, 0 } },
             blocks::bone{ 11.f, { 0, 0, 0 } },
             blocks::bone{ 5.f, { -math::tau_8 / 8, math::tau_8 / 8, 0 } }
@@ -147,7 +147,7 @@ struct humanoid : blocks::joint
                 thigh_raise = math::tau_4 * .08f;
 
         leg = {
-            blocks::bone{ 6.f, { -math::tau_4, 0, 0 } },
+            blocks::bone{ 5.f, { -math::tau_4, 0, 0 } },
             blocks::bone{ 18.f, { math::tau_4 * .966f, 0, -thigh_raise } },
             blocks::bone{ 18.f, { 0, knee_bend, 0 } },
             blocks::bone{ 7.f, { 0, - knee_bend + thigh_raise - math::tau_4, 0 } }

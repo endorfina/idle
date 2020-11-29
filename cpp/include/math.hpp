@@ -389,12 +389,19 @@ struct point2
         return *this;
     }
 
-    constexpr value_type product(const point2& other) noexcept { return x * other.x + y * other.y; }
-
-    // Distance
-    friend float operator^(const point2& first, const point2& second)
+    constexpr value_type product(const point2& other) const noexcept
     {
-        return const_math::hypot(first.x - second.x, first.y - second.y);
+        return x * other.x + y * other.y;
+    }
+
+    constexpr value_type determinant(const point2& other) const noexcept
+    {
+        return x * other.y - y * other.x;
+    }
+
+    constexpr value_type distance(const point2& other) const noexcept
+    {
+        return const_math::hypot(x - other.x, y - other.y);
     }
 };
 
@@ -640,10 +647,14 @@ template<typename table_type>
 constexpr table_type multiplication(const table_type& first, const table_type& second) noexcept
 {
     table_type dest{};
-    for (int i = 0; i < 16; ++i) {
-        dest[i] = first[i - (i % 4)] * second[i % 4];
-        for (int n = 1; n < 4; ++n)
-            dest[i] += first[i - (i % 4) + n] * second[(i % 4) + n * 4];
+    for (int i = 0; i < 16; ++i)
+    {
+        const int x = i % 4;
+        const int y = i - x;
+        dest[i] = first[y] * second[x]
+            + first[y + 1] * second[x + 4]
+            + first[y + 2] * second[x + 8]
+            + first[y + 3] * second[x + 12];
     }
     return dest;
 }

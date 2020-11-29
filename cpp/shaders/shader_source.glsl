@@ -154,9 +154,10 @@ attribute vec2 attr_pos, attr_dest_pos, attr_mapped_vec;
 uniform mat4 u_projm, u_viewm, u_modelm; // projection, view, model
 uniform float u_inter;  // interpolate value (between 0 and 1)
 varying vec2 var_mapped_vec;
+uniform vec2 u_map_shift, u_map_mult;
 
 void main() {
-    var_mapped_vec = attr_mapped_vec;
+    var_mapped_vec = attr_mapped_vec * u_map_mult + u_map_shift;
     vec2 pos = attr_pos + (attr_dest_pos - attr_pos) * u_inter;
     gl_Position = u_projm * u_viewm * u_modelm * vec4(pos, 0.0, 1.0);
 }

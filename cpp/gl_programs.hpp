@@ -144,6 +144,14 @@ struct double_solid_program_t : program_t, double_base_program_t
 
 struct double_vertex_program_t : textured_program_t, double_base_program_t
 {
+private:
+    GLint shift_handle = 0, multiplier_handle = 0;
+
+public:
+    void set_texture_shift(const idle::point_t pt) const noexcept;
+
+    void set_texture_mult(const idle::point_t pt) const noexcept;
+
     void prepare() noexcept;
 };
 
