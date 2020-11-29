@@ -47,14 +47,14 @@ constexpr auto skew_index(const Painter& paint_vertex, const Source& key_frame_v
 }
 
 template<auto Size>
-constexpr float average_z(const std::array<point_3d_t, Size>& input) noexcept
+constexpr float average_depth(const std::array<point_3d_t, Size>& input) noexcept
 {
-    float z = 0;
+    float depth = 0;
     for (const auto& it : input)
     {
-        z += it.x;
+        depth += it.x;
     }
-    return z / static_cast<float>(Size);
+    return depth / static_cast<float>(Size);
 }
 
 template<auto Size>
@@ -94,7 +94,7 @@ struct drawable_strip_mesh
 #if !__cpp_lib_constexpr_tuple
     constexpr drawable_strip_mesh& operator=(const drawable_strip_mesh& other) noexcept
     {
-        meta::tuple_copy(strip_tuple, other.strip_tuple);
+        utility::tuple_copy(strip_tuple, other.strip_tuple);
         return *this;
     }
 #endif
@@ -260,7 +260,7 @@ struct blob_mesh
         input_select = other.input_select;
         input_transform = other.input_transform;
         texture_geometry = other.texture_geometry;
-        meta::tuple_copy(chain, other.chain);
+        utility::tuple_copy(chain, other.chain);
         return *this;
     }
 #endif
@@ -310,7 +310,7 @@ public:
     constexpr returned_pair form_blob(const Tree& input) const noexcept
     {
         const auto select = input_select(input);
-        const auto z = meta::average_z(select);
+        const auto z = meta::average_depth(select);
 
         meta::drawable_strip<output_nodes> out{};
         vertex(out.mesh, 0, input_transform(select));
@@ -340,7 +340,7 @@ struct composition_mesh
     constexpr composition_mesh& operator=(const composition_mesh& other) noexcept
     {
         factory = other.factory;
-        meta::tuple_copy(chain, other.chain);
+        utility::tuple_copy(chain, other.chain);
         return *this;
     }
 #endif
@@ -508,7 +508,7 @@ struct join
 #if !__cpp_lib_constexpr_tuple
     constexpr join& operator=(const join& other) noexcept
     {
-        meta::tuple_copy(chain, other.chain);
+        utility::tuple_copy(chain, other.chain);
         return *this;
     }
 #endif
@@ -654,10 +654,8 @@ public:
                     work[i] = work[i + 1];
                     work[i + 1] = temp;
 #else
-                    work[i].first = work[i + 1].first;
-                    work[i].second = work[i + 1].second;
-                    work[i + 1].first = temp.first;
-                    work[i + 1].second = temp.second;
+                    utility::pair_copy(work[i], work[i + 1]);
+                    utility::pair_copy(work[i + 1], temp);
 #endif
                 }
             }
@@ -738,14 +736,14 @@ struct default_humanoid
 namespace drawing
 {
 
-inline constexpr auto default_procedure = [] (const auto& drawable, const auto& average_zs)
+inline constexpr auto default_procedure = [] (const auto& drawable, const auto& average_depth_array)
 {
     return meta::default_drawable{ drawable };
 };
 
-inline constexpr auto humanoid = [] (const auto& drawable, const auto& average_zs)
+inline constexpr auto humanoid = [] (const auto& drawable, const auto& average_depth_array)
 {
-    return meta::default_humanoid{ drawable, average_zs };
+    return meta::default_humanoid{ drawable, average_depth_array };
 };
 
 }  // namespace drawing

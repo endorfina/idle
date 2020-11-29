@@ -101,7 +101,7 @@ struct room : image_loader
     unsigned char facing = 0;
     bool show_bones = false,
          show_skin = true,
-         show_blobs = true;
+         show_blobs = false;
 
     std::atomic<animation> model_anim;
     GLuint debug_texture = 0;
@@ -114,6 +114,10 @@ struct room : image_loader
     std::optional<keyring::variant> step(const pointer_wrapper& cursor) noexcept;
 
     void draw(const graphics::core& gl) const noexcept;
+
+private:
+    template<typename Model, typename Paint>
+    void draw_model(const graphics::core& gl, const Model& model, const Paint& paint, const animation anim) const noexcept;
 };
 
 }  // namespace idle::hotel::model

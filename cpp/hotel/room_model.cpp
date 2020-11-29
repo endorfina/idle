@@ -273,18 +273,20 @@ constexpr auto floating = make_lines<0, 45, 90, 135, 180, 225, 270, 315>(floatin
 
 constexpr auto& drawn_model = walking_lines;
 
-template<typename Room, typename Models, typename Paints>
-void draw_bones(const Room& r, const graphics::core& gl, const Models& models, const Paints& paints, const animation anim) noexcept
+}  // namespace
+
+template<typename Model, typename Paint>
+void room::draw_model(const graphics::core& gl, const Model& model, const Paint& paint, const animation anim) const noexcept
 {
     gl.prog.fill.use();
     constexpr color_t frames_display{ 1, .2f, .2f };
     gl.prog.fill.set_color(frames_display);
 
-    const auto model_offset = gl.draw_size.x / (models.size() + 1);
+    const auto model_offset = gl.draw_size.x / (model.size() + 1);
     gl.prog.fill.set_view_transform(math::matrices::translate<float>({model_offset, gl.draw_size.y * .8f}));
 
     unsigned i = 0;
-    for (const auto& it : models)
+    for (const auto& it : model)
     {
         gl.prog.fill.set_transform(math::matrices::translate<float>({model_offset * i++, 0}));
         it.draw(gl);
@@ -292,7 +294,7 @@ void draw_bones(const Room& r, const graphics::core& gl, const Models& models, c
 
     constexpr auto scale_mat = math::matrices::uniform_scale(2.f);
 
-    if (r.show_skin || r.show_skin)
+    if (show_skin || show_blobs)
     {
         gl.prog.double_normal.use();
         gl::ActiveTexture(gl::TEXTURE0);
@@ -301,38 +303,36 @@ void draw_bones(const Room& r, const graphics::core& gl, const Models& models, c
         gl.prog.double_normal.set_transform(scale_mat);
         gl.prog.double_normal.set_view_transform(math::matrices::translate(gl.draw_size / 2.f));
 
-        if (r.show_skin)
+        if (show_skin)
         {
-            gl::BindTexture(gl::TEXTURE_2D, r.char_texture);
+            gl::BindTexture(gl::TEXTURE_2D, char_texture);
             constexpr auto tex_mult = point_t{1, 1} / 8.f;
             gl.prog.double_normal.set_texture_mult(tex_mult);
-            gl.prog.double_normal.set_texture_shift({r.facing / static_cast<float>(drawn_model.size()), 0});
+            gl.prog.double_normal.set_texture_shift({facing / static_cast<float>(drawn_model.size()), 0});
             gl.prog.double_normal.set_color({ 1, 1, 1 });
-            paints[anim.source % models.size()].draw(gl.prog.double_normal, human_skin, paints[anim.dest % models.size()]);
+            paint[anim.source % model.size()].draw(gl.prog.double_normal, human_skin, paint[anim.dest % model.size()]);
         }
 
-        if (r.show_blobs)
+        if (show_blobs)
         {
-            gl::BindTexture(gl::TEXTURE_2D, r.debug_texture);
+            gl::BindTexture(gl::TEXTURE_2D, debug_texture);
             gl.prog.double_normal.set_texture_mult({1, 1});
             gl.prog.double_normal.set_texture_shift({0, 0});
-            gl.prog.double_normal.set_color({ 1, 1, 1, .333f });
-            paints[anim.source % models.size()].draw(gl.prog.double_normal, human_skin, paints[anim.dest % models.size()]);
+            gl.prog.double_normal.set_color({ 1, 1, 1, .389f });
+            paint[anim.source % model.size()].draw(gl.prog.double_normal, human_skin, paint[anim.dest % model.size()]);
         }
     }
 
-    if (r.show_bones)
+    if (show_bones)
     {
         gl.prog.double_fill.use();
         gl.prog.double_fill.set_color({ 1, 1, 1, .7f });
         gl.prog.double_fill.set_interpolation(anim.interpolation);
         gl.prog.double_fill.set_transform(scale_mat);
         gl.prog.double_fill.set_view_transform(math::matrices::translate(gl.draw_size / 2.f));
-        models[anim.source % models.size()].draw_interpolated(gl, models[anim.dest % models.size()]);
+        model[anim.source % model.size()].draw_interpolated(gl, model[anim.dest % model.size()]);
     }
 }
-
-}  // namespace
 
 void room::draw(const graphics::core& gl) const noexcept
 {
@@ -350,7 +350,7 @@ void room::draw(const graphics::core& gl) const noexcept
     draw_text<text_align::center, text_align::center>(*gl.fonts.title, gl.prog.text, "Model", gl.draw_size / 2.f, 48);
 
     gl::LineWidth(2.f);
-    draw_bones(*this, gl,
+    draw_model(gl,
         drawn_model[facing],
         walking_paint[facing],
         model_anim.load(std::memory_order_relaxed));

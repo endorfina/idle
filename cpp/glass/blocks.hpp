@@ -20,40 +20,11 @@
 #pragma once
 
 #include <array>
-#include <tuple>
 #include <math_defines.hpp>
+#include "utility.hpp"
 
 namespace idle::glass
 {
-
-namespace meta
-{
-
-template<std::size_t I = 0, typename Callable, typename...Vars>
-constexpr void tuple_visit(const Callable& call, const std::tuple<Vars...>& tuple) noexcept
-{
-    call(std::get<I>(tuple));
-
-    if constexpr (I + 1 < sizeof...(Vars))
-    {
-        tuple_visit<I + 1, Callable, Vars...>(call, tuple);
-    }
-}
-
-#if !__cpp_lib_constexpr_tuple
-template<std::size_t I = 0, typename...Vars>
-constexpr void tuple_copy(std::tuple<Vars...>& dest, const std::tuple<Vars...>& src) noexcept
-{
-    std::get<I>(dest) = std::get<I>(src);
-
-    if constexpr (I + 1 < sizeof...(Vars))
-    {
-        tuple_copy<I + 1, Vars...>(dest, src);
-    }
-}
-#endif
-
-}  // namespace meta
 
 namespace blocks
 {
@@ -108,7 +79,7 @@ struct joint
     constexpr joint& operator=(const joint& other) noexcept
     {
         root = other.root;
-        meta::tuple_copy(branches, other.branches);
+        utility::tuple_copy(branches, other.branches);
         return *this;
     }
 #endif

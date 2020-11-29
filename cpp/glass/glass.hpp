@@ -27,7 +27,7 @@
 namespace idle::glass::paint
 {
 
-inline constexpr float cell = .5f;
+inline constexpr float cell = .25f;
 
 inline constexpr poly::composition_mesh human_mesh
 {
@@ -46,8 +46,8 @@ inline constexpr poly::composition_mesh human_mesh
 
             skin::equiv_rect
             {
-                point_t{ cell, cell * 1.5f },
-                point_t{ cell, cell * 1.5f }
+                point_t{ 0.f, cell * 5 },
+                point_t{ cell * 2, cell * 3 }
             },
 
             extra::uniform_sym_strip<0, 3>(20.f, -5.f, 5.f)
@@ -61,8 +61,8 @@ inline constexpr poly::composition_mesh human_mesh
 
             skin::equiv_rect
             {
-                point_t{ cell / 2, cell * 1.5f },
-                point_t{ cell / 2, cell }
+                point_t{ cell, cell * 3 },
+                point_t{ cell, cell * 2 }
             },
 
             extra::uniform_sym_strip<0, 7>(9.f, -4.f, 2.f)
@@ -76,8 +76,8 @@ inline constexpr poly::composition_mesh human_mesh
 
             skin::equiv_rect
             {
-                point_t{ 0.f, cell * 1.5f },
-                point_t{ cell / 2, cell }
+                point_t{ 0.f, cell * 3 },
+                point_t{ cell, cell * 2 }
             },
 
             extra::uniform_sym_strip<0, 7>(9.f, -4.f, 2.f)
@@ -91,8 +91,8 @@ inline constexpr poly::composition_mesh human_mesh
 
             skin::equiv_rect
             {
-                point_t{ cell / 2, cell * 3.5f },
-                point_t{ cell / 2, cell / 2 }
+                point_t{ cell, cell * 10 },
+                point_t{ cell, cell }
             },
 
             extra::uniform_sym_strip<>(10.f, -4.f, 2.f)
@@ -106,8 +106,8 @@ inline constexpr poly::composition_mesh human_mesh
 
             skin::equiv_rect
             {
-                point_t{ 0.f, cell * 3.5f },
-                point_t{ cell / 2, cell / 2 }
+                point_t{ 0.f, cell * 10 },
+                point_t{ cell, cell }
             },
 
             extra::uniform_sym_strip<>(10.f, -4.f, 2.f)
@@ -121,8 +121,8 @@ inline constexpr poly::composition_mesh human_mesh
 
             skin::equiv_rect
             {
-                point_t{ cell / 2, cell * 2.5f },
-                point_t{ cell / 2, cell }
+                point_t{ cell, cell * 8 },
+                point_t{ cell, cell * 2 }
             },
 
             extra::uniform_sym_strip<0, 5>(10.f, -4.f, 2.f)
@@ -136,8 +136,8 @@ inline constexpr poly::composition_mesh human_mesh
 
             skin::equiv_rect
             {
-                point_t{ 0.f, cell * 2.5f },
-                point_t{ cell / 2, cell }
+                point_t{ 0.f, cell * 8 },
+                point_t{ cell, cell * 2 }
             },
 
             extra::uniform_sym_strip<0, 5>(10.f, -4.f, 2.f)
@@ -151,13 +151,13 @@ inline constexpr poly::composition_mesh human_mesh
 
             skin::equiv_rect
             {
-                point_t{ 0.f, cell },
-                point_t{ cell / 2, cell / 2 }
+                point_t{ cell * 2, cell * 3 },
+                point_t{ cell, cell }
             },
 
             std::make_tuple(
-                skin::sym{-8.f, 1},
-                skin::sym{-8.f, 0}
+                skin::sym{-9.f, 1},
+                skin::sym{-9.f, 0}
             )
         },
 
@@ -170,12 +170,12 @@ inline constexpr poly::composition_mesh human_mesh
             skin::equiv_rect
             {
                 point_t{ 0.f, 0.f },
-                point_t{ cell, cell }
+                point_t{ cell * 2, cell * 2 }
             },
 
             std::make_tuple(
-                skin::sym{-16.f, 1, 6.f},
-                skin::sym{-16.f, 0, -6.f}
+                skin::sym{-18.f, 1, 6.f},
+                skin::sym{-18.f, 0, -6.f}
             )
         }
     ),

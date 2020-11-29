@@ -78,7 +78,7 @@ private:
 
         if constexpr (sizeof...(Vars) > 1)
         {
-            meta::tuple_visit<1>([&](const auto& it)
+            utility::tuple_visit<1>([&](const auto& it)
                 {
                     lengths[index.lengths++] = index.table;
                     table[index.table++] = table[branchoff_point];
