@@ -71,7 +71,7 @@ private:
     constexpr meta::index_pair to_lines(meta::index_pair index, const blocks::joint<Vars...>& j, const mat4x4_noopt_t& mat) noexcept
     {
         const auto rot = j.root.get_transform() * mat;
-        const auto branchoff_point = index.table;
+        [[maybe_unused]] const auto branchoff_point = index.table;
 
         table[index.table++] = rot * point_3d_t{};
         index = to_lines(index, j.template branch<0>(), rot);

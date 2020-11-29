@@ -135,7 +135,7 @@ std::unique_ptr<GLuint[]> trash_content;
 
 void database::destroy_textures() noexcept
 {
-    std::lock_guard<std::mutex> lock(map_mutex);
+    std::unique_lock<std::mutex> lock(map_mutex);
     if (!map.size()) return;
 
     const auto size = map.size();
@@ -143,10 +143,11 @@ void database::destroy_textures() noexcept
     auto ptr = out.get();
     for (const auto& it : map)
     {
-        LOGDD("Marking tex %u for destruction", it.second);
+        LOGDD("Marking tex %u for destruction", it.second.id);
         *ptr++ = it.second.id;
     }
     map.clear();
+    lock.unlock();
 
     while (!!trash_size.load(std::memory_order_acquire)) std::this_thread::yield();
 

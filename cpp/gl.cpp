@@ -416,7 +416,12 @@ void double_base_program_t::set_interpolation(const GLfloat x) const noexcept
 
 void double_vertex_program_t::set_texture_shift(const idle::point_t pt) const noexcept
 {
-    gl::Uniform2f(shift_handle, pt.x, pt.y);
+    gl::Uniform2f(face_shift_handle, pt.x, pt.y);
+}
+
+void double_vertex_program_t::set_texture_shift_internal(const idle::point_t pt) const noexcept
+{
+    gl::Uniform2f(internal_shift_handle, pt.x, pt.y);
 }
 
 void double_vertex_program_t::set_texture_mult(const idle::point_t pt) const noexcept
@@ -572,10 +577,12 @@ void double_vertex_program_t::prepare() noexcept
 {
     textured_program_t::prepare();
     double_base_program_t::prepare_headless(program_id);
-    shift_handle = load_uniform(program_id, "u_map_shift");
+    internal_shift_handle = load_uniform(program_id, "u_map_shift1");
+    face_shift_handle = load_uniform(program_id, "u_map_shift2");
     multiplier_handle = load_uniform(program_id, "u_map_mult");
 
     set_texture_shift({0, 0});
+    set_texture_shift_internal({0, 0});
     set_texture_mult({1, 1});
 }
 

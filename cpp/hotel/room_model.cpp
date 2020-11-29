@@ -309,7 +309,10 @@ void room::draw_model(const graphics::core& gl, const Model& model, const Paint&
             gl.prog.double_normal.set_texture_mult(char_texture.area / 8.f);
             gl.prog.double_normal.set_texture_shift({facing / static_cast<float>(drawn_model.size()), 0});
             gl.prog.double_normal.set_color({ 1, 1, 1 });
-            paint[anim.source % model.size()].draw(gl.prog.double_normal, human_skin, paint[anim.dest % model.size()]);
+            paint[anim.source % model.size()].draw(
+                    gl.prog.double_normal,
+                    paint[anim.dest % model.size()],
+                    human_skin);
         }
 
         if (show_blobs)
@@ -318,7 +321,10 @@ void room::draw_model(const graphics::core& gl, const Model& model, const Paint&
             gl.prog.double_normal.set_texture_mult(debug_texture.area);
             gl.prog.double_normal.set_texture_shift({0, 0});
             gl.prog.double_normal.set_color({ 1, 1, 1, .389f });
-            paint[anim.source % model.size()].draw(gl.prog.double_normal, human_skin, paint[anim.dest % model.size()]);
+            paint[anim.source % model.size()].draw(
+                    gl.prog.double_normal,
+                    paint[anim.dest % model.size()],
+                    human_skin);
         }
     }
 

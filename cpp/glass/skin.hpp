@@ -74,8 +74,10 @@ struct drawable_strip
     using vertex_table_type = std::array<point_t, Size>;
     vertex_table_type mesh;
 
+    static constexpr bool extra_arguments = false;
+
     template<typename Program>
-    void draw_elem(const Program& prog, const vertex_table_type& texture, const drawable_strip& another) const noexcept
+    void draw_elem(const Program& prog, const drawable_strip& another, const vertex_table_type& texture) const noexcept
     {
         prog.position_vertex(reinterpret_cast<const GLfloat*>(mesh.data()));
         prog.destination_vertex(reinterpret_cast<const GLfloat*>(another.mesh.data()));
@@ -84,11 +86,11 @@ struct drawable_strip
     }
 };
 
-template<auto...Sizes>
+template<typename...Links>
 struct drawable_strip_mesh
 {
-    using vertex_tuple_type = std::tuple<drawable_strip<Sizes>...>;
-    using texture_tuple_type = std::tuple<typename drawable_strip<Sizes>::vertex_table_type...>;
+    using vertex_tuple_type = std::tuple<Links...>;
+    using texture_tuple_type = std::tuple<typename Links::vertex_table_type...>;
     vertex_tuple_type strip_tuple;
 
 #if !__cpp_lib_constexpr_tuple
@@ -99,27 +101,40 @@ struct drawable_strip_mesh
     }
 #endif
 
-    template<unsigned Index, typename Program>
+    template<unsigned Index, typename Program, typename...Extra>
     void draw(const Program& program,
+            const drawable_strip_mesh& another,
             const texture_tuple_type& texture_vertices,
-            const drawable_strip_mesh& another) const noexcept
+            const Extra&...extra) const noexcept
     {
-        static_assert(Index < sizeof...(Sizes));
-        std::get<Index>(strip_tuple).draw_elem(program,
-                            std::get<Index>(texture_vertices),
-                            std::get<Index>(another.strip_tuple));
+        static_assert(Index < sizeof...(Links));
+        using frag_type = typename std::tuple_element<Index, vertex_tuple_type>::type;
+        if constexpr(frag_type::extra_arguments)
+        {
+            std::get<Index>(strip_tuple).draw_elem(program,
+                                std::get<Index>(another.strip_tuple),
+                                std::get<Index>(texture_vertices),
+                                extra...);
+        }
+        else
+        {
+            std::get<Index>(strip_tuple).draw_elem(program,
+                                std::get<Index>(another.strip_tuple),
+                                std::get<Index>(texture_vertices));
+        }
     }
 
-    template<unsigned Index = 0, typename Program>
+    template<unsigned Index = 0, typename Program, typename...Extra>
     void draw_all(const Program& program,
+            const drawable_strip_mesh& another,
             const texture_tuple_type& texture_vertices,
-            const drawable_strip_mesh& another) const noexcept
+            const Extra&...extra) const noexcept
     {
-        draw<Index>(program, texture_vertices, another);
+        draw<Index>(program, another, texture_vertices, extra...);
 
-        if constexpr (Index + 1 < sizeof...(Sizes))
+        if constexpr (Index + 1 < sizeof...(Links))
         {
-            draw_all<Index + 1, Program>(program, texture_vertices, another);
+            draw_all<Index + 1, Program>(program, another, texture_vertices, extra...);
         }
     }
 };
@@ -304,7 +319,8 @@ protected:
     }
 
 public:
-    using returned_pair = std::pair<meta::drawable_strip<output_nodes>, float>;
+    using output_vertex_type = meta::drawable_strip<output_nodes>;
+    using returned_pair = std::pair<output_vertex_type, float>;
 
     template<typename Tree>
     constexpr returned_pair form_blob(const Tree& input) const noexcept
@@ -346,7 +362,7 @@ struct composition_mesh
 #endif
 
     using z_array_t = std::array<float, sizeof...(Links)>;
-    using output_mesh = meta::drawable_strip_mesh<Links::output_nodes...>;
+    using output_mesh = meta::drawable_strip_mesh<typename Links::output_vertex_type...>;
     using texture_mesh = typename output_mesh::texture_tuple_type;
 
 protected:
@@ -601,22 +617,23 @@ constexpr auto uniform_sym_strip(const float width, const float begin, const flo
 namespace meta
 {
 
-template<auto...Sizes>
+template<typename...Links>
 struct default_drawable
 {
-    using drawable_t = meta::drawable_strip_mesh<Sizes...>;
+    using drawable_t = meta::drawable_strip_mesh<Links...>;
     drawable_t drawable;
 
     constexpr default_drawable(const drawable_t& m) noexcept
         : drawable{m}
     {}
 
-    template<typename Program>
+    template<typename Program, typename...Extra>
     void draw(const Program& program,
+            const default_drawable& another,
             const typename drawable_t::texture_tuple_type& texture_vertices,
-            const default_drawable& another) const noexcept
+            const Extra&...extra) const noexcept
     {
-        drawable.draw_all(program, texture_vertices, another.drawable);
+        drawable.draw_all(program, another.drawable, texture_vertices, extra...);
     }
 };
 
@@ -673,11 +690,12 @@ public:
         }
     }
 
-    template<typename Program, typename Drawable>
+    template<typename Program, typename Drawable, typename...Extra>
     void draw(const Program& program,
             const Drawable& drawable,
+            const Drawable& another,
             const typename Drawable::texture_tuple_type& texture_vertices,
-            const Drawable& another) const noexcept
+            const Extra&...extra) const noexcept
     {
         for (const auto index : table)
             switch(index)
@@ -685,7 +703,7 @@ public:
 #define IDLE_DRAWABLE(num) \
             case num: \
                 if constexpr ((num) < Size) { \
-                    drawable.template draw<num>(program, texture_vertices, another); \
+                    drawable.template draw<num>(program, another, texture_vertices, extra...); \
                 } \
                 break;
 
@@ -711,23 +729,25 @@ public:
     }
 };
 
-template<auto...Sizes>
-struct default_humanoid
+template<typename...Links>
+struct default_depth_check
 {
-    using drawable_t = meta::drawable_strip_mesh<Sizes...>;
+    using drawable_t = meta::drawable_strip_mesh<Links...>;
     drawable_t drawable;
-    drawing_precedence<sizeof...(Sizes)> precedence;
+    drawing_precedence<sizeof...(Links)> precedence;
 
-    constexpr default_humanoid(const drawable_t& m, const std::array<float, sizeof...(Sizes)>& zs) noexcept
+    constexpr default_depth_check(const drawable_t& m, const std::array<float, sizeof...(Links)>& zs) noexcept
         : drawable{m}, precedence{zs}
     {}
 
-    template<typename Program>
+    template<typename Program, typename...Extra>
     void draw(const Program& program,
+            const default_depth_check& another,
             const typename drawable_t::texture_tuple_type& texture_vertices,
-            const default_humanoid& another) const noexcept
+            const Extra&...extra) const noexcept
     {
-        precedence.template draw<Program, drawable_t>(program, drawable, texture_vertices, another.drawable);
+        precedence.template draw<Program, drawable_t, Extra...>(
+                program, drawable, another.drawable, texture_vertices, extra...);
     }
 };
 
@@ -743,7 +763,7 @@ inline constexpr auto default_procedure = [] (const auto& drawable, const auto& 
 
 inline constexpr auto humanoid = [] (const auto& drawable, const auto& average_depth_array)
 {
-    return meta::default_humanoid{ drawable, average_depth_array };
+    return meta::default_depth_check{ drawable, average_depth_array };
 };
 
 }  // namespace drawing
