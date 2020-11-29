@@ -26,14 +26,20 @@
 namespace idle
 {
 
-struct png_image_data
+struct png_base_data
+{
+    unsigned width, height, size;
+
+protected:
+    std::vector<unsigned char> decode_png_buffer(const unsigned char * const src, const size_t datalen) noexcept;
+};
+
+struct png_image_data : png_base_data
 {
     std::unique_ptr<unsigned char[]> image;
-    unsigned width, height, real_width = 1, real_height = 1, size;
+    unsigned real_width = 1, real_height = 1;
 
 private:
-    std::vector<unsigned char> decode_png_buffer(const unsigned char * const src, const size_t datalen) noexcept;
-
     void decode(const std::string_view source) noexcept;
 
 public:

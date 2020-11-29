@@ -55,7 +55,7 @@ bool verify_file_extension(const char * const fn) noexcept
 
 }  // namespace
 
-std::vector<unsigned char> png_image_data::decode_png_buffer(const unsigned char * const src, const size_t datalen) noexcept
+std::vector<unsigned char> png_base_data::decode_png_buffer(const unsigned char * const src, const size_t datalen) noexcept
 {
     std::vector<unsigned char> out;
     lodepng::State st;

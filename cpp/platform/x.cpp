@@ -32,6 +32,7 @@
 #include "context.hpp"
 #include "asset_access.hpp"
 #include <almost_cpp20.hpp>
+#include "../png/png.hpp"
 
 namespace platform
 {
@@ -58,10 +59,6 @@ struct x11_display
     }
 };
 
-#ifdef X11_USE_CLIENTMESSAGE
-constinit Atom wmDeleteMessage;
-#endif
-
 int x_fatal_error_handler(Display *) noexcept
 {
     LOGE(u8"\U0001F480 (Display destroyed)");
@@ -79,6 +76,18 @@ int x_error_handler(Display *dpy, XErrorEvent *ev) noexcept
 static_assert(sizeof(x11_display) <= sizeof(context::data_t));
 
 constexpr unsigned initial_width = 1280, initial_height = 720;
+
+struct png_xlib_icon_data : idle::png_base_data
+{
+    std::unique_ptr<unsigned long[]> image;
+    unsigned buffer_length;
+
+private:
+    void decode(const std::string_view source) noexcept;
+
+public:
+    png_xlib_icon_data(const char* filename) noexcept;
+};
 
 bool create_window(x11_display& x) noexcept
 {
@@ -188,6 +197,16 @@ bool create_window(x11_display& x) noexcept
         XFreeColormap(new_display.get(), x.colormap);
         return false;
     }
+
+    Atom wm_icon = XInternAtom(new_display.get(), "_NET_WM_ICON", False);
+    Atom wm_cardinal = XInternAtom(new_display.get(), "CARDINAL", False);
+
+    if (const png_xlib_icon_data icon_file{ "icon.png" }; icon_file.image)
+    {
+        XChangeProperty(new_display.get(), x.window, wm_icon, wm_cardinal, 32, PropModeReplace,
+                reinterpret_cast<const unsigned char*>(icon_file.image.get()), icon_file.buffer_length);
+    }
+
     XStoreName(new_display.get(), x.window, "idle/crimson");
     XMapWindow(new_display.get(), x.window);
 
@@ -206,8 +225,8 @@ bool create_window(x11_display& x) noexcept
     }
 
 #ifdef X11_USE_CLIENTMESSAGE
-    wmDeleteMessage = XInternAtom(new_display.get(), "WM_DELETE_WINDOW", False);
-    XSetWMProtocols(new_display.get(), x.window, &wmDeleteMessage, 1);
+    Atom wm_delete_message = XInternAtom(new_display.get(), "WM_DELETE_WINDOW", False);
+    XSetWMProtocols(new_display.get(), x.window, &wm_delete_message, 1);
 #endif
 
     // Sync to ensure any errors generated are processed.
@@ -239,6 +258,42 @@ bool create_window(x11_display& x) noexcept
     x.display = new_display.release();
     return true;
 }
+
+void png_xlib_icon_data::decode(const std::string_view source) noexcept
+{
+    if (const auto temp = decode_png_buffer(reinterpret_cast<const unsigned char*>(source.data()), source.size()); !!temp.size())
+    {
+        buffer_length = 2 + width * height;
+        image = std::make_unique<unsigned long[]>(buffer_length);
+        image[0] = static_cast<uint32_t>(width);
+        image[1] = static_cast<uint32_t>(height);
+
+        size_t i = 2;
+
+        for (unsigned y = 0; y < height; ++y)
+        for (unsigned x = 0; x < width; ++x)
+        {
+            const auto pos = (y * width + x) * size;
+            image[i++] = (static_cast<uint32_t>(size > 3 ? temp[pos + 3] : 0xff) << 24)
+                | (static_cast<uint32_t>(temp[pos]) << 16)
+                | (static_cast<uint32_t>(temp[pos + 1]) << 8)
+                | temp[pos + 2];
+        }
+    }
+    else
+    {
+        LOGE("Failed to load PNG icon");
+    }
+}
+
+png_xlib_icon_data::png_xlib_icon_data(const char * fn) noexcept
+{
+    if (const auto b = platform::asset::hold(fn))
+    {
+        decode(b.view());
+    }
+}
+
 
 } // namespace
 
