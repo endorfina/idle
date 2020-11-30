@@ -279,7 +279,7 @@ bool core::resize(const buffer_size window_size) noexcept
         return false;
     }
 
-    LOGI("Window size set to %i x %i", window_size.x, window_size.y);
+    LOGD("Window size set to %i x %i", window_size.x, window_size.y);
 
     constexpr unsigned draw_height = 360;
     constexpr unsigned main_buffer_height = 720;

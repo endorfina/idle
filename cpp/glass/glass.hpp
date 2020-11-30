@@ -32,7 +32,7 @@ inline constexpr float cell = .25f;
 inline constexpr poly::composition_mesh human_mesh
 {
     std::make_tuple(
-        poly::blob_mesh
+        poly::torso_mesh
         {
             selector::join
             {
@@ -43,6 +43,22 @@ inline constexpr poly::composition_mesh human_mesh
             },
 
             extra::smooth,
+
+            selector::join
+            {
+                std::make_tuple(
+                    selector::segment<parts::upperbody, 1>{},
+                    selector::split<parts::shoulders, 2>{}
+                )
+            },
+
+            selector::join
+            {
+                std::make_tuple(
+                    selector::segment<parts::lowerbody, 1>{},
+                    selector::split<parts::hips, 2>{}
+                )
+            },
 
             skin::equiv_rect
             {
@@ -65,7 +81,7 @@ inline constexpr poly::composition_mesh human_mesh
                 point_t{ cell, cell * 2 }
             },
 
-            extra::uniform_sym_strip<0, 7>(9.f, -4.f, 2.f)
+            extra::uniform_sym_strip<0, 7>(9.f, -2.f, 2.f)
         },
 
         poly::blob_mesh
@@ -80,7 +96,7 @@ inline constexpr poly::composition_mesh human_mesh
                 point_t{ cell, cell * 2 }
             },
 
-            extra::uniform_sym_strip<0, 7>(9.f, -4.f, 2.f)
+            extra::uniform_sym_strip<0, 7>(9.f, -2.f, 2.f)
         },
 
         poly::blob_mesh
@@ -161,11 +177,16 @@ inline constexpr poly::composition_mesh human_mesh
             )
         },
 
-        poly::blob_mesh
+        poly::face_mesh
         {
             selector::segment<parts::head, 2>{1},
 
             extra::smooth,
+
+            {
+                skin::sym{-19.f, 1, 6.f},
+                skin::sym{-19.f, 0, -6.f}
+            },
 
             skin::equiv_rect
             {
@@ -173,10 +194,17 @@ inline constexpr poly::composition_mesh human_mesh
                 point_t{ cell * 2, cell * 2 }
             },
 
-            std::make_tuple(
-                skin::sym{-18.f, 1, 6.f},
-                skin::sym{-18.f, 0, -6.f}
-            )
+            skin::equiv_rect
+            {
+                point_t{ cell * 2, 0.f },
+                point_t{ cell * 2, cell }
+            },
+
+            skin::equiv_rect
+            {
+                point_t{ cell * 3, cell * 3 },
+                point_t{ cell, cell }
+            },
         }
     ),
 

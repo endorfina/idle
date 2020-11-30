@@ -302,6 +302,7 @@ void room::draw_model(const graphics::core& gl, const Model& model, const Paint&
         gl.prog.double_normal.set_interpolation(anim.interpolation);
         gl.prog.double_normal.set_transform(scale_mat);
         gl.prog.double_normal.set_view_transform(math::matrices::translate(gl.draw_size / 2.f));
+        const bool data = true;
 
         if (show_skin)
         {
@@ -312,7 +313,7 @@ void room::draw_model(const graphics::core& gl, const Model& model, const Paint&
             paint[anim.source % model.size()].draw(
                     gl.prog.double_normal,
                     paint[anim.dest % model.size()],
-                    human_skin);
+                    human_skin, data);
         }
 
         if (show_blobs)
@@ -324,7 +325,7 @@ void room::draw_model(const graphics::core& gl, const Model& model, const Paint&
             paint[anim.source % model.size()].draw(
                     gl.prog.double_normal,
                     paint[anim.dest % model.size()],
-                    human_skin);
+                    human_skin, data);
         }
     }
 
@@ -420,6 +421,12 @@ std::optional<keyring::variant> room::step(const pointer_wrapper& pointer) noexc
                     show_bones = !show_bones;
                     break;
 
+                case function::reload_images:
+                    pool.db.destroy_textures();
+                    pool.load_image("debug_tex.png", debug_texture);
+                    pool.load_image("octavia_tex.png", char_texture, gl::NEAREST);
+                    break;
+
                 default:
                     break;
             }
@@ -437,7 +444,7 @@ void room::on_resize(const point_t screen_size) noexcept
 room::room() noexcept
 {
     pool.load_image("debug_tex.png", debug_texture);
-    pool.load_image("char_tex.png", char_texture, gl::NEAREST);
+    pool.load_image("octavia_tex.png", char_texture, gl::NEAREST);
 }
 
 }  // namespace idle::hotel::model

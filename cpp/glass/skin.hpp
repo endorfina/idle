@@ -68,6 +68,34 @@ constexpr auto flatten(const std::array<point_3d_t, Size>& input) noexcept
     return out;
 }
 
+struct drawable_face
+{
+    using vertex_table_type = std::array<std::array<point_t, 4>, 3>;
+    vertex_table_type mesh;
+
+    static constexpr bool extra_arguments = true;
+
+private:
+    template<typename Program>
+    void draw_single(const Program& prog, const drawable_face& another, const vertex_table_type& texture, const unsigned index) const noexcept
+    {
+        prog.position_vertex(reinterpret_cast<const GLfloat*>(mesh[index].data()));
+        prog.destination_vertex(reinterpret_cast<const GLfloat*>(another.mesh[index].data()));
+        prog.texture_vertex(reinterpret_cast<const GLfloat*>(texture[index].data()));
+        gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
+    }
+
+public:
+    template<typename Program, typename Data>
+    void draw_elem(const Program& prog, const drawable_face& another, const vertex_table_type& texture, const Data& data) const noexcept
+    {
+        draw_single<Program>(prog, another, texture, 0);
+        draw_single<Program>(prog, another, texture, 1);
+        draw_single<Program>(prog, another, texture, 2);
+        prog.set_texture_shift_internal({0, 0});
+    }
+};
+
 template<auto Size>
 struct drawable_strip
 {
@@ -199,6 +227,13 @@ constexpr auto smooth_vectors(const std::array<point_3d_t, Size>& input) noexcep
     }
 }
 
+constexpr float angle_between(const mesh_node& a, const mesh_node& b) noexcept
+{
+    const auto prod = a.pl.product(b.pl);
+    const auto det = a.pl.determinant(b.pl);
+    return math::const_math::atan2(det, prod);
+}
+
 template<auto Size>
 constexpr auto curved_vectors(const std::array<point_3d_t, Size>& input) noexcept
 {
@@ -217,10 +252,7 @@ constexpr auto curved_vectors(const std::array<point_3d_t, Size>& input) noexcep
     {
         const auto a = vec1[i - 1];
         const auto b = vec1[i];
-        const auto prod = a.pl.product(b.pl);
-        const auto det = a.pl.determinant(b.pl);
-        const auto angle = math::const_math::atan2(det, prod);
-        const auto val = angle / math::tau / 2;
+        const auto val = angle_between(a, b) / math::tau / 2;
         vec2[i * 2 - 1] += a.pp * (a.pt.distance(b.pt)) * val;
         vec2[i * 2 + 1] += b.pp * (b.pt.distance(vec1[i + 1].pt)) * val;
     }
@@ -243,6 +275,52 @@ constexpr auto make(const Painter& painter, const std::array<Rig, Size>& animati
 
     return std::array { face(math::degtorad(static_cast<float>(Deg))) ... };
 }
+
+namespace skin
+{
+
+struct sym
+{
+    float width;
+    unsigned input_index;
+    float shift = 0.f;
+
+    static constexpr unsigned output_nodes = 2;
+    static constexpr unsigned input_nodes = 1;
+
+    template<auto Size>
+    constexpr void chew(std::array<point_t, Size>& out, const unsigned index, const meta::mesh_node& input) const noexcept
+    {
+        const auto shift_vec = input.pp * (width / 2);
+        const auto shift_pos = input.pt - input.pl * shift;
+        out[index] = shift_pos - shift_vec;
+        out[index + 1] = shift_pos + shift_vec;
+    }
+};
+
+struct equiv_rect
+{
+    point_t start, size;
+
+    template<unsigned Parts, auto Size>
+    constexpr point_t chew(std::array<point_t, Size>& out, point_t pos, const unsigned index) const noexcept
+    {
+        out[index] = pos;
+        out[index + 1] = { pos.x + size.x, pos.y };
+        pos.y += size.y / (Parts - 1);
+        return pos;
+    }
+};
+
+struct rect_fragment
+{
+    equiv_rect tex;
+    std::array<sym, 2> vert;
+
+    static constexpr unsigned output_nodes = 4;
+};
+
+}  // namespace skin
 
 namespace poly
 {
@@ -308,9 +386,9 @@ protected:
     constexpr void texture(output_array_t& out, point_t pos, const unsigned index) const noexcept
     {
         using frag_type = typename std::tuple_element<Index, tuple_type>::type;
-        const frag_type& fragment = std::get<Index>(chain);
+        // const frag_type& fragment = std::get<Index>(chain);
 
-        pos = texture_geometry.template chew<sizeof...(Links)>(out, pos, index, fragment);
+        pos = texture_geometry.template chew<sizeof...(Links)>(out, pos, index);
 
         if constexpr (Index + 1 < sizeof...(Links))
         {
@@ -328,7 +406,7 @@ public:
         const auto select = input_select(input);
         const auto z = meta::average_depth(select);
 
-        meta::drawable_strip<output_nodes> out{};
+        output_vertex_type out{};
         vertex(out.mesh, 0, input_transform(select));
         return { out, z };
     }
@@ -337,6 +415,149 @@ public:
     {
         output_array_t out{};
         texture(out, texture_geometry.start, 0);
+        return out;
+    }
+};
+
+template<typename Sel1, typename Transform, typename Sel2, typename Sel3>
+struct torso_mesh : blob_mesh<Sel1, Transform, skin::equiv_rect, skin::sym, skin::sym, skin::sym>
+{
+    using parent_blob_type = blob_mesh<Sel1, Transform, skin::equiv_rect, skin::sym, skin::sym, skin::sym>;
+
+    Sel2 shoulder_select;
+    Sel3 hip_select;
+
+    constexpr torso_mesh(
+            const Sel1& sel1,
+            const Transform& transform,
+            const Sel2& sel2,
+            const Sel3& sel3,
+            const skin::equiv_rect& rect,
+            const typename parent_blob_type::tuple_type& syms) noexcept
+    :
+        parent_blob_type{sel1, transform, rect, syms},
+        shoulder_select{sel2},
+        hip_select{sel3}
+    {}
+
+#if !__cpp_lib_constexpr_tuple
+    constexpr torso_mesh& operator=(const torso_mesh& other) noexcept
+    {
+        input_select = other.input_select;
+        input_transform = other.input_transform;
+        shoulder_select = other.shoulder_select;
+        hip_select = other.hip_select;
+        tex = other.tex;
+        utility::tuple_copy(verts, other.verts);
+        return *this;
+    }
+#endif
+
+    template<typename Tree>
+    constexpr auto form_blob(const Tree& tree) const noexcept
+    {
+        constexpr auto bend = [] (const std::array<meta::mesh_node, 3>& node) -> float
+        {
+            const auto angle = meta::angle_between(node[0], node[1]);
+            // const auto cos2 = math::const_math::cos(angle * 2);
+            // return (cos2 + 1) / 9;
+            const auto a = math::const_math::abs(angle);
+            const auto b = math::const_math::abs(a - math::tau_4);
+            const auto c = std::min(b, .8f);
+            return c / 6;
+        };
+
+        const auto shoulders = bend(meta::extrapolate_vectors(meta::flatten(shoulder_select(tree))));
+        const auto hips = bend(meta::extrapolate_vectors(meta::flatten(hip_select(tree))));
+
+        auto out = parent_blob_type::form_blob(tree);
+        auto& mesh = out.first.mesh;
+
+        constexpr auto morph = [] (point_t& a, point_t& b, const float val) -> void
+        {
+            const auto ca = a;
+            const auto cb = b;
+            a = ca * (1 - val) + cb * val;
+            b = cb * (1 - val) + ca * val;
+        };
+
+        morph(mesh[0], mesh[1], shoulders);
+        morph(mesh[4], mesh[5], hips);
+
+        return out;
+    }
+};
+
+template<typename Selector, typename Transform>
+struct face_mesh
+{
+    Selector input_select;
+    Transform input_transform;
+    std::array<skin::sym, 2> verts;
+
+    static constexpr unsigned size = 3;
+    std::array<skin::equiv_rect, size> tex_rects;
+
+    template<typename...Rects>
+    constexpr face_mesh(
+            const Selector& select,
+            const Transform& transform,
+            const std::array<skin::sym, 2>& syms,
+            const Rects&...r) noexcept
+    :
+        input_select{select},
+        input_transform{transform},
+        verts{syms},
+        tex_rects{r...}
+    {}
+
+    using output_array_t = std::array<std::array<point_t, 4>, size>;
+    using output_vertex_type = meta::drawable_face;
+    using returned_pair = std::pair<output_vertex_type, float>;
+
+    template<typename Tree>
+    constexpr returned_pair form_blob(const Tree& tree) const noexcept
+    {
+        const auto select = input_select(tree);
+        const auto z = meta::average_depth(select);
+        const auto input = input_transform(select);
+
+        output_vertex_type out{};
+        {
+            auto& dest = out.mesh[0];
+            verts[0].chew(dest, 0, input[verts[0].input_index]);
+            verts[1].chew(dest, skin::sym::output_nodes, input[verts[1].input_index]);
+        }
+        {
+            const auto& src = out.mesh[0];
+            out.mesh[1] = {
+                src[0] * .75f + src[2] * .25f,
+                src[1] * .75f + src[3] * .25f,
+                src[2] * .75f + src[0] * .25f,
+                src[3] * .75f + src[1] * .25f
+            };
+
+            out.mesh[2] = {
+                point_t{ src[0].x * .8f + src[1].x * .2f, (src[0].y + src[2].y) * .5f },
+                point_t{ src[1].x * .8f + src[0].x * .2f, (src[1].y + src[3].y) * .5f },
+                src[2] * .8f + src[3] * .2f,
+                src[3] * .8f + src[2] * .2f
+            };
+        }
+        return { out, z };
+    }
+
+    constexpr auto tex_blob() const noexcept
+    {
+        output_array_t out{};
+        for (unsigned i = 0; i < size; ++i)
+        {
+            const auto& geometry = tex_rects[i];
+            auto& dest = out[i];
+            auto pos = geometry.start;
+            pos = geometry.chew<2>(dest, pos, 0);
+            geometry.chew<2>(dest, pos, skin::sym::output_nodes);
+        }
         return out;
     }
 };
@@ -414,44 +635,6 @@ public:
 };
 
 }  // namespace poly
-
-namespace skin
-{
-
-struct sym
-{
-    float width;
-    unsigned input_index;
-    float shift = 0.f;
-
-    static constexpr unsigned output_nodes = 2;
-    static constexpr unsigned input_nodes = 1;
-
-    template<auto Size>
-    constexpr void chew(std::array<point_t, Size>& out, const unsigned index, const meta::mesh_node& input) const noexcept
-    {
-        const auto shift_vec = input.pp * (width / 2);
-        const auto shift_pos = input.pt - input.pl * shift;
-        out[index] = shift_pos - shift_vec;
-        out[index + 1] = shift_pos + shift_vec;
-    }
-};
-
-struct equiv_rect
-{
-    point_t start, size;
-
-    template<unsigned Parts, auto Size>
-    constexpr point_t chew(std::array<point_t, Size>& out, point_t pos, const unsigned index, const sym&) const noexcept
-    {
-        out[index] = pos;
-        out[index + 1] = { pos.x + size.x, pos.y };
-        pos.y += size.y / (Parts - 1);
-        return pos;
-    }
-};
-
-}  // namespace skin
 
 namespace selector
 {

@@ -38,7 +38,13 @@ struct animation
 
 enum class function : unsigned char
 {
-    none, show_bones, show_skin, show_blobs, rotate_model, exit_landing
+    none,
+    show_bones,
+    show_skin,
+    show_blobs,
+    rotate_model,
+    reload_images,
+    exit_landing
 };
 
 template<function Id, int X, int Y, unsigned width, unsigned height>
@@ -61,6 +67,9 @@ struct model_button : gui::shapes::button<gui::positions::edge_hugger<X, Y>, wid
 
                 case function::rotate_model:
                     return { "rot", { .5f, .5f, 1.f } };
+
+                case function::reload_images:
+                    return { "reld", { .5f, .8f, .9f } };
 
                 case function::exit_landing:
                     return { "land", { .6f, .6f, .6f } };
@@ -89,6 +98,7 @@ struct room : image_loader
 
     using gui_t = gui::interface
         <
+            control_button<function::reload_images, -260>,
             control_button<function::show_bones, -220>,
             control_button<function::show_skin, -180>,
             control_button<function::show_blobs, -140>,
