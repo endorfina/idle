@@ -855,7 +855,7 @@ public:
             for (unsigned char i = 0; i < Size - 1; ++i)
             {
                 const auto temp = work[i];
-                if (temp.second < work[i + 1].second)
+                if (temp.second > work[i + 1].second)
                 {
 #if __cpp_lib_constexpr_utility
                     work[i] = work[i + 1];
