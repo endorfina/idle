@@ -231,9 +231,10 @@ constexpr auto smooth_vectors(const std::array<point_3d_t, Size>& input) noexcep
 
 constexpr float angle_between(const mesh_node& a, const mesh_node& b) noexcept
 {
-    const auto prod = a.pl.product(b.pl);
+    // const auto prod = a.pl.product(b.pl);
     const auto det = a.pl.determinant(b.pl);
-    return math::const_math::atan2(det, prod);
+    // return math::const_math::atan2(det, prod);
+    return math::ce::asin(det);
 }
 
 template<auto Size>

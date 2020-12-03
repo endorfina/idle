@@ -208,40 +208,10 @@ constexpr T tan(T x) noexcept
     return std::numeric_limits<T>::infinity();
 }
 
+
+
 namespace detail
 {
-    template<floating T>
-    constexpr T atan_term(T x2, int k) noexcept
-    {
-        return (T{2} * static_cast<T>(k) * x2)
-            / ((T{2} * static_cast<T>(k) + T{1}) * (T{1} + x2));
-    }
-
-    template<floating T>
-    constexpr T atan_product(const T val, int lim) noexcept
-    {
-        auto ret = T{1};
-        do
-        {
-            ret *= atan_term(val * val, lim);
-        }
-        while (--lim > 0);
-        return ret;
-    }
-
-    template<floating T>
-    constexpr T atan_sum(const T x, T sum, int n) noexcept
-    {
-        while (true)
-        {
-            const T new_sum = sum + atan_product(x, n);
-            if (epsilon_equal(sum, new_sum))
-                return sum;
-            sum = new_sum;
-            ++n;
-        }
-    }
-
     template<floating T>
     constexpr T inverse_trigonometry(const T x, T sum, int n, T t) noexcept
     {
@@ -278,26 +248,6 @@ constexpr T acos(T x) noexcept
         return 0.f;
 
     return tau_4 - asin(x);
-}
-
-template<floating T>
-constexpr T atan(T x) noexcept
-{
-    return x / (T{1} + x * x) * detail::atan_sum(x, T{1}, 1);
-}
-
-template<floating T>
-constexpr T atan2(T x, T y) noexcept
-{
-    if (x > 0)
-        return atan(y/x);
-    if (y >= 0 && x < 0)
-        return atan(y/x) + static_cast<T>(tau_2);
-    if (y < 0 && x < 0)
-        return atan(y/x) - static_cast<T>(tau_2);
-    if (y > 0 && x == 0)
-        return static_cast<T>(tau_4);
-    return -static_cast<T>(tau_4);
 }
 
 }  // namespace ce
