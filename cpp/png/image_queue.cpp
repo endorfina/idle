@@ -59,9 +59,7 @@ texture database::load_from_assets(const char * filename, GLint quality) noexcep
                 gl::CLAMP_TO_EDGE,
                 std::move(picture.image));
 
-        std::lock_guard<std::mutex> lock(map_mutex);
-        map.try_emplace(fn_view, tex);
-        return
+        const texture out
         {
             tex,
             {
@@ -69,6 +67,9 @@ texture database::load_from_assets(const char * filename, GLint quality) noexcep
                 static_cast<float>(picture.height) / static_cast<float>(picture.real_height)
             }
         };
+        std::lock_guard<std::mutex> lock(map_mutex);
+        map.try_emplace(fn_view, out);
+        return out;
     }
 }
 
