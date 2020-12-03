@@ -442,19 +442,6 @@ struct torso_mesh : blob_mesh<Sel1, Transform, skin::equiv_rect, skin::sym, skin
         hip_select{sel3}
     {}
 
-#if !__cpp_lib_constexpr_tuple
-    constexpr torso_mesh& operator=(const torso_mesh& other) noexcept
-    {
-        input_select = other.input_select;
-        input_transform = other.input_transform;
-        shoulder_select = other.shoulder_select;
-        hip_select = other.hip_select;
-        tex = other.tex;
-        utility::tuple_copy(verts, other.verts);
-        return *this;
-    }
-#endif
-
     template<typename Tree>
     constexpr auto form_blob(const Tree& tree) const noexcept
     {
@@ -574,8 +561,8 @@ struct face_mesh
             const auto& geometry = tex_rects[i];
             auto& dest = out[i];
             auto pos = geometry.start;
-            pos = geometry.chew<2>(dest, pos, 0);
-            geometry.chew<2>(dest, pos, skin::sym::output_nodes);
+            pos = geometry.template chew<2>(dest, pos, 0);
+            geometry.template chew<2>(dest, pos, skin::sym::output_nodes);
         }
         return out;
     }
