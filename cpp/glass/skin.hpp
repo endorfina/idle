@@ -54,7 +54,7 @@ constexpr float average_depth(const std::array<point_3d_t, Size>& input) noexcep
     {
         depth += it.x;
     }
-    return depth / static_cast<float>(Size);
+    return (depth + input[0].x) / static_cast<float>(Size + 1);
 }
 
 template<auto Size>
@@ -70,7 +70,7 @@ constexpr auto flatten(const std::array<point_3d_t, Size>& input) noexcept
 
 struct drawable_face
 {
-    using vertex_table_type = std::array<std::array<point_t, 4>, 3>;
+    using vertex_table_type = std::array<std::array<point_t, 4>, 5>;
     vertex_table_type mesh;
 
     static constexpr bool extra_arguments = true;
@@ -89,10 +89,12 @@ public:
     template<typename Program, typename Data>
     void draw_elem(const Program& prog, const drawable_face& another, const vertex_table_type& texture, const Data& data) const noexcept
     {
-        draw_single<Program>(prog, another, texture, 0);
-        draw_single<Program>(prog, another, texture, 1);
-        draw_single<Program>(prog, another, texture, 2);
+        draw_single<Program>(prog, another, texture, 4); // hair (bg, movable)
+        draw_single<Program>(prog, another, texture, 0); // face base
+        draw_single<Program>(prog, another, texture, 1); // eyes (blinkable)
+        draw_single<Program>(prog, another, texture, 2); // mouth
         prog.set_texture_shift_internal({0, 0});
+        draw_single<Program>(prog, another, texture, 3); // hair (fg, movable)
     }
 };
 
@@ -495,20 +497,21 @@ struct face_mesh
     Transform input_transform;
     std::array<skin::sym, 2> verts;
 
-    static constexpr unsigned size = 3;
-    std::array<skin::equiv_rect, size> tex_rects;
+    static constexpr unsigned size = 5;
 
-    template<typename...Rects>
+    using texture_array_type = std::array<skin::equiv_rect, size>;
+    texture_array_type tex_rects;
+
     constexpr face_mesh(
             const Selector& select,
             const Transform& transform,
             const std::array<skin::sym, 2>& syms,
-            const Rects&...r) noexcept
+            const texture_array_type& rects) noexcept
     :
         input_select{select},
         input_transform{transform},
         verts{syms},
-        tex_rects{r...}
+        tex_rects{rects}
     {}
 
     using output_array_t = std::array<std::array<point_t, 4>, size>;
@@ -543,6 +546,22 @@ struct face_mesh
                 src[2] * .8f + src[3] * .2f,
                 src[3] * .8f + src[2] * .2f
             };
+
+            const auto center = (src[0] + src[1] + src[2] + src[3]) / 4;
+
+            out.mesh[3] = src;
+
+            for (auto& it : out.mesh[3])
+            {
+                it -= (center - it) * .333f;
+            }
+
+            out.mesh[4] = src;
+
+            for (auto& it : out.mesh[4])
+            {
+                it -= (center - it) * .333f;
+            }
         }
         return { out, z };
     }

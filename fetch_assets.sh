@@ -34,6 +34,22 @@ else
   readonly color_norm=
 fi
 
+curl_opts=('--proto' '=https'
+    '--tlsv1.2'
+    '-Lf#'
+    '--max-redirs' 1)
+
+readonly version_regex='curl[[:space:]]+([0-9]+)\.([0-9]+)'
+
+if [[ $(curl --version | head -n1) =~ $version_regex ]]
+then
+    readonly curl_ver_major=${BASH_REMATCH[1]}
+    readonly curl_ver_minor=${BASH_REMATCH[2]}
+
+    [[ $curl_ver_major -gt 7 || $curl_ver_major -eq 7 && $curl_ver_minor -ge 66 ]] \
+        && curl_opts+=(-Z)
+fi
+
 if [[ ${#missing_assets[*]} -gt 0 ]]
 then
     echo -n "-- 🌠 Fetching assets: $color_blue"
@@ -41,10 +57,6 @@ then
         | sed -E 's~-O[[:space:]]+[^[:space:]]+/~\n  -- ~g'
     echo "$color_norm"
 
-    curl --proto '=https' \
-        --tlsv1.2 \
-        -ZLf\# \
-        --max-redirs 1 \
-        "${missing_assets[@]}"
+    curl "${curl_opts[@]}" "${missing_assets[@]}"
 fi
 

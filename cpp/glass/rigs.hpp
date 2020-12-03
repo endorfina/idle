@@ -118,9 +118,9 @@ struct humanoid : blocks::joint
     constexpr humanoid() noexcept
     {
         auto& [neck, face] = get_ref<parts::head>().table;
-        neck.length = 12;
-        face.length = 14;
-        face.angle.y = - (neck.angle.y = math::tau / 30);
+        neck.length = 6;
+        face.length = 20;
+        face.angle.y = - (neck.angle.y = math::tau / 25);
 
         auto& ub = get_ref<parts::upperbody>().root;
         auto& lb = get_ref<parts::lowerbody>().root;

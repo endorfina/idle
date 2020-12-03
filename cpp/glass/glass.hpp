@@ -77,8 +77,8 @@ inline constexpr poly::composition_mesh human_mesh
 
             skin::equiv_rect
             {
-                point_t{ cell, cell * 3 },
-                point_t{ cell, cell * 2 }
+                point_t{ cell, cell * 2 },
+                point_t{ cell, cell * 3 }
             },
 
             extra::uniform_sym_strip<0, 7>(9.f, -2.f, 2.f)
@@ -92,8 +92,8 @@ inline constexpr poly::composition_mesh human_mesh
 
             skin::equiv_rect
             {
-                point_t{ 0.f, cell * 3 },
-                point_t{ cell, cell * 2 }
+                point_t{ 0.f, cell * 2 },
+                point_t{ cell, cell * 3 }
             },
 
             extra::uniform_sym_strip<0, 7>(9.f, -2.f, 2.f)
@@ -107,11 +107,11 @@ inline constexpr poly::composition_mesh human_mesh
 
             skin::equiv_rect
             {
-                point_t{ cell, cell * 10 },
+                point_t{ cell, cell * 11 },
                 point_t{ cell, cell }
             },
 
-            extra::uniform_sym_strip<>(10.f, -4.f, 2.f)
+            extra::uniform_sym_strip<>(10.f, -3.f, 3.f)
         },
 
         poly::blob_mesh
@@ -122,11 +122,11 @@ inline constexpr poly::composition_mesh human_mesh
 
             skin::equiv_rect
             {
-                point_t{ 0.f, cell * 10 },
+                point_t{ 0.f, cell * 11 },
                 point_t{ cell, cell }
             },
 
-            extra::uniform_sym_strip<>(10.f, -4.f, 2.f)
+            extra::uniform_sym_strip<>(10.f, -3.f, 3.f)
         },
 
         poly::blob_mesh
@@ -138,10 +138,10 @@ inline constexpr poly::composition_mesh human_mesh
             skin::equiv_rect
             {
                 point_t{ cell, cell * 8 },
-                point_t{ cell, cell * 2 }
+                point_t{ cell, cell * 3 }
             },
 
-            extra::uniform_sym_strip<0, 5>(10.f, -4.f, 2.f)
+            extra::uniform_sym_strip<0, 5>(10.f, -3.f, 2.f)
         },
 
         poly::blob_mesh
@@ -153,10 +153,10 @@ inline constexpr poly::composition_mesh human_mesh
             skin::equiv_rect
             {
                 point_t{ 0.f, cell * 8 },
-                point_t{ cell, cell * 2 }
+                point_t{ cell, cell * 3 }
             },
 
-            extra::uniform_sym_strip<0, 5>(10.f, -4.f, 2.f)
+            extra::uniform_sym_strip<0, 5>(10.f, -3.f, 2.f)
         },
 
         poly::blob_mesh
@@ -167,12 +167,12 @@ inline constexpr poly::composition_mesh human_mesh
 
             skin::equiv_rect
             {
-                point_t{ cell * 2, cell * 3 },
+                point_t{ cell * 3, cell * 7 },
                 point_t{ cell, cell }
             },
 
             std::make_tuple(
-                skin::sym{-9.f, 1},
+                skin::sym{-9.f, 1, 2.f},
                 skin::sym{-9.f, 0}
             )
         },
@@ -181,30 +181,44 @@ inline constexpr poly::composition_mesh human_mesh
         {
             selector::segment<parts::head, 2>{1},
 
-            extra::smooth,
+            extra::flat,
 
             {
-                skin::sym{-19.f, 1, 6.f},
-                skin::sym{-19.f, 0, -6.f}
+                skin::sym{-19.f, 1, 3.f},
+                skin::sym{-19.f, 0, -3.f}
             },
 
-            skin::equiv_rect
             {
-                point_t{ 0.f, 0.f },
-                point_t{ cell * 2, cell * 2 }
-            },
+                skin::equiv_rect
+                {
+                    point_t{ 0.f, 0.f },
+                    point_t{ cell * 2, cell * 2 }
+                },
 
-            skin::equiv_rect
-            {
-                point_t{ cell * 2, 0.f },
-                point_t{ cell * 2, cell }
-            },
+                skin::equiv_rect
+                {
+                    point_t{ cell * 2, 0.f },
+                    point_t{ cell * 2, cell }
+                },
 
-            skin::equiv_rect
-            {
-                point_t{ cell * 3, cell * 3 },
-                point_t{ cell, cell }
-            },
+                skin::equiv_rect
+                {
+                    point_t{ cell * 2, cell * 5 },
+                    point_t{ cell, cell }
+                },
+
+                skin::equiv_rect
+                {
+                    point_t{ cell * 2, cell * 8 },
+                    point_t{ cell * 2, cell * 2 }
+                },
+
+                skin::equiv_rect
+                {
+                    point_t{ cell * 2, cell * 10 },
+                    point_t{ cell * 2, cell * 2 }
+                }
+            }
         }
     ),
 

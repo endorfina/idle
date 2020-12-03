@@ -279,7 +279,7 @@ template<typename Model, typename Paint>
 void room::draw_model(const graphics::core& gl, const Model& model, const Paint& paint, const animation anim) const noexcept
 {
     gl.prog.fill.use();
-    constexpr color_t frames_display{ 1, .2f, .2f };
+    constexpr color_t frames_display{ .3f, 1.f, .3f, .5f };
     gl.prog.fill.set_color(frames_display);
 
     const auto model_offset = gl.draw_size.x / (model.size() + 1);
@@ -302,14 +302,25 @@ void room::draw_model(const graphics::core& gl, const Model& model, const Paint&
         gl.prog.double_normal.set_interpolation(anim.interpolation);
         gl.prog.double_normal.set_transform(scale_mat);
         gl.prog.double_normal.set_view_transform(math::matrices::translate(gl.draw_size / 2.f));
+        gl.prog.double_normal.set_color({ 1, 1, 1 });
         const bool data = true;
+
+        if (show_blobs)
+        {
+            gl::BindTexture(gl::TEXTURE_2D, debug_texture.id);
+            gl.prog.double_normal.set_texture_mult(debug_texture.area);
+            gl.prog.double_normal.set_texture_shift({0, 0});
+            paint[anim.source % model.size()].draw(
+                    gl.prog.double_normal,
+                    paint[anim.dest % model.size()],
+                    human_skin, data);
+        }
 
         if (show_skin)
         {
             gl::BindTexture(gl::TEXTURE_2D, char_texture.id);
             gl.prog.double_normal.set_texture_mult(char_texture.area / 8.f);
             gl.prog.double_normal.set_texture_shift({facing / static_cast<float>(drawn_model.size()), 0});
-            gl.prog.double_normal.set_color({ 1, 1, 1 });
             paint[anim.source % model.size()].draw(
                     gl.prog.double_normal,
                     paint[anim.dest % model.size()],
@@ -321,7 +332,7 @@ void room::draw_model(const graphics::core& gl, const Model& model, const Paint&
             gl::BindTexture(gl::TEXTURE_2D, debug_texture.id);
             gl.prog.double_normal.set_texture_mult(debug_texture.area);
             gl.prog.double_normal.set_texture_shift({0, 0});
-            gl.prog.double_normal.set_color({ 1, 1, 1, .389f });
+            gl.prog.double_normal.set_color({ 1, 1, 1, .3f });
             paint[anim.source % model.size()].draw(
                     gl.prog.double_normal,
                     paint[anim.dest % model.size()],
@@ -345,15 +356,15 @@ void room::draw(const graphics::core& gl) const noexcept
     gl.prog.fill.use();
     gl.prog.fill.set_identity();
     gl.prog.fill.set_view_identity();
-    constexpr auto grey_bg = color_t::greyscale(.2f);
-    gl.prog.fill.set_color(grey_bg);
+    constexpr color_t bg_color{ .3f, .5f, .4f };
+    gl.prog.fill.set_color(bg_color);
     fill_screen(gl, gl.prog.fill);
 
-    constexpr auto greyscale = color_t::greyscale(.29f);
+    constexpr auto text_color = color_t::greyscale(.8f);
 
     gl.prog.text.use();
-    gl.prog.text.set_color(greyscale);
-    draw_text<text_align::center, text_align::center>(*gl.fonts.title, gl.prog.text, "Model", gl.draw_size / 2.f, 48);
+    gl.prog.text.set_color(text_color);
+    draw_text<text_align::center, text_align::center>(*gl.fonts.title, gl.prog.text, "Model", gl.draw_size / 2.f, 32);
 
     gl::LineWidth(2.f);
     draw_model(gl,
@@ -364,7 +375,7 @@ void room::draw(const graphics::core& gl) const noexcept
     gl.prog.fill.use();
     gl.prog.fill.set_identity();
     gl.prog.fill.set_view_identity();
-    gl.prog.fill.set_color(greyscale, .5f);
+    gl.prog.fill.set_color(graphics::black, .5f);
 
     gui.draw(gl);
 }
