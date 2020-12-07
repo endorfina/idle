@@ -21,6 +21,7 @@ set(${PROJECT_NAME}-files
         hotel/service.cpp
         hotel/room_landing.cpp
         hotel/room_stage.cpp
+        hotel/stage_objects.cpp
         hotel/room_model.cpp
         hotel/image_loader.cpp
         room_controller.cpp
@@ -64,7 +65,6 @@ add_library(${PROJECT_NAME}-top INTERFACE)
 add_library(${PROJECT_NAME}-obj STATIC)
 
 target_compile_definitions(${PROJECT_NAME}-obj PRIVATE
-    $<$<BOOL:${DOUBLE_THE_FPS}>:IDLE_DOUBLE_THE_FPS>
     $<$<BOOL:${COMPILE_FPS_COUNTERS}>:IDLE_COMPILE_FPS_COUNTERS>
     $<$<BOOL:${COMPILE_FONT_DEBUG_SCREEN}>:IDLE_COMPILE_FONT_DEBUG_SCREEN>
     $<$<BOOL:${COMPILE_GALLERY}>:IDLE_COMPILE_GALLERY>)
@@ -76,8 +76,10 @@ else()
 endif()
 
 target_include_directories(${PROJECT_NAME}-top INTERFACE include)
-target_compile_definitions(${PROJECT_NAME}-top INTERFACE "$<$<CONFIG:Debug>:DEBUG>" "LOG_LEVEL=${LOG_LEVEL}")
 target_compile_features(${PROJECT_NAME}-top INTERFACE cxx_std_20)
+target_compile_definitions(${PROJECT_NAME}-top INTERFACE
+        $<$<BOOL:${DOUBLE_THE_FPS}>:IDLE_DOUBLE_THE_FPS>
+        $<$<CONFIG:Debug>:DEBUG> "LOG_LEVEL=${LOG_LEVEL}")
 target_compile_options(${PROJECT_NAME}-top INTERFACE
         -Wall -Wredundant-move -fno-char8_t
         $<$<CXX_COMPILER_ID:GNU>:-fconstexpr-ops-limit=268435456>
@@ -85,6 +87,7 @@ target_compile_options(${PROJECT_NAME}-top INTERFACE
 
 find_package(ZLIB REQUIRED)
 add_subdirectory(platform)
+add_subdirectory(game)
 add_subdirectory(freetype)
 add_subdirectory(shaders)
 add_subdirectory(png)
@@ -93,6 +96,7 @@ add_subdirectory(png)
 target_link_libraries(${PROJECT_NAME}-obj
             PUBLIC ${PROJECT_NAME}-top
             PRIVATE ${PROJECT_NAME}-ft
+            PRIVATE ${PROJECT_NAME}-game
             PRIVATE ${PROJECT_NAME}-shaders
             PRIVATE ${PROJECT_NAME}-png
             PRIVATE ZLIB::ZLIB)

@@ -50,7 +50,13 @@ void main() {
   vec4 raw = texture2D(u_tex, coords);
   vec4 mask = texture2D(u_tex, mask_coords);
 
-  gl_FragColor = raw * mask;
+  float grey_val = (raw.x + raw.y + raw.z) / 2.8;
+  float sat = (mask.x + mask.y + mask.z) / 3.0;
+
+  vec4 grey = vec4(grey_val, grey_val, grey_val * 1.1, 1.0);
+  vec4 modified = grey + (raw - grey) * sat;
+
+  gl_FragColor = modified * mask;
 }
 
 @@ simpleblurf

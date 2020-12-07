@@ -19,37 +19,16 @@
 #pragma once
 
 #include <idle/gl.hpp>
-#include <idle/pointer_wrapper.hpp>
-#include <idle/draw_text.hpp>
-#include "gui.hpp"
-#include "keys.hpp"
-#include <colony.hpp>
-#include "image_loader.hpp"
-#include <mutex>
-#include "stage_objects.hpp"
 
 namespace idle::hotel::stage
 {
 
-struct room : image_loader
+enum class action
 {
-private:
-    std::mutex cell_mod_mutex;
-    std::atomic_uint8_t draw_fork = 0;
-    std::array<std::vector<const object*>, 6> render_order;
-    cells::colony<unsigned, object> objs;
-    player_object player;
-
-public:
-    using iterator_type = typename cells::colony<unsigned, object>::iterator;
-
-    room() noexcept;
-
-    void on_resize(point_t) noexcept;
-
-    std::optional<keyring::variant> step(const pointer_wrapper& cursor) noexcept;
-
-    void draw(const graphics::core& gl) noexcept;
+    none,
+    register_drawable,
+    unregister_drawable,
+    destroy
 };
 
 }  // namespace idle::hotel::stage

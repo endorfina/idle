@@ -24,6 +24,11 @@ namespace idle::hotel
 
 image_pool::image_pool() noexcept
 {
+    start_worker();
+}
+
+void image_pool::start_worker() noexcept
+{
     worker.start([this]()
     {
         while (worker.is_active())
@@ -67,6 +72,11 @@ void image_pool::kill_worker() noexcept
 void image_loader::load_queued_images() noexcept
 {
     pool.db.load_topmost_queued_picture();
+}
+
+void image_loader::start_workers() noexcept
+{
+    pool.start_worker();
 }
 
 void image_loader::kill_workers() noexcept

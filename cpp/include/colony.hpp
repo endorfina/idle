@@ -20,172 +20,219 @@
 #pragma once
 #include <utility>  // pair
 #include <memory>
-#include <vector>
-#include <array>
 #include <set>
 #include <cstddef>
 #include <limits>
-
+#include <vector>
+#include <deque>
 
 namespace cells
 {
 
-template<typename index_type, typename value_type>
-struct cell
-{
-    index_type skip = std::numeric_limits<index_type>::max();
-    std::byte data[sizeof(value_type)];
-
-    const value_type& get() const
-    {
-        return *std::launder(reinterpret_cast<const value_type*>(data));
-    }
-
-    value_type& get()
-    {
-        return *std::launder(reinterpret_cast<value_type*>(data));
-    }
-
-    void destroy()
-    {
-        if (!skip) std::destroy_at(&get());
-        skip = 0;
-    }
-
-    ~cell()
-    {
-        destroy();
-    }
-
-    template<typename...Args>
-    void emplace(Args&&...args)
-    {
-        destroy();
-        ::new(static_cast<void*>(&get())) value_type(std::forward<Args>(args)...);
-    }
-};
-
-template<typename value_type>
-struct iterator
-{
-    value_type* ptr;
-
-    void skip()
-    {
-        if (!!ptr->skip)
-            ptr += ptr->skip;
-    }
-
-    auto& operator*() const
-    {
-        skip();
-        return ptr->get();
-    }
-
-    auto& operator*()
-    {
-        skip();
-        return ptr->get();
-    }
-
-    auto operator->() const
-    {
-        skip();
-        return &ptr->get();
-    }
-
-    auto operator->()
-    {
-        skip();
-        return &ptr->get();
-    }
-
-    iterator& operator++()
-    {
-        ++ptr;
-        return *this;
-    }
-
-    iterator operator++(int)
-    {
-        iterator copy{*this};
-        this->operator++();
-        return copy;
-    }
-};
-
-template<typename value_type>
-bool operator!=(const iterator<value_type>& lhs, const iterator<value_type>& rhs)
-{
-    return lhs.ptr != rhs.ptr;
-}
-
-template<typename index_type, typename value_type>
+template<typename index_t, typename value_t>
 struct colony
 {
-    using cell_type = cell<index_type, value_type>;
-    using container_type = std::vector<cell_type>;
+    using index_type = index_t;
+    using value_type = value_t;
 
-    unsigned int count = 0;
-    container_type data;
+    struct cell
+    {
+        index_type skip = 0;
+
+    private:
+        std::byte data[sizeof(value_type)];
+
+        template<typename...Args>
+        void emplace(Args&&...args) noexcept
+        {
+            ::new(static_cast<void*>(&ref())) value_type(std::forward<Args>(args)...);
+        }
+
+    public:
+        const value_type& ref() const noexcept
+        {
+            return *std::launder(reinterpret_cast<const value_type*>(data));
+        }
+
+        value_type& ref() noexcept
+        {
+            return *std::launder(reinterpret_cast<value_type*>(data));
+        }
+
+        template<typename...Args>
+        cell(Args&&...args)
+        {
+            emplace(std::forward<Args>(args)...);
+        }
+
+        void destroy(const index_type new_skip) noexcept
+        {
+            if (skip == 0)
+            {
+                std::destroy_at(&ref());
+            }
+            skip = new_skip;
+        }
+
+        ~cell() noexcept
+        {
+            destroy(0);
+        }
+
+        template<typename...Args>
+        void reset(Args&&...args) noexcept
+        {
+            destroy(0);
+            emplace(std::forward<Args>(args)...);
+        }
+    };
+
+    using container_type = std::deque<cell>;
+    using cell_iterator_type = typename container_type::iterator;
+
+    class iterator
+    {
+        friend struct colony;
+        cell_iterator_type de_iter;
+
+        iterator(const cell_iterator_type& iter) noexcept
+            : de_iter{iter}
+        {}
+
+        void advance() noexcept
+        {
+            if (de_iter->skip > 0)
+            {
+                de_iter += de_iter->skip;
+            }
+        }
+
+    public:
+        index_type count = 0;
+
+        value_type& operator*() const noexcept
+        {
+            advance();
+            return de_iter->ref();
+        }
+
+        value_type& operator*() noexcept
+        {
+            advance();
+            return de_iter->ref();
+        }
+
+        const value_type* operator->() const noexcept
+        {
+            advance();
+            return &de_iter->ref();
+        }
+
+        value_type* operator->() noexcept
+        {
+            advance();
+            return &de_iter->ref();
+        }
+
+        iterator& operator++() noexcept
+        {
+            ++de_iter;
+            return *this;
+        }
+
+        iterator operator++(int) noexcept
+        {
+            iterator copy{*this};
+            this->operator++();
+            return copy;
+        }
+
+        bool operator!=(const cell_iterator_type& rhs) const noexcept
+        {
+            return de_iter != rhs;
+        }
+
+        bool operator!=(const iterator& rhs) const noexcept
+        {
+            return de_iter != rhs.de_iter;
+        }
+    };
+
+private:
+    index_type count = 0;
+    container_type deque;
+
+public:
+    index_type size() const noexcept
+    {
+        return count;
+    }
 
     template<typename...Args>
-    value_type& emplace(Args&&...args)
+    value_type& emplace(Args&&...args) noexcept
     {
-        if (count++ < data.size())
+        if (count++ < deque.size())
         {
-            auto find = begin().ptr;
-            while (!find->skip)
+            auto find = deque.begin();
+            while (!find->skip) // assume empty space exists
                 ++find;
-            find->emplace(std::forward<Args>(args)...);
-            return find->get();
+
+            find->reset(std::forward<Args>(args)...);
+            return find->ref();
         }
         else
         {
-            auto& obj = data.emplace_back();
-            obj.emplace(std::forward<Args>(args)...);
-            return obj.get();
+            auto& obj = deque.emplace_back(std::forward<Args>(args)...);
+            return obj.ref();
         }
     }
 
-    void remove(const iterator<cell_type> removed)
+    void remove(const cell_iterator_type removed) noexcept
     {
-        if (!count || !!removed.ptr->skip) return;
+        if (!count || !!removed->skip) return;
         --count;
-        removed.ptr->destroy();
 
-        const auto b = begin().ptr, e = end().ptr;
-        index_type skip_val = 1;
+        index_type new_skip = 1;
 
-        if (const auto next = removed.ptr + 1; next != e)
-            skip_val += next->skip;
+        if (const auto next = removed + 1; next != deque.end())
+        {
+            new_skip += next->skip;
+        }
 
-        for (auto prev = removed.ptr; prev-- != b && !!prev->skip;)
-            prev->skip += skip_val;
+        while (removed != deque.begin() && removed->skip > 0)
+        {
+            (removed - 1)->skip += new_skip;
+        }
 
-        removed.ptr->skip = skip_val;
+        removed->destroy(new_skip);
     }
 
-    iterator<const cell_type> begin() const
+    void remove(const iterator& removed) noexcept
     {
-        return { &data[0] };
+        remove(removed.de_iter);
     }
 
-    iterator<const cell_type> end() const
+    iterator begin() const noexcept
     {
-        return { &data[0] + data.size() };
+        return { deque.begin() };
     }
 
-    iterator<cell_type> begin()
+    cell_iterator_type end() const noexcept
     {
-        return { &data[0] };
+        return deque.end();
     }
 
-    iterator<cell_type> end()
+    iterator begin() noexcept
     {
-        return { &data[0] + data.size() };
+        return { deque.begin() };
+    }
+
+    cell_iterator_type end() noexcept
+    {
+        return deque.end();
     }
 };
+
 
 }  // namespace cells
 

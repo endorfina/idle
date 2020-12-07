@@ -33,6 +33,13 @@ namespace meta
 
 inline constexpr mat4x4_noopt_t skew_matrix = math::matrices::rotate<GLfloat>(math::tau_8) * math::matrices::rotate_y<GLfloat>(math::tau_4 / 3);
 
+// inline constexpr mat4x4_noopt_t anti_skew_matrix = []()
+// {
+//     auto mat = skew_matrix;
+//     mat.invert();
+//     return mat;
+// }();
+
 template<typename Painter, typename Source, auto...Indices>
 constexpr auto skew_index(const Painter& paint_vertex, const Source& key_frame_vertex_table, const mat4x4_noopt_t& base_matrix, const std::index_sequence<Indices...>) noexcept
 {

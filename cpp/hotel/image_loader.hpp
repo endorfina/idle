@@ -52,6 +52,8 @@ public:
 
     void load_image(const char * filename, images::texture& out, GLint quality = gl::NEAREST) noexcept;
 
+    void start_worker() noexcept;
+
     void kill_worker() noexcept;
 };
 
@@ -60,6 +62,8 @@ struct image_loader
     image_pool pool;
 
     void load_queued_images() noexcept;
+
+    void start_workers() noexcept;
 
     void kill_workers() noexcept;
 };

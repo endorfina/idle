@@ -768,7 +768,7 @@ struct matrix4x4 : meta::matrix4x4_bare<T>
         return *this;
     }
 
-    constexpr matrix4x4& reverse_multiply(const matrix4x4& other) noexcept
+    constexpr matrix4x4& reverse_multiply(const bare_type& other) noexcept
     {
         this->values = meta::multiplication(other.values, this->values);
         return *this;

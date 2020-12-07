@@ -18,38 +18,41 @@
 */
 #pragma once
 
-#include <idle/gl.hpp>
-#include <idle/pointer_wrapper.hpp>
-#include <idle/draw_text.hpp>
-#include "gui.hpp"
-#include "keys.hpp"
-#include <colony.hpp>
-#include "image_loader.hpp"
-#include <mutex>
-#include "stage_objects.hpp"
+#include "stage_include.hpp"
+#include "../game/objects.hpp"
 
 namespace idle::hotel::stage
 {
 
-struct room : image_loader
+struct object
 {
-private:
-    std::mutex cell_mod_mutex;
-    std::atomic_uint8_t draw_fork = 0;
-    std::array<std::vector<const object*>, 6> render_order;
-    cells::colony<unsigned, object> objs;
-    player_object player;
+    point_t pos;
+    bool shown = false;
+    objects::variant variant;
 
-public:
-    using iterator_type = typename cells::colony<unsigned, object>::iterator;
+    object(point_t p) noexcept;
 
-    room() noexcept;
+    action step() noexcept;
 
-    void on_resize(point_t) noexcept;
+    void draw(const graphics::core& gl) const noexcept;
 
-    std::optional<keyring::variant> step(const pointer_wrapper& cursor) noexcept;
+    void move(float direction, float value) noexcept;
+};
 
-    void draw(const graphics::core& gl) noexcept;
+
+struct player_object
+{
+    object* captive_mind = nullptr;
+
+    struct camera_type
+    {
+        point_t translate {0, 0};
+        float scale = 1.f;
+    };
+    camera_type camera;
+    point_t cursor_pos;
+
+    point_t hud_size;
 };
 
 }  // namespace idle::hotel::stage

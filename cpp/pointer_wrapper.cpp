@@ -17,6 +17,7 @@
     along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <math_defines.hpp>
 #include "pointer_wrapper.hpp"
 
 namespace idle
@@ -28,11 +29,11 @@ void pointer_keeper::advance(const platform::pointer& cur) noexcept
 
     if (pointer.cursor.pressed)
     {
-        pointer.touch = std::min(pointer.touch + .05f, 1.f);
+        pointer.touch = std::min(pointer.touch + .025f * uni_time_factor, 1.f);
     }
     else
     {
-        pointer.touch = std::max(pointer.touch - .1f, 0.f);
+        pointer.touch = std::max(pointer.touch - .1f * uni_time_factor, 0.f);
     }
 
     pointer.single_press = false;
