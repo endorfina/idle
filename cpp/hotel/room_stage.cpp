@@ -17,6 +17,7 @@
     along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <random>
 #include <cmath>
 #include <algorithm>
 #include <utility>
@@ -34,6 +35,11 @@ room::room() noexcept
 {
     pool.load_image("octavia_tex.png", std::get<crimson::characters::octavia>(player.captive_mind->variant).tex, gl::NEAREST);
     player.camera.translate = { 200, 200 };
+
+    std::minstd_rand gen{};
+    std::uniform_int_distribution<unsigned> rando{ 0, 255 };
+    std::generate(floor_tiles.begin(), floor_tiles.end(),
+            [&](){ return static_cast<uint8_t>(rando(gen)); });
 }
 
 void room::draw(const graphics::core& gl) noexcept
@@ -52,23 +58,58 @@ void room::draw(const graphics::core& gl) noexcept
     gl.prog.fill.set_color({1,1,1});
 
     constexpr mat4x4_noopt_t skew_matrix =
-        math::matrices::scale(point_3d_t{ 1, 1 / .668f, 1 })
-        * math::matrices::rotate(-math::tau_8)
-        * math::matrices::rotate_x<GLfloat>(-math::tau_4 / 3);
+        math::matrices::scale(point_3d_t{ 1, 1 / .61f, 1 })
+        * math::matrices::rotate(-math::tau_8);
 
-    constexpr mat4x4_noopt_t anti_skew_matrix = math::matrices::rotate_x<GLfloat>(math::tau_4 / 3)
-        * math::matrices::rotate(math::tau_8)
-        * math::matrices::scale(point_3d_t{1, .668f, 0});
+    constexpr mat4x4_noopt_t anti_skew_matrix =
+        math::matrices::rotate(math::tau_8)
+        * math::matrices::scale(point_3d_t{1, .61f, 0});
 
-    auto view_mat = anti_skew_matrix;
-    math::transform::translate(view_mat, point_t{0, 30});
-    math::transform::uniform_scale(view_mat, player.camera.scale);
-    math::transform::translate(view_mat, gl.draw_size / 2);
+    const auto view_mat = [this, &anti_skew_matrix, &gl]()
+    {
+        auto mat = anti_skew_matrix;
+        math::transform::translate(mat, point_t{0, 30});
+        math::transform::uniform_scale(mat, player.camera.scale);
+        math::transform::translate(mat, gl.draw_size / 2);
+        return mat;
+    }();
+
+    const auto model_mat = [this, &skew_matrix]()
+        {
+            auto mat = skew_matrix;
+            math::transform::translate(mat, player.camera.translate * -1.f);
+            return mat;
+        }();
+
+    static constexpr std::array<point_t, 4> tile_rectangle
+    {
+        point_t{0, 0},
+        point_t{32, 0},
+        point_t{0, 32},
+        point_t{32, 32}
+    };
+
+    gl.prog.fill.position_vertex(reinterpret_cast<const GLfloat*>(&tile_rectangle[0]));
     gl.prog.fill.set_view_transform(view_mat);
 
-    auto model_mat = skew_matrix;
-    math::transform::translate(model_mat, player.camera.translate * -1.f);
+    for (int y = 0; y < 32; ++y)
+        for (int x = 0; x < 32; ++x)
+        {
+            if (x == int(player.captive_mind->pos.x / 32) && y == int(player.captive_mind->pos.y / 32))
+            {
+                gl.prog.fill.set_color(color_t::greyscale(1.f));
+            }
+            else
+            {
+                gl.prog.fill.set_color(color_t::greyscale(.2f + floor_tiles[y * 32 + x] / 600.f));
+            }
+
+            gl.prog.fill.set_transform(math::matrices::translate(point_t{ x * 32.f, y * 32.f } - player.camera.translate));
+            gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
+        }
+
     gl.prog.fill.set_transform(model_mat);
+    gl.prog.fill.set_view_transform(view_mat);
 
     constexpr std::array<std::array<point_t, 2>, 2> helper_lines
     {
@@ -77,6 +118,7 @@ void room::draw(const graphics::core& gl) noexcept
             point_t{ },
             point_t{ 150.f, 0.f }
         },
+        std::array
         {
             point_t{ },
             point_t{ 0.f, 150.f }
@@ -166,10 +208,8 @@ std::optional<keyring::variant> room::step(const pointer_wrapper& pointer) noexc
     const auto& current_draw_order = render_order[current_draw_fork];
     auto& next_draw_order = render_order[next_draw_fork];
 
-    if (current_draw_order.size() != next_draw_order.size() || !std::equal(current_draw_order.begin(), current_draw_order.end(), next_draw_order.begin()))
-    {
-        next_draw_order = render_order[current_draw_fork];
-    }
+    next_draw_order.resize(current_draw_order.size());
+    std::copy(current_draw_order.begin(), current_draw_order.end(), next_draw_order.begin());
 
     if (!!action_hide.size())
     {
@@ -191,7 +231,7 @@ std::optional<keyring::variant> room::step(const pointer_wrapper& pointer) noexc
     std::sort(next_draw_order.begin(), next_draw_order.end(),
             [](const auto lhs, const auto rhs)
             {
-                return lhs->pos.y < rhs->pos.y;
+                return lhs->pos.x + lhs->pos.y < rhs->pos.x + rhs->pos.y;
             });
 
     if (!!action_destroy.size())

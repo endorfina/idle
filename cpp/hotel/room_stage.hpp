@@ -39,6 +39,7 @@ private:
     std::array<std::vector<const object*>, 6> render_order;
     cells::colony<unsigned, object> objs;
     player_object player;
+    std::array<uint8_t, 32 * 32> floor_tiles;
 
 public:
     using iterator_type = typename cells::colony<unsigned, object>::iterator;

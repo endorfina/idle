@@ -107,21 +107,29 @@ void octavia::draw(const graphics::core& gl) const noexcept
 
 point_t octavia::apply_physics(const point_t pos) const noexcept
 {
-    return pos + speed;
+    return pos + speed * uni_time_factor;
 }
 
 void octavia::push_move(float direction, float value) noexcept
 {
     const point_t shift { std::cos(direction) * value, std::sin(direction) * value };
-    speed += (shift - speed) * .333f * uni_time_factor;
+    speed += (shift - speed) * .5f;
+    friction_recalc = 0;
 }
 
 hotel::stage::action octavia::step() noexcept
 {
-    speed *= .95f;
+    if (friction_recalc-- == 0)
+    {
+        friction_recalc = application_frames_per_second / 30;
+        friction = speed / 50.f * uni_time_factor;
+    }
+
     auto frame = fr.load(std::memory_order_relaxed);
     if (std::abs(speed.x) + std::abs(speed.y) > .1f)
     {
+        speed -= friction;
+
         const point_t nv = speed * -1.f / std::hypot(speed.x, speed.y);
         constexpr point_t right{ 1, 0 };
         const float det = nv.determinant(right);
@@ -139,6 +147,10 @@ hotel::stage::action octavia::step() noexcept
                 frame.sub[1] = 0;
             }
         }
+    }
+    else
+    {
+        speed = {0, 0};
     }
     fr.store(frame, std::memory_order_relaxed);
     return hotel::stage::action::none;

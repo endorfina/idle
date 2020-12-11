@@ -6,7 +6,7 @@
 readonly PROGNAME=${0##*/}
 readonly BUILD_DIR='.cxx'
 readonly SOURCE_DIR='cpp'
-readonly IMPORTANT_FILES=("$BUILD_DIR" 'Makefile' "$SOURCE_DIR/Makefile")
+readonly IMPORTANT_FILES=("$BUILD_DIR" 'Makefile')
 tmp_file=
 
 if [[ -t 1 && -t 2 ]]

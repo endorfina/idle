@@ -53,7 +53,8 @@ struct humanoid
     };
 
     std::atomic<frame> fr;
-    point_t speed;
+    point_t speed, friction;
+    uint8_t friction_recalc = 0;
     images::texture tex;
 
     humanoid() noexcept = default;
