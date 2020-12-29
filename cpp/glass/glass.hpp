@@ -66,7 +66,7 @@ inline constexpr poly::composition_mesh human_mesh
                 point_t{ cell * 2, cell * 3 }
             },
 
-            extra::uniform_sym_strip<0, 3>(20.f, -5.f, 5.f)
+            extra::uniform_sym_strip<0, 3>(16.f, -5.f, 5.f)
         },
 
         poly::blob_mesh
@@ -81,7 +81,7 @@ inline constexpr poly::composition_mesh human_mesh
                 point_t{ cell, cell * 3 }
             },
 
-            extra::uniform_sym_strip<0, 7>(9.f, -2.f, 2.f)
+            extra::uniform_sym_strip<0, 7>(8.f, -2.f, 2.f)
         },
 
         poly::blob_mesh
@@ -96,7 +96,7 @@ inline constexpr poly::composition_mesh human_mesh
                 point_t{ cell, cell * 3 }
             },
 
-            extra::uniform_sym_strip<0, 7>(9.f, -2.f, 2.f)
+            extra::uniform_sym_strip<0, 7>(8.f, -2.f, 2.f)
         },
 
         poly::blob_mesh
@@ -111,7 +111,7 @@ inline constexpr poly::composition_mesh human_mesh
                 point_t{ cell, cell }
             },
 
-            extra::uniform_sym_strip<>(10.f, -3.f, 3.f)
+            extra::uniform_sym_strip<>(8.f, -2.f, 2.f)
         },
 
         poly::blob_mesh
@@ -126,7 +126,7 @@ inline constexpr poly::composition_mesh human_mesh
                 point_t{ cell, cell }
             },
 
-            extra::uniform_sym_strip<>(10.f, -3.f, 3.f)
+            extra::uniform_sym_strip<>(8.f, -2.f, 2.f)
         },
 
         poly::blob_mesh
@@ -141,7 +141,7 @@ inline constexpr poly::composition_mesh human_mesh
                 point_t{ cell, cell * 3 }
             },
 
-            extra::uniform_sym_strip<0, 5>(10.f, -3.f, 2.f)
+            extra::uniform_sym_strip<0, 5>(8.f, -3.f, 2.f)
         },
 
         poly::blob_mesh
@@ -156,7 +156,7 @@ inline constexpr poly::composition_mesh human_mesh
                 point_t{ cell, cell * 3 }
             },
 
-            extra::uniform_sym_strip<0, 5>(10.f, -3.f, 2.f)
+            extra::uniform_sym_strip<0, 5>(8.f, -3.f, 2.f)
         },
 
         poly::blob_mesh
@@ -172,8 +172,8 @@ inline constexpr poly::composition_mesh human_mesh
             },
 
             std::make_tuple(
-                skin::sym{-9.f, 1, 2.f},
-                skin::sym{-9.f, 0}
+                skin::sym{-8.f, 1, 2.f},
+                skin::sym{-8.f, 0}
             )
         },
 
@@ -184,8 +184,8 @@ inline constexpr poly::composition_mesh human_mesh
             extra::flat,
 
             {
-                skin::sym{-19.f, 1, 3.f},
-                skin::sym{-19.f, 0, -3.f}
+                skin::sym{-21.5f, 1, 3.f},
+                skin::sym{-21.5f, 0, -3.f}
             },
 
             {

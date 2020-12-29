@@ -17,38 +17,32 @@
     along with Idle. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#pragma once
+#include "stage_crawlers.hpp"
 
-#include <atomic>
-#include <optional>
-#include <thread>
-
-#include <relaxed.hpp>
-
-namespace idle::hotel
+namespace idle::hotel::stage
 {
 
-class room_service
+crawler_pool::~crawler_pool() noexcept
 {
-    relaxed<bool> worker_active_flag{false};
-    std::optional<std::thread> worker_thread;
+    kill_worker();
+}
 
-public:
-    template<typename...Vars>
-    void start(Vars...vars) noexcept
+void crawler_pool::kill_worker() noexcept
+{
+    worker_alive_flag = false;
+    cond_variable.notify_all();
+
+    for (auto& it : workers)
     {
-        stop();
-        set_active(true);
-        worker_thread.emplace(std::forward<Vars>(vars)...);
+        it.join();
     }
+    workers.clear();
+}
 
-    void set_active(const bool flag) noexcept;
+void crawler_pool::notify() noexcept
+{
+    cond_variable.notify_all();
+}
 
-    void stop() noexcept;
+}  // namespace idle::hotel::stage
 
-    bool is_active() const noexcept;
-
-    ~room_service();
-};
-
-}  // namespace idle::hotel

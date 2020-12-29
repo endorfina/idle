@@ -19,15 +19,15 @@
 
 #include "image_loader.hpp"
 
-namespace idle::hotel
+namespace idle::hotel::garment
 {
 
-image_pool::image_pool() noexcept
+pool::pool() noexcept
 {
     start_worker();
 }
 
-void image_pool::start_worker() noexcept
+void pool::start_worker() noexcept
 {
     worker.start([this]()
     {
@@ -45,7 +45,7 @@ void image_pool::start_worker() noexcept
     });
 }
 
-void image_pool::load_image(const char * filename, images::texture& out, GLint quality) noexcept
+void pool::load_image(const char * filename, images::texture& out, GLint quality) noexcept
 {
     {
         std::lock_guard lock{mutex};
@@ -54,12 +54,12 @@ void image_pool::load_image(const char * filename, images::texture& out, GLint q
     cond_variable.notify_one();
 }
 
-image_pool::~image_pool() noexcept
+pool::~pool() noexcept
 {
     kill_worker();
 }
 
-void image_pool::kill_worker() noexcept
+void pool::kill_worker() noexcept
 {
     {
         std::lock_guard lock{mutex};
@@ -69,20 +69,20 @@ void image_pool::kill_worker() noexcept
     worker.stop();
 }
 
-void image_loader::load_queued_images() noexcept
+void loader::load_queued_images() noexcept
 {
-    pool.db.load_topmost_queued_picture();
+    pictures.db.load_topmost_queued_picture();
 }
 
-void image_loader::start_workers() noexcept
+void loader::start_workers() noexcept
 {
-    pool.start_worker();
+    pictures.start_worker();
 }
 
-void image_loader::kill_workers() noexcept
+void loader::kill_workers() noexcept
 {
-    pool.kill_worker();
+    pictures.kill_worker();
 }
 
-}  // namespace idle::hotel
+}  // namespace idle::hotel::garment
 

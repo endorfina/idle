@@ -118,14 +118,14 @@ struct humanoid : blocks::joint
     constexpr humanoid() noexcept
     {
         auto& [neck, face] = get_ref<parts::head>().table;
-        neck.length = 6;
-        face.length = 20;
+        neck.length = 5.5f;
+        face.length = 22;
         face.angle.y = - (neck.angle.y = math::tau / 25);
 
         auto& ub = get_ref<parts::upperbody>().root;
         auto& lb = get_ref<parts::lowerbody>().root;
 
-        ub.length = lb.length = 15;
+        ub.length = lb.length = 10;
 
         lb.angle.y = math::tau_2;
 
@@ -135,11 +135,13 @@ struct humanoid : blocks::joint
         auto& arm = sh.left.table;
         auto& leg = hp.left.table;
 
+        constexpr float mult = .62f;
+
         arm = {
-            blocks::bone{ 6.f, { -math::tau_4, 0, 0 } },
-            blocks::bone{ 11.f, { -math::tau_8, 0, 0 } },
-            blocks::bone{ 11.f, { 0, 0, 0 } },
-            blocks::bone{ 5.f, { -math::tau_8 / 8, math::tau_8 / 8, 0 } }
+            blocks::bone{ mult * 7.f, { -math::tau_4, 0, 0 } },
+            blocks::bone{ mult * 11.f, { -math::tau_8, 0, 0 } },
+            blocks::bone{ mult * 11.f, { 0, 0, 0 } },
+            blocks::bone{ mult * 5.f, { -math::tau_8 / 8, math::tau_8 / 8, 0 } }
         };
 
         constexpr float
@@ -147,10 +149,10 @@ struct humanoid : blocks::joint
                 thigh_raise = math::tau_4 * .08f;
 
         leg = {
-            blocks::bone{ 5.f, { -math::tau_4, 0, 0 } },
-            blocks::bone{ 18.f, { math::tau_4 * .966f, 0, -thigh_raise } },
-            blocks::bone{ 18.f, { 0, knee_bend, 0 } },
-            blocks::bone{ 7.f, { 0, - knee_bend + thigh_raise - math::tau_4, 0 } }
+            blocks::bone{ mult * 5.5f, { -math::tau_4, 0, 0 } },
+            blocks::bone{ mult * 18.f, { math::tau_4 * .966f, 0, -thigh_raise } },
+            blocks::bone{ mult * 18.f, { 0, knee_bend, 0 } },
+            blocks::bone{ mult * 7.f, { 0, - knee_bend + thigh_raise - math::tau_4, 0 } }
         };
 
         meta::sync_right(sh);

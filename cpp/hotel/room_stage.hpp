@@ -27,12 +27,16 @@
 #include "image_loader.hpp"
 #include <mutex>
 #include "stage_objects.hpp"
+#include "stage_crawlers.hpp"
 
 namespace idle::hotel::stage
 {
+using cell_iterator_type = typename cells::colony<unsigned, object>::iterator;
 
-struct room : image_loader
+struct room : garment::loader
 {
+    using iterator_type = cell_iterator_type;
+
 private:
     std::mutex cell_mod_mutex;
     std::atomic_uint8_t draw_fork = 0;
@@ -42,8 +46,6 @@ private:
     std::array<uint8_t, 32 * 32> floor_tiles;
 
 public:
-    using iterator_type = typename cells::colony<unsigned, object>::iterator;
-
     room() noexcept;
 
     void on_resize(point_t) noexcept;
@@ -51,6 +53,8 @@ public:
     std::optional<keyring::variant> step(const pointer_wrapper& cursor) noexcept;
 
     void draw(const graphics::core& gl) noexcept;
+
+    void kill_workers() noexcept;
 };
 
 }  // namespace idle::hotel::stage

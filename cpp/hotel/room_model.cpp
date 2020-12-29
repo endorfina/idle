@@ -329,9 +329,9 @@ std::optional<keyring::variant> room::step(const pointer_wrapper& pointer) noexc
                     break;
 
                 case function::reload_images:
-                    pool.db.destroy_textures();
-                    pool.load_image("debug_tex.png", debug_texture);
-                    pool.load_image("octavia_tex.png", char_texture, gl::NEAREST);
+                    pictures.db.destroy_textures();
+                    pictures.load_image("debug_tex.png", debug_texture);
+                    pictures.load_image("octavia_tex.png", char_texture, gl::NEAREST);
                     break;
 
                 default:
@@ -350,8 +350,8 @@ void room::on_resize(const point_t screen_size) noexcept
 
 room::room() noexcept
 {
-    pool.load_image("debug_tex.png", debug_texture);
-    pool.load_image("octavia_tex.png", char_texture, gl::NEAREST);
+    pictures.load_image("debug_tex.png", debug_texture);
+    pictures.load_image("octavia_tex.png", char_texture, gl::NEAREST);
 }
 
 }  // namespace idle::hotel::model

@@ -24,7 +24,7 @@ namespace idle::hotel
 
 void room_service::set_active(const bool flag) noexcept
 {
-    worker_active_flag.store(flag, std::memory_order_relaxed);
+    worker_active_flag = flag;
 }
 
 void room_service::stop() noexcept
@@ -40,7 +40,7 @@ void room_service::stop() noexcept
 
 bool room_service::is_active() const noexcept
 {
-    return worker_active_flag.load(std::memory_order_relaxed);
+    return worker_active_flag;
 }
 
 room_service::~room_service()

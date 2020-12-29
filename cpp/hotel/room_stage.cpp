@@ -32,8 +32,37 @@ namespace idle::hotel::stage
 
 room::room() noexcept
     : player{ &objs.emplace(point_t{150.f,0}) }
+
+    // action_vec([this] (auto& var)
+    //     {
+    //         using T = idle_remove_cvr(var);
+
+    //         if constexpr(std::is_same_v<actions::step, T>)
+    //         {
+    //             if (const auto a = var.it->step(); a != action::none)
+    //             {
+    //                 const std::lock_guard lock{ action_vec.mutex };
+    //                 switch(var.it->step())
+    //                 {
+    //                     case action::destroy:
+    //                         action_vec.destroy.push_back(var.it);
+
+    //                     case action::unregister_drawable:
+    //                         action_vec.hide.push_back(&*var.it);
+    //                         break;
+
+    //                     case action::register_drawable:
+    //                         action_vec.show.push_back(&*var.it);
+    //                         break;
+
+    //                     default:
+    //                         break;
+    //                 }
+    //             }
+    //         }
+    //     })
 {
-    pool.load_image("octavia_tex.png", std::get<crimson::characters::octavia>(player.captive_mind->variant).tex, gl::NEAREST);
+    pictures.load_image("octavia_tex.png", std::get<crimson::characters::octavia>(player.captive_mind->variant).tex, gl::NEAREST);
     player.camera.translate = { 200, 200 };
 
     std::minstd_rand gen{};
@@ -248,8 +277,15 @@ std::optional<keyring::variant> room::step(const pointer_wrapper& pointer) noexc
     }
 
     draw_fork.store(next_draw_fork, std::memory_order_release);
+
     return {};
 }
+
+void room::kill_workers() noexcept
+{
+    garment::loader::kill_workers();
+}
+
 
 }  // namespace idle::hotel::stage
 

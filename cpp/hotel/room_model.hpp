@@ -91,7 +91,7 @@ struct model_button : gui::shapes::button<gui::positions::edge_hugger<X, Y>, wid
     }
 };
 
-struct room : image_loader
+struct room : garment::loader
 {
     template<function Id, int X, int Y = -16>
     using control_button = model_button<Id, X, Y, 39, 22>;

@@ -21,6 +21,9 @@
 
 #include <array>
 #include <atomic>
+
+#include <relaxed.hpp>
+
 #include <idle/gl.hpp>
 #include <idle/hotel/stage_include.hpp>
 #include <idle/glass/glass.hpp>
@@ -52,7 +55,7 @@ struct humanoid
         float timer = 0.f;
     };
 
-    std::atomic<frame> fr;
+    relaxed<frame> fr;
     point_t speed, friction;
     uint8_t friction_recalc = 0;
     images::texture tex;

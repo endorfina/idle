@@ -102,7 +102,7 @@ void octavia::draw(const graphics::core& gl) const noexcept
     gl::BindTexture(gl::TEXTURE_2D, tex.id);
     gl.prog.double_normal.set_texture_mult(tex.area / 8.f);
 
-    draw_octavia(gl.prog.double_normal, fr.load(std::memory_order_relaxed));
+    draw_octavia(gl.prog.double_normal, fr);
 }
 
 point_t octavia::apply_physics(const point_t pos) const noexcept
@@ -125,7 +125,7 @@ hotel::stage::action octavia::step() noexcept
         friction = speed / 50.f * uni_time_factor;
     }
 
-    auto frame = fr.load(std::memory_order_relaxed);
+    auto frame = fr.load();
     if (std::abs(speed.x) + std::abs(speed.y) > .1f)
     {
         speed -= friction;
@@ -152,7 +152,7 @@ hotel::stage::action octavia::step() noexcept
     {
         speed = {0, 0};
     }
-    fr.store(frame, std::memory_order_relaxed);
+    fr = frame;
     return hotel::stage::action::none;
 }
 

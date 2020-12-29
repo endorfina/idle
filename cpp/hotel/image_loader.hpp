@@ -26,10 +26,10 @@
 #include "service.hpp"
 #include "../png/image_queue.hpp"
 
-namespace idle::hotel
+namespace idle::hotel::garment
 {
 
-class image_pool
+class pool
 {
     struct item
     {
@@ -46,9 +46,9 @@ class image_pool
 public:
     images::database db;
 
-    image_pool() noexcept;
+    pool() noexcept;
 
-    ~image_pool() noexcept;
+    ~pool() noexcept;
 
     void load_image(const char * filename, images::texture& out, GLint quality = gl::NEAREST) noexcept;
 
@@ -57,9 +57,9 @@ public:
     void kill_worker() noexcept;
 };
 
-struct image_loader
+struct loader
 {
-    image_pool pool;
+    pool pictures;
 
     void load_queued_images() noexcept;
 
@@ -68,4 +68,4 @@ struct image_loader
     void kill_workers() noexcept;
 };
 
-}  // namespace idle::hotel
+}  // namespace idle::hotel::garment
