@@ -15,23 +15,42 @@ ASSETS=(
 readonly ASSETS
 readonly filehost='https://idle.endorfina.dev/assets'
 
-missing_assets=()
+opt_force_all=no
+opt_missing_only=no
 
-for filename in "${ASSETS[@]}"
+while [[ $# -gt 0 ]]
 do
-    [[ -f $filename ]] && continue
+    opt_iter=${1#-}
+    shift
 
-    missing_assets+=('-O' "$filehost/$filename")
+    while [[ -n $opt_iter ]]
+    do
+        case ${opt_iter:0:1} in
+            f)
+                opt_force_all=yes
+                ;;
+
+            m)
+                opt_missing_only=yes
+                ;;
+
+        esac
+        opt_iter=${opt_iter#?}
+    done
 done
+
+readonly opt_{force_all,missing_only}
 
 if [[ -t 1 ]]
 then
-  readonly ESC=$(printf '\033')'['
-  readonly color_blue=$ESC'0;34m'
-  readonly color_norm=$ESC'0m'
+    readonly ESC=$(printf '\033')'['
+    readonly color_green=$ESC'1;32m'
+    readonly color_blue=$ESC'0;34m'
+    readonly color_norm=$ESC'0m'
 else
-  readonly color_blue=
-  readonly color_norm=
+    readonly color_green=
+    readonly color_blue=
+    readonly color_norm=
 fi
 
 curl_opts=('--proto' '=https'
@@ -50,13 +69,37 @@ then
         && curl_opts+=(-Z)
 fi
 
-if [[ ${#missing_assets[*]} -gt 0 ]]
-then
-    echo -n "-- 🌠 Fetching assets: $color_blue"
-    printf '%s' "${missing_assets[*]}" \
-        | sed -E 's~-O[[:space:]]+[^[:space:]]+/~\n  -- ~g'
-    echo "$color_norm"
+download_args=()
+download_list=()
 
-    curl "${curl_opts[@]}" "${missing_assets[@]}"
+for filename in "${ASSETS[@]}"
+do
+    if [[ $opt_force_all == no ]]
+    then
+        if [[ $opt_missing_only == yes ]]
+        then
+            [[ -f $filename ]] && continue
+
+        else
+            download_args+=('-z' "./$filename")
+        fi
+    fi
+
+    download_args+=('-O' "$filehost/$filename")
+
+    [[ -f $filename ]] \
+        && download_list+=("$filename$color_green*") \
+        || download_list+=("$filename")
+done
+
+readonly download_{args,list}
+
+if [[ ${#download_list[*]} -gt 0 ]]
+then
+    readonly list_item_prefix=${color_blue}$'\n  -- '
+
+    printf '%s\n' "-- 🌠 Remote assets: ${download_list[*]/#/$list_item_prefix}${color_norm}"
+
+    curl "${curl_opts[@]}" "${download_args[@]}"
 fi
 
