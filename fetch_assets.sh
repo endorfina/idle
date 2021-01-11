@@ -43,7 +43,7 @@ readonly opt_{force_all,missing_only}
 
 if [[ -t 1 ]]
 then
-    readonly ESC=$(printf '\033')'['
+    readonly ESC=$'\e['
     readonly color_green=$ESC'1;32m'
     readonly color_blue=$ESC'0;34m'
     readonly color_norm=$ESC'0m'

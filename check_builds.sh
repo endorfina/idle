@@ -11,7 +11,7 @@ tmp_file=
 
 if [[ -t 1 && -t 2 ]]
 then
-    readonly ESC=$(printf '\033')'['
+    readonly ESC=$'\e['
     readonly color_red=$ESC'1;31m'
     readonly color_norm=$ESC'0m'
 else

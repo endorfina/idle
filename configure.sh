@@ -3,16 +3,16 @@
 # (ɔ) 2020 endorfina <dev.endorfina@outlook.com>
 # GPLv3
 
-readonly PROJECT_NAME='idle'
-readonly SOURCE_DIR='cpp'
-readonly BUILD_DIR='.cxx'
-readonly COMPC_FILE='compile_commands.json'
+readonly project_name='idle'
+readonly cxx_source_dir='cpp'
+readonly cmake_build_dir='.cxx'
+readonly cc_json_filename='compile_commands.json'
 
-readonly PROGNAME=${BASH_SOURCE[0]##*/}
+readonly program_name=${BASH_SOURCE[0]##*/}
 
 if [[ -t 1 && -t 2 ]]
 then
-  readonly ESC=$(printf '\033')'['
+  readonly ESC=$'\e['
   readonly color_green=$ESC'0;32m'
   readonly color_blue=$ESC'0;34m'
   readonly color_red=$ESC'1;31m'
@@ -26,7 +26,7 @@ fi
 
 die()
 {
-  printf >&2 '💀 %s\n' "${color_red}${PROGNAME} !!${color_norm} $*"
+  printf >&2 '💀 %s\n' "${color_red}${program_name} !!${color_norm} $*"
   exit 1
 }
 
@@ -34,12 +34,12 @@ set -o pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")" || die "Couldn't move to the root directory"
 
-[[ -d $SOURCE_DIR ]] || die "Source dir \"$SOURCE_DIR\" not found!"
+[[ -d $cxx_source_dir ]] || die "Source dir \"$cxx_source_dir\" not found!"
 
-BUILD_TYPE='Release'
-CM_OPTS=()
-CM_OPTS_CXX=()
-CM_LOG_LEVEL=2 # default: 2 (warnings)
+cmake_build_type='Release'
+cmake_options=()
+cmake_cxx_flags=()
+cmake_log_level=2 # default: 2 (warnings)
 
 if [[ $# -gt 0 && $1 == dev ]]
 then
@@ -47,109 +47,109 @@ then
   set -- '-ncgSlpJ' "$@"
 fi
 
-for CLI_ARG in "$@"
+for arg_iter in "$@"
 do
-  CLI_ARG=${CLI_ARG#-}
+  arg_iter=${arg_iter#-}
 
-  while [[ -n $CLI_ARG ]]
+  while [[ -n $arg_iter ]]
   do
-    OPT=${CLI_ARG:0:1}
-    CLI_ARG=${CLI_ARG#?}
+    opt_iter=${arg_iter:0:1}
+    arg_iter=${arg_iter#?}
 
-    case $OPT in
+    case $opt_iter in
       d)
-        BUILD_TYPE='Debug'
+        cmake_build_type='Debug'
         ;;
 
       C)
-        CM_OPTS+=('-DCMAKE_CXX_COMPILER=clang++')
-        CM_OPTS_CXX+=('-stdlib=libc++')
+        cmake_options+=('-DCMAKE_CXX_COMPILER=clang++')
+        cmake_cxx_flags+=('-stdlib=libc++')
         ;;
 
       n)
-        CM_OPTS_CXX+=('-march=native' '-mtune=native')
+        cmake_cxx_flags+=('-march=native' '-mtune=native')
         ;;
 
       u)
-        CM_OPTS+=('-DCMAKE_UNITY_BUILD=ON')  # since cmake 3.16
+        cmake_options+=('-DCMAKE_UNITY_BUILD=ON')  # since cmake 3.16
         ;;
 
       J)
-        CM_OPTS+=('-DMAKESHIFT_UNITY=OFF')
+        cmake_options+=('-DMAKESHIFT_UNITY=OFF')
         ;;
 
       c)
-        CM_OPTS+=('-DCMAKE_EXPORT_COMPILE_COMMANDS=ON')
+        cmake_options+=('-DCMAKE_EXPORT_COMPILE_COMMANDS=ON')
         ;;
 
       s)
-        CM_OPTS+=('-DPRUNE_SYMBOLS=ON')
+        cmake_options+=('-DPRUNE_SYMBOLS=ON')
         ;;
 
       S)
-        CM_OPTS+=('-DPRUNE_SYMBOLS=OFF')
+        cmake_options+=('-DPRUNE_SYMBOLS=OFF')
         ;;
 
       g)
-        CM_OPTS+=('-DCOMPILE_GALLERY=ON')
+        cmake_options+=('-DCOMPILE_GALLERY=ON')
         ;;
 
       p)
-        CM_OPTS+=('-DCOMPILE_FPS_COUNTERS=ON')
+        cmake_options+=('-DCOMPILE_FPS_COUNTERS=ON')
         ;;
 
       X)
-        CM_OPTS+=('-DX11_USE_CLIENTMESSAGE=OFF')
+        cmake_options+=('-DX11_USE_CLIENTMESSAGE=OFF')
         ;;
 
       o)
-        CM_OPTS+=("-DOUTPUT_DIR=$(pwd)")
+        cmake_options+=("-DOUTPUT_DIR=$(pwd)")
         ;;
 
       v)
-        CM_OPTS+=('-DCMAKE_VERBOSE_MAKEFILE=ON')
+        cmake_options+=('-DCMAKE_VERBOSE_MAKEFILE=ON')
         ;;
 
       l)
-        (( ++CM_LOG_LEVEL ))
+        (( ++cmake_log_level ))
         ;;
 
       L)
-        CM_LOG_LEVEL=0
+        cmake_log_level=0
         ;;
 
       q)
-        CM_OPTS+=('--log-level=WARNING')
+        cmake_options+=('--log-level=WARNING')
         ;;
 
       *)
-        echo >&2 "$PROGNAME: Ignoring unknown option \"$OPT\""
+        echo >&2 "$program_name: Ignoring unknown option \"$opt_iter\""
         ;;
     esac
   done
 done
 
-ARGS=("-S$SOURCE_DIR" "-B$BUILD_DIR" "-DCMAKE_BUILD_TYPE=$BUILD_TYPE")
+cmake_cli_args=("-S$cxx_source_dir" "-B$cmake_build_dir" "-DCMAKE_BUILD_TYPE=$cmake_build_type")
 
-command -v 'ninja' &>/dev/null && ARGS+=('-GNinja')
+command -v 'ninja' &>/dev/null && cmake_cli_args+=('-GNinja')
 
-[[ ${#CM_OPTS_CXX[*]} -gt 0 ]] && ARGS+=("-DCMAKE_CXX_FLAGS=${CM_OPTS_CXX[*]}")
+[[ ${#cmake_cxx_flags[*]} -gt 0 ]] && cmake_cli_args+=("-DCMAKE_CXX_FLAGS=${cmake_cxx_flags[*]}")
 
-[[ ${#CM_OPTS[*]} -gt 0 ]] && ARGS+=("${CM_OPTS[@]}")
+[[ ${#cmake_options[*]} -gt 0 ]] && cmake_cli_args+=("${cmake_options[@]}")
 
-ARGS+=("-DLOG_LEVEL=$CM_LOG_LEVEL")
+cmake_cli_args+=("-DLOG_LEVEL=$cmake_log_level")
 
-readonly ARGS
+readonly cmake_cli_args
 
 # READY TO BOOT
 # There should be no side effects before this line
 
-[[ -r $SOURCE_DIR/png/lodepng/lodepng.h ]] || git submodule update --init -j 2
+[[ -r $cxx_source_dir/png/lodepng/lodepng.h ]] || git submodule update --init -j 2
 
-if [[ -d $BUILD_DIR ]]
+if [[ -d $cmake_build_dir ]]
 then
   echo 'Clearing existing cmake configuration files'
-  find "$BUILD_DIR" -type f -delete
+  find "$cmake_build_dir" -type f -delete
 fi
 
 hearts_iter=0
@@ -158,7 +158,7 @@ readonly hearts
 
 echo "Using following CMake args:"
 echo '--'
-for arg_iter in "${ARGS[@]}"
+for arg_iter in "${cmake_cli_args[@]}"
 do
   echo -n "    ${hearts[$hearts_iter]} "
   case $arg_iter in
@@ -184,22 +184,20 @@ do
 done
 
 echo '--'
-cmake "${ARGS[@]}" \
+cmake "${cmake_cli_args[@]}" \
     | sed -E 's~(-[[:space:]]+(done|found|yes|success))$~'"$color_green"'\1'"$color_norm~" \
-    || die "CMake configuration failed. Verbatim CLI arguments: \"${ARGS[*]}\""
+    || die "CMake configuration failed. Verbatim CLI arguments: \"${cmake_cli_args[*]}\""
 
-[[ ! -f "$SOURCE_DIR/$COMPC_FILE" \
-  && -f "$BUILD_DIR/$COMPC_FILE" ]] \
-  && ln -s "../$BUILD_DIR/$COMPC_FILE" "$SOURCE_DIR/$COMPC_FILE"
+[[ ! -f "$cxx_source_dir/$cc_json_filename" \
+  && -f "$cmake_build_dir/$cc_json_filename" ]] \
+  && ln -s "../$cmake_build_dir/$cc_json_filename" "$cxx_source_dir/$cc_json_filename"
 
 ./fetch_assets.sh || die "Failed to download assets"
 
-# required by GNU make
-readonly INDENT=$'\t'
 
 make_target()
 {
-  local command_file=$BUILD_DIR/run_command
+  local command_file=$cmake_build_dir/run_command
   local name=$1
   shift
   local additional_cmds=()
@@ -226,41 +224,41 @@ make_target()
   fi
 }
 
-readonly RECONFIG_CLI="'./$PROGNAME'"$(for iarg in "$@"; do printf " '%s'" "$iarg"; done)
+readonly reconfig_cli_quoted="'./$program_name'"$(for iarg in "$@"; do printf " '%s'" "$iarg"; done)
 
-cat > 'Makefile' << _EOF
-## Makefile generated by $PROGNAME ##
+sed -E 's~^[[:space:]]+~\t~' > 'Makefile' << _EOF
+## Makefile generated by $program_name ##
 
-${PROJECT_NAME}: is_configured
-${INDENT}cmake --build '$BUILD_DIR'
+${project_name}: is_configured
+  cmake --build '$cmake_build_dir'
 
 is_configured:
-${INDENT}@test -d '$BUILD_DIR' || $RECONFIG_CLI
+  @test -d '$cmake_build_dir' || $reconfig_cli_quoted
 
 vars: is_configured
-${INDENT}cmake -N -LH --build '$BUILD_DIR'
+  cmake -N -LH --build '$cmake_build_dir'
 
 reconfig: erase
-${INDENT}${RECONFIG_CLI}
+  ${reconfig_cli_quoted}
 
 test: is_configured
-${INDENT}cmake --build '$BUILD_DIR' --target '${PROJECT_NAME}-test-run'
+  cmake --build '$cmake_build_dir' --target '${project_name}-test-run'
 
 clean:
-${INDENT}cmake --build '$BUILD_DIR' --target 'clean'
+  cmake --build '$cmake_build_dir' --target 'clean'
 
 ccmake:
-${INDENT}ccmake -B '$BUILD_DIR' -S '$SOURCE_DIR'
+  ccmake -B '$cmake_build_dir' -S '$cxx_source_dir'
 
 erase:
-${INDENT}rm -rf '$BUILD_DIR'
+  rm -rf '$cmake_build_dir'
 
 $(make_target exec)
 
-run: $PROJECT_NAME exec
+run: $project_name exec
 
 $(make_target perf 's~\([[:space:]]*('"'[^']*'"')[^)]*\)$~perf stat \1~;')
 
-.PHONY: $PROJECT_NAME is_configured test vars clean erase exec run perf
+.PHONY: $project_name is_configured test vars clean erase exec run perf
 _EOF
 
