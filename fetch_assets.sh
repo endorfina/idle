@@ -69,6 +69,8 @@ then
         && curl_opts+=(-Z)
 fi
 
+readonly curl_opts
+
 download_args=()
 download_list=()
 
@@ -81,7 +83,9 @@ do
             [[ -f $filename ]] && continue
 
         else
-            download_args+=('-z' "./$filename")
+            [[ ${#download_args[*]} -gt 0 ]] && download_args+=('--next' "${curl_opts[@]}")
+
+            [[ -f $filename ]] && download_args+=('-z' "./$filename")
         fi
     fi
 
