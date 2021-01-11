@@ -62,8 +62,3 @@
 
 #endif  // __cpp_concepts
 
-#ifdef __ANDROID__
-#if __cpp_concepts && __cpp_constinit
-#error "NDK has caught up. This header should now be removed."
-#endif
-#endif
